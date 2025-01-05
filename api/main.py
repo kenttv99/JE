@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-from api.endpoints import exchange
+from api.endpoints import exchange_api
 import logging
 
 # Настройка логирования
@@ -16,4 +16,4 @@ async def log_requests(request: Request, call_next):
     return response
 
 # Регистрация маршрутов
-app.include_router(exchange.router, prefix="/api/v1", tags=["exchange"])
+app.include_router(exchange_api.router, prefix="/api/v1", tags=["exchange"])
