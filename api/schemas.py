@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
@@ -6,9 +6,9 @@ from enum import Enum
 
 
 # Enums
-class OrderStatusEnum(str, Enum):
+class OrderStatus(str, Enum):
     pending = "pending"
-    waiting_access = "waiting_access"
+    waiting_confirmation = "waiting_confirmation"
     processing = "processing"
     arbitrage = "arbitrage"
     completed = "completed"
@@ -54,6 +54,10 @@ class ExchangeOrderBase(BaseModel):
     total_rub: Decimal
 
 
+class ExchangeOrderRequest(ExchangeOrderBase):
+    pass
+
+
 class ExchangeOrderCreate(ExchangeOrderBase):
     pass
 
@@ -61,12 +65,33 @@ class ExchangeOrderCreate(ExchangeOrderBase):
 class ExchangeOrderResponse(ExchangeOrderBase):
     id: int
     user_id: int
-    status: OrderStatusEnum
+    status: OrderStatus
     created_at: datetime
     updated_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class OrderResponse(BaseModel):
+    id: int
+    order_type: OrderTypeEnum
+    currency: str
+    amount: Decimal
+    total_rub: Decimal
+    status: OrderStatus
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# Exchange Rate Schemas
+class ExchangeRateResponse(BaseModel):
+    currency: str
+    rate: Decimal
+    timestamp: datetime
 
 
 # Payment Schemas
@@ -82,9 +107,26 @@ class PaymentCreate(PaymentBase):
 
 class PaymentResponse(PaymentBase):
     id: int
-    status: OrderStatusEnum
+    status: OrderStatus
     created_at: datetime
     updated_at: datetime
 
     class Config:
         from_attributes = True
+
+
+# Authentication Schemas
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class RegisterRequest(BaseModel):
+    email: EmailStr
+    password: str
+    full_name: str
+
+
+# Update Order Status Schema
+class UpdateOrderStatusRequest(BaseModel):
+    status: OrderStatus

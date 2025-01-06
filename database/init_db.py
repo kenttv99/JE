@@ -4,6 +4,7 @@ from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
 import enum
 import logging
+from api.schemas import OrderStatus
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -16,13 +17,13 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 # Определение enum для статуса заявок и платежей
-class OrderStatus(enum.Enum):
-    pending = "pending"
-    waiting_access = "waiting_access"
-    processing = "processing"
-    arbitrage = "arbitrage"
-    completed = "completed"
-    canceled = "canceled"
+# class OrderStatus(enum.Enum):
+#     pending = "pending"
+#     waiting_confirmation = "waiting_confirmation"
+#     processing = "processing"
+#     arbitrage = "arbitrage"
+#     completed = "completed"
+#     canceled = "canceled"
 
 
 # Модели таблиц

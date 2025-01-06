@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from database.init_db import SessionLocal, ExchangeOrder, OrderStatus, ExchangeRate
 from typing import List
 from api.endpoints.garantex_api import fetch_garantex_rates
-from api.schemas import OrderResponse, ExchangeRateResponse  # Импортируем схемы из schemas.py
+from api.schemas import ExchangeRateResponse  # Импортируем схемы из schemas.py
 
 router = APIRouter()
 
