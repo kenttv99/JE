@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from database.init_db import SessionLocal, ExchangeOrder, OrderStatus, ExchangeRate
-from pydantic import BaseModel
 from typing import List
 from api.endpoints.garantex_api import fetch_garantex_rates
+from api.schemas import OrderResponse, ExchangeRateResponse  # Импортируем схемы из schemas.py
 
 router = APIRouter()
 
@@ -14,28 +14,6 @@ def get_db():
         yield db
     finally:
         db.close()
-
-# Pydantic модель для получения заявок
-class OrderResponse(BaseModel):
-    id: int
-    user_id: int
-    order_type: str
-    currency: str
-    amount: float
-    total_rub: float
-    status: str
-    created_at: str
-    updated_at: str
-
-    class Config:
-        from_attributes = True
-
-# Модель курсов обмена
-class ExchangeRateResponse(BaseModel):
-    currency: str
-    buy_rate: float
-    sell_rate: float
-    updated_at: str
 
 # Проверка здоровья сервера
 @router.get("/health")

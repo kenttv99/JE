@@ -2,9 +2,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 from database.init_db import SessionLocal, ExchangeOrder, OrderStatus, User
-from pydantic import BaseModel
 from typing import List
 from api.auth import get_current_user
+from api.schemas import UpdateOrderStatusRequest, OrderResponse, ExchangeOrderRequest  # Импортируем схемы
 
 router = APIRouter()
 
@@ -16,36 +16,9 @@ def get_db():
     finally:
         db.close()
 
-# Pydantic модель для изменения статуса заявки
-class UpdateOrderStatusRequest(BaseModel):
-    status: OrderStatus
-
-# Pydantic модель для получения заявок
-class OrderResponse(BaseModel):
-    id: int
-    user_id: int
-    order_type: str
-    currency: str
-    amount: float
-    total_rub: float
-    status: str
-    created_at: str
-    updated_at: str
-
-    class Config:
-        from_attributes = True
-
-# Pydantic модель для создания заявки
-class ExchangeOrderRequest(BaseModel):
-    order_type: str
-    currency: str
-    amount: float
-    total_rub: float
-
 # Эндпоинт для получения списка заявок пользователя
 @router.get("/orders", response_model=List[OrderResponse])
 def get_user_orders(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    
     # Получаем user_id на основе email текущего пользователя
     user = db.query(User).filter(User.email == current_user["email"]).first()
     if not user:

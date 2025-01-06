@@ -1,10 +1,10 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
 from datetime import timedelta
 
 from api.auth import create_access_token, verify_password, hash_password, get_current_user
 from database.init_db import SessionLocal, User
+from api.schemas import LoginRequest, RegisterRequest  # Импортируем схемы из schemas.py
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -12,17 +12,6 @@ logger = logging.getLogger(__name__)
 
 # Создаем роутер
 router = APIRouter()
-
-# Модель для входа
-class LoginRequest(BaseModel):
-    email: str
-    password: str
-
-# Модель для регистрации
-class RegisterRequest(BaseModel):
-    email: str
-    password: str
-    full_name: str
 
 # Обработчик регистрации
 @router.post("/register")
