@@ -1,11 +1,9 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException
 from psycopg2 import connect, OperationalError
 import logging
 from pydantic import BaseModel
 from psycopg2.extras import RealDictCursor
 from api.endpoints.garantex_api import fetch_garantex_rates
-from api.auth import hash_password, verify_password, create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES
-from datetime import timedelta
 
 # Настройка логирования
 logging.basicConfig(
@@ -40,21 +38,13 @@ def connect_to_db():
 router = APIRouter()
 
 # Модели данных
-class User(BaseModel):
-    email: str
-    password: str
-    full_name: str | None = None
-
-class DeleteUser(BaseModel):
-    email: str
-    
 class ExchangeOrder(BaseModel):
     user_id: int
-    order_type: str # "buy" or "sell"
-    currency: str # "BTC" or "USDT"
+    order_type: str  # "buy" or "sell"
+    currency: str  # "BTC" or "USDT"
     amount: float
     total_rub: float
-    
+
 class OrderFilter(BaseModel):
     user_id: int
 
@@ -63,62 +53,6 @@ class OrderFilter(BaseModel):
 async def health_check():
     logging.info("Выполнена проверка здоровья сервера.")
     return {"status": "ok"}
-
-# Эндпоинт для создания пользователя
-@router.post("/add_user")
-async def create_user(user: User):
-    conn = connect_to_db()
-    try:
-        cursor = conn.cursor()
-        query = """
-        INSERT INTO users (email, password_hash, full_name)
-        VALUES (%s, crypt(%s, gen_salt('bf')), %s)
-        RETURNING id;
-        """
-        cursor.execute(query, (user.email, user.password, user.full_name))
-        user_id = cursor.fetchone()[0]
-        conn.commit()
-        logging.info(f"Пользователь {user.email} успешно создан.")
-        return {"message": "Пользователь создан", "user_id": user_id}
-    except Exception as e:
-        conn.rollback()
-        logging.error(f"Ошибка создания пользователя: {e}")
-        raise HTTPException(status_code=500, detail=f"Ошибка создания пользователя: {e}")
-    finally:
-        conn.close()
-
-# Эндпоинт для получения списка пользователей
-@router.get("/users")
-async def get_users():
-    conn = connect_to_db()
-    try:
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-        cursor.execute("SELECT id, email, full_name, created_at FROM users;")
-        users = cursor.fetchall()
-        logging.info("Список пользователей успешно получен.")
-        return users
-    except Exception as e:
-        logging.error(f"Ошибка получения пользователей: {e}")
-        raise HTTPException(status_code=500, detail=f"Ошибка получения пользователей: {e}")
-    finally:
-        conn.close()
-
-# Эндпоинт для удаления пользователя
-@router.delete("/delete_user")
-async def delete_user(user: DeleteUser):
-    conn = connect_to_db()
-    try:
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM users WHERE email = %s;", (user.email,))
-        conn.commit()
-        logging.info(f"Пользователь {user.email} успешно удален.")
-        return {"message": "Пользователь удален"}
-    except Exception as e:
-        conn.rollback()
-        logging.error(f"Ошибка удаления пользователя: {e}")
-        raise HTTPException(status_code=500, detail=f"Ошибка удаления пользователя: {e}")
-    finally:
-        conn.close()
 
 # Эндпоинт для обновления курсов
 @router.post("/update_rates")
@@ -164,7 +98,7 @@ async def get_exchange_rates():
         raise HTTPException(status_code=500, detail=f"Ошибка получения курсов: {e}")
     finally:
         conn.close()
-        
+
 # Эндпоинт для создания заявки на обмен
 @router.post("/create_order")
 async def create_exchange_order(order: ExchangeOrder):
@@ -185,7 +119,7 @@ async def create_exchange_order(order: ExchangeOrder):
         raise HTTPException(status_code=500, detail=f"Ошибка создания заявки: {e}")
     finally:
         conn.close()
-        
+
 # Эндпоинт для получения заявок на обмен        
 @router.post("/get_orders")
 async def get_exchange_orders(filter: OrderFilter):
@@ -205,33 +139,3 @@ async def get_exchange_orders(filter: OrderFilter):
         raise HTTPException(status_code=500, detail=f"Ошибка получения заявок: {e}")
     finally:
         conn.close()
-        
-# Маршрут для авторизации пользователей
-@router.post("/auth/login")
-async def login(email: str, password: str):
-    conn = connect_to_db()
-    try:
-        cursor = conn.cursor()
-        query = "SELECT password_hash FROM users WHERE email = %s;"
-        cursor.execute(query, (email,))
-        user = cursor.fetchone()
-
-        if user is None or not verify_password(password, user[0]):
-            raise HTTPException(status_code=401, detail="Неверный email или пароль")
-        
-        # Генерация токена
-        access_token = create_access_token(
-            data={"sub": email},
-            expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        )
-        return {"access_token": access_token, "token_type": "bearer"}
-    except Exception as e:
-        logging.error(f"Ошибка при авторизации: {e}")
-        raise HTTPException(status_code=500, detail="Ошибка сервера")
-    finally:
-        conn.close()
-
-# Пример защищенного маршрута
-@router.get("/protected-route")
-async def protected_route(current_user: dict = Depends(get_current_user)):
-    return {"message": "Вы авторизованы!", "email": current_user["email"]}

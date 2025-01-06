@@ -188,3 +188,54 @@ AttributeError: module 'bcrypt' has no attribute '__about__'
 2025-01-05 21:04:54,814 [INFO] Ответ: 200
 2025-01-05 21:05:15,521 [INFO] Получен запрос: GET http://localhost:8000/api/v1/protected-route
 2025-01-05 21:05:15,523 [INFO] Ответ: 401
+2025-01-06 12:18:54,475 [INFO] Получен запрос: GET http://localhost:8000/docs
+2025-01-06 12:18:54,475 [INFO] Ответ: 200
+2025-01-06 12:18:55,693 [INFO] Получен запрос: GET http://localhost:8000/openapi.json
+2025-01-06 12:18:55,744 [INFO] Ответ: 200
+2025-01-06 12:23:20,510 [INFO] Получен запрос: GET http://localhost:8000/docs
+2025-01-06 12:23:20,510 [INFO] Ответ: 200
+2025-01-06 12:23:21,224 [INFO] Получен запрос: GET http://localhost:8000/openapi.json
+2025-01-06 12:23:21,237 [INFO] Ответ: 200
+2025-01-06 12:24:10,493 [INFO] Получен запрос: GET http://localhost:8000/docs
+2025-01-06 12:24:10,496 [INFO] Ответ: 200
+2025-01-06 12:24:10,889 [INFO] Получен запрос: GET http://localhost:8000/openapi.json
+2025-01-06 12:24:10,900 [INFO] Ответ: 200
+2025-01-06 12:26:51,748 [INFO] Получен запрос: GET http://localhost:8000/api/v1/health
+2025-01-06 12:26:51,748 [INFO] Выполнена проверка здоровья сервера.
+2025-01-06 12:26:51,748 [INFO] Ответ: 200
+2025-01-06 12:26:59,840 [INFO] Получен запрос: GET http://localhost:8000/docs
+2025-01-06 12:26:59,840 [INFO] Ответ: 200
+2025-01-06 12:27:00,186 [INFO] Получен запрос: GET http://localhost:8000/openapi.json
+2025-01-06 12:27:00,206 [INFO] Ответ: 200
+2025-01-06 12:27:25,652 [INFO] Получен запрос: GET http://localhost:8000/api/v1/auth/protected-route
+2025-01-06 12:27:25,657 [INFO] Ответ: 401
+2025-01-06 12:27:59,155 [INFO] Получен запрос: POST http://localhost:8000/api/v1/auth/register
+2025-01-06 12:27:59,166 [INFO] Регистрация пользователя с email: mail.ru
+2025-01-06 12:27:59,340 [WARNING] (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\kentt\OneDrive\Desktop\projects\JE\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-01-06 12:27:59,896 [INFO] Пользователь mail.ru успешно зарегистрирован
+2025-01-06 12:27:59,896 [INFO] Ответ: 200
+2025-01-06 12:28:16,801 [INFO] Получен запрос: POST http://localhost:8000/api/v1/auth/register
+2025-01-06 12:28:16,803 [INFO] Регистрация пользователя с email: mail.ru
+2025-01-06 12:28:16,803 [WARNING] Регистрация не удалась: email mail.ru уже зарегистрирован
+2025-01-06 12:28:16,803 [INFO] Ответ: 400
+2025-01-06 12:29:12,783 [INFO] Получен запрос: POST http://localhost:8000/api/v1/auth/login
+2025-01-06 12:29:12,783 [INFO] Попытка входа пользователя с email: mail.ru
+2025-01-06 12:29:13,263 [WARNING] Неудачная попытка входа: неверный email или пароль для mail.ru
+2025-01-06 12:29:13,263 [INFO] Ответ: 401
+2025-01-06 12:29:20,673 [INFO] Получен запрос: POST http://localhost:8000/api/v1/auth/login
+2025-01-06 12:29:20,673 [INFO] Попытка входа пользователя с email: mail.ru
+2025-01-06 12:29:21,062 [INFO] Пользователь mail.ru успешно вошел в систему
+2025-01-06 12:29:21,062 [INFO] Ответ: 200
+2025-01-06 12:29:45,251 [INFO] Получен запрос: GET http://localhost:8000/api/v1/auth/protected-route
+2025-01-06 12:29:45,254 [INFO] Доступ к защищенному маршруту предоставлен пользователю: mail.ru
+2025-01-06 12:29:45,254 [INFO] Ответ: 200
+2025-01-06 12:29:53,597 [INFO] Получен запрос: GET http://localhost:8000/api/v1/auth/me
+2025-01-06 12:29:53,597 [INFO] Запрос информации о текущем пользователе: mail.ru
+2025-01-06 12:29:53,597 [INFO] Ответ: 200
+2025-01-06 12:30:08,448 [INFO] Получен запрос: GET http://localhost:8000/api/v1/auth/me
+2025-01-06 12:30:08,448 [INFO] Ответ: 401
