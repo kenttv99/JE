@@ -18,6 +18,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # Определение enum для статуса заявок и платежей
 class OrderStatus(enum.Enum):
     pending = "pending"
+    waiting_access = "waiting_access"
     processing = "processing"
     arbitrage = "arbitrage"
     completed = "completed"
@@ -32,8 +33,13 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False)
     password_hash = Column(Text, nullable=False)
     full_name = Column(String(255))
+    referrer_id = Column(Integer, ForeignKey("users.id"), nullable=True, default=None)
+    referral_code = Column(String(255), unique=True, nullable=True, default=None)
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow)
+
+    # Связь с приглашёнными пользователями
+    referred_users = relationship("User", backref="referrer", remote_side=[id])
 
 
 class ExchangeRate(Base):

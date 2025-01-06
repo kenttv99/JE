@@ -1,141 +1,70 @@
-from fastapi import APIRouter, HTTPException
-from psycopg2 import connect, OperationalError
-import logging
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
+from database.init_db import SessionLocal, ExchangeOrder, OrderStatus, ExchangeRate
 from pydantic import BaseModel
-from psycopg2.extras import RealDictCursor
+from typing import List
 from api.endpoints.garantex_api import fetch_garantex_rates
 
-# Настройка логирования
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.FileHandler("app.log"),
-        logging.StreamHandler()
-    ]
-)
-
-# Конфигурация базы данных
-DB_CONFIG = {
-    "dbname": "crypto_exchange",
-    "user": "postgres",
-    "password": "assasin88",
-    "host": "localhost",
-    "port": "5432",
-}
-
-def connect_to_db():
-    """Функция для подключения к базе данных."""
-    try:
-        conn = connect(**DB_CONFIG)
-        logging.info("Успешное подключение к базе данных.")
-        return conn
-    except OperationalError as e:
-        logging.error(f"Ошибка подключения к базе данных: {e}")
-        raise HTTPException(status_code=500, detail="Ошибка базы данных")
-
-# Инициализация роутера
 router = APIRouter()
 
-# Модели данных
-class ExchangeOrder(BaseModel):
+# Подключение к базе данных через зависимость
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# Pydantic модель для получения заявок
+class OrderResponse(BaseModel):
+    id: int
     user_id: int
-    order_type: str  # "buy" or "sell"
-    currency: str  # "BTC" or "USDT"
+    order_type: str
+    currency: str
     amount: float
     total_rub: float
+    status: str
+    created_at: str
+    updated_at: str
 
-class OrderFilter(BaseModel):
-    user_id: int
+    class Config:
+        from_attributes = True
 
-# Эндпоинт проверки здоровья сервера
+# Модель курсов обмена
+class ExchangeRateResponse(BaseModel):
+    currency: str
+    buy_rate: float
+    sell_rate: float
+    updated_at: str
+
+# Проверка здоровья сервера
 @router.get("/health")
 async def health_check():
-    logging.info("Выполнена проверка здоровья сервера.")
     return {"status": "ok"}
 
-# Эндпоинт для обновления курсов
+# Обновление курсов
 @router.post("/update_rates")
-async def update_exchange_rates():
-    logging.info("Начата процедура обновления курсов.")
-    conn = connect_to_db()
-    try:
-        rates = fetch_garantex_rates()
-        if not rates:
-            logging.error("Не удалось получить курсы с Garantex.")
-            raise HTTPException(status_code=500, detail="Не удалось получить курсы с Garantex")
-        
-        cursor = conn.cursor()
-        cursor.execute("TRUNCATE TABLE exchange_rates;")
-        query = """
-        INSERT INTO exchange_rates (currency, buy_rate, sell_rate, source, updated_at)
-        VALUES ('USDT', %s, %s, 'Garantex', CURRENT_TIMESTAMP);
-        """
-        cursor.execute(query, (rates["buy_rate"], rates["sell_rate"]))
-        conn.commit()
-        logging.info("Курсы успешно обновлены в базе данных.")
-        return {"message": "Курсы успешно обновлены"}
-    except Exception as e:
-        conn.rollback()
-        logging.error(f"Ошибка обновления курсов: {e}")
-        raise HTTPException(status_code=500, detail=f"Ошибка обновления курсов: {e}")
-    finally:
-        conn.close()
+async def update_exchange_rates(db: Session = Depends(get_db)):
+    rates = fetch_garantex_rates()
+    if not rates:
+        raise HTTPException(status_code=500, detail="Не удалось получить курсы с Garantex")
 
-# Эндпоинт для получения курсов
-@router.get("/get_rates")
-async def get_exchange_rates():
-    logging.info("Запрос на получение курсов.")
-    conn = connect_to_db()
-    try:
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-        cursor.execute("SELECT currency, buy_rate, sell_rate, updated_at FROM exchange_rates;")
-        rates = cursor.fetchall()
-        logging.info("Курсы успешно получены из базы данных.")
-        return rates
-    except Exception as e:
-        logging.error(f"Ошибка получения курсов: {e}")
-        raise HTTPException(status_code=500, detail=f"Ошибка получения курсов: {e}")
-    finally:
-        conn.close()
+    # Обновление курсов в базе данных
+    db.query(ExchangeRate).delete()  # Удаляем старые записи
+    new_rate = ExchangeRate(
+        currency="USDT",
+        buy_rate=rates["buy_rate"],
+        sell_rate=rates["sell_rate"],
+        source="Garantex"
+    )
+    db.add(new_rate)
+    db.commit()
+    return {"message": "Курсы успешно обновлены"}
 
-# Эндпоинт для создания заявки на обмен
-@router.post("/create_order")
-async def create_exchange_order(order: ExchangeOrder):
-    conn = connect_to_db()
-    try:
-        cursor = conn.cursor()
-        query = """
-        INSERT INTO exchange_orders (user_id, order_type, currency, amount, total_rub, status, created_at, updated_at)
-        VALUES (%s, %s, %s, %s, %s, 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        RETURNING id;
-        """
-        cursor.execute(query, (order.user_id, order.order_type, order.currency, order.amount, order.total_rub))
-        order_id = cursor.fetchone()[0]
-        conn.commit()
-        return {"message": "Заявка на обмен успешно создана", "order_id": order_id}
-    except Exception as e:
-        conn.rollback()
-        raise HTTPException(status_code=500, detail=f"Ошибка создания заявки: {e}")
-    finally:
-        conn.close()
-
-# Эндпоинт для получения заявок на обмен        
-@router.post("/get_orders")
-async def get_exchange_orders(filter: OrderFilter):
-    conn = connect_to_db()
-    try:
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-        query = """
-        SELECT id, user_id, order_type, currency, amount, total_rub, status, created_at, updated_at
-        FROM exchange_orders
-        WHERE user_id = %s
-        ORDER BY created_at DESC;
-        """
-        cursor.execute(query, (filter.user_id,))
-        orders = cursor.fetchall()
-        return orders
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка получения заявок: {e}")
-    finally:
-        conn.close()
+# Получение курсов
+@router.get("/get_rates", response_model=List[ExchangeRateResponse])
+async def get_exchange_rates(db: Session = Depends(get_db)):
+    rates = db.query(ExchangeRate).all()
+    if not rates:
+        raise HTTPException(status_code=404, detail="Курсы не найдены")
+    return rates
