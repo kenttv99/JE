@@ -65,3 +65,126 @@
 2025-01-05 16:06:34,603 [INFO] Успешное подключение к базе данных.
 2025-01-05 16:06:34,645 [INFO] Пользователь mail успешно создан.
 2025-01-05 16:20:36,999 [INFO] Успешное подключение к базе данных.
+2025-01-05 18:20:09,986 [INFO] Успешное подключение к базе данных.
+2025-01-05 18:20:10,036 [INFO] Пользователь mail.ru успешно создан.
+2025-01-05 18:20:53,153 [INFO] Успешное подключение к базе данных.
+2025-01-05 18:20:53,169 [ERROR] Ошибка при авторизации: bcrypt: no backends available -- recommend you install one (e.g. 'pip install bcrypt')
+2025-01-05 18:23:17,919 [INFO] Успешное подключение к базе данных.
+2025-01-05 18:23:17,956 [WARNING] (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\kentt\OneDrive\Desktop\projects\JE\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-01-05 18:56:39,958 [INFO] Успешное подключение к базе данных.
+2025-01-05 18:56:39,974 [WARNING] (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\kentt\OneDrive\Desktop\projects\JE\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-01-05 19:04:44,898 [INFO] Успешное подключение к базе данных.
+2025-01-05 19:04:44,906 [WARNING] (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\kentt\OneDrive\Desktop\projects\JE\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-01-05 19:16:15,929 [INFO] Успешное подключение к базе данных.
+2025-01-05 19:16:15,987 [WARNING] (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\kentt\OneDrive\Desktop\projects\JE\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-01-05 19:24:13,624 [INFO] Успешное подключение к базе данных.
+2025-01-05 19:24:13,624 [WARNING] (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\kentt\OneDrive\Desktop\projects\JE\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-01-05 19:51:02,458 [INFO] Успешное подключение к базе данных.
+2025-01-05 19:51:02,477 [WARNING] (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\kentt\OneDrive\Desktop\projects\JE\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-01-05 20:00:12,393 [INFO] Успешное подключение к базе данных.
+2025-01-05 20:00:12,406 [WARNING] (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\kentt\OneDrive\Desktop\projects\JE\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-01-05 20:06:49,729 [INFO] Получен запрос: GET http://localhost:8000/docs
+2025-01-05 20:06:49,729 [INFO] Ответ: 200
+2025-01-05 20:06:50,590 [INFO] Получен запрос: GET http://localhost:8000/openapi.json
+2025-01-05 20:06:50,609 [INFO] Ответ: 200
+2025-01-05 20:08:04,311 [INFO] Получен запрос: POST http://localhost:8000/api/v1/auth/login?email=mail.ru&password=qwerty
+2025-01-05 20:08:04,425 [INFO] Успешное подключение к базе данных.
+2025-01-05 20:08:04,454 [WARNING] (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\kentt\OneDrive\Desktop\projects\JE\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-01-05 20:08:04,512 [INFO] Ответ: 200
+2025-01-05 20:08:30,731 [INFO] Получен запрос: GET http://localhost:8000/api/v1/protected-route
+2025-01-05 20:08:30,731 [INFO] Ответ: 200
+2025-01-05 20:30:42,668 [INFO] Получен запрос: GET http://localhost:8000/api/v1/protected-route
+2025-01-05 20:30:42,668 [INFO] Ответ: 401
+2025-01-05 20:30:59,701 [INFO] Получен запрос: POST http://localhost:8000/api/v1/auth/login?email=mail.ru&password=qwerty
+2025-01-05 20:30:59,766 [INFO] Успешное подключение к базе данных.
+2025-01-05 20:30:59,799 [INFO] Ответ: 200
+2025-01-05 20:32:07,057 [INFO] Получен запрос: GET http://localhost:8000/docs
+2025-01-05 20:32:07,057 [INFO] Ответ: 200
+2025-01-05 20:32:07,922 [INFO] Получен запрос: GET http://localhost:8000/openapi.json
+2025-01-05 20:32:07,924 [INFO] Ответ: 200
+2025-01-05 20:48:27,569 [INFO] Получен запрос: GET http://localhost:8000/docs
+2025-01-05 20:48:27,569 [INFO] Ответ: 200
+2025-01-05 20:48:28,672 [INFO] Получен запрос: GET http://localhost:8000/openapi.json
+2025-01-05 20:48:28,699 [INFO] Ответ: 200
+2025-01-05 20:50:06,685 [INFO] Получен запрос: GET http://localhost:8000/docs
+2025-01-05 20:50:06,687 [INFO] Ответ: 200
+2025-01-05 20:50:07,174 [INFO] Получен запрос: GET http://localhost:8000/openapi.json
+2025-01-05 20:50:07,186 [INFO] Ответ: 200
+2025-01-05 20:51:23,176 [INFO] Получен запрос: GET http://localhost:8000/api/v1/protected-route
+2025-01-05 20:51:23,176 [INFO] Ответ: 401
+2025-01-05 20:51:36,317 [INFO] Получен запрос: GET http://localhost:8000/api/v1/protected-route
+2025-01-05 20:51:36,317 [INFO] Ответ: 401
+2025-01-05 20:51:49,834 [INFO] Получен запрос: GET http://localhost:8000/api/v1/protected-route
+2025-01-05 20:51:49,837 [INFO] Ответ: 401
+2025-01-05 20:54:16,592 [INFO] Получен запрос: POST http://localhost:8000/api/v1/auth/login?email=mail.ru&password=qwerty
+2025-01-05 20:54:16,715 [INFO] Успешное подключение к базе данных.
+2025-01-05 20:54:16,752 [WARNING] (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\kentt\OneDrive\Desktop\projects\JE\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-01-05 20:54:16,804 [INFO] Ответ: 200
+2025-01-05 20:54:35,722 [INFO] Получен запрос: GET http://localhost:8000/api/v1/protected-route
+2025-01-05 20:54:35,724 [INFO] Ответ: 401
+2025-01-05 20:54:46,554 [INFO] Получен запрос: GET http://localhost:8000/api/v1/protected-route
+2025-01-05 20:54:46,554 [INFO] Ответ: 200
+2025-01-05 20:55:00,241 [INFO] Получен запрос: GET http://localhost:8000/api/v1/protected-route
+2025-01-05 20:55:00,243 [INFO] Ответ: 401
+2025-01-05 20:55:10,732 [INFO] Получен запрос: GET http://localhost:8000/docs
+2025-01-05 20:55:10,734 [INFO] Ответ: 200
+2025-01-05 20:55:11,419 [INFO] Получен запрос: GET http://localhost:8000/openapi.json
+2025-01-05 20:55:11,440 [INFO] Ответ: 200
+2025-01-05 21:02:18,094 [INFO] Получен запрос: GET http://localhost:8000/api/v1/protected-route
+2025-01-05 21:02:18,096 [INFO] Ответ: 401
+2025-01-05 21:04:13,213 [INFO] Получен запрос: POST http://localhost:8000/api/v1/auth/login?email=mail.ru&password=%22%242a%2406%24q5dz3qcqzgj2Sf1Ao%2FHLXuk2F2qT7XyQ0INRccrg7yR3X4nVHb7wK%22
+2025-01-05 21:04:13,299 [INFO] Успешное подключение к базе данных.
+2025-01-05 21:04:13,316 [ERROR] Ошибка при авторизации: 401: Неверный email или пароль
+2025-01-05 21:04:13,316 [INFO] Ответ: 500
+2025-01-05 21:04:23,993 [INFO] Получен запрос: POST http://localhost:8000/api/v1/auth/login?email=mail.ru&password=qwerty
+2025-01-05 21:04:24,076 [INFO] Успешное подключение к базе данных.
+2025-01-05 21:04:24,078 [INFO] Ответ: 200
+2025-01-05 21:04:54,814 [INFO] Получен запрос: GET http://localhost:8000/api/v1/protected-route
+2025-01-05 21:04:54,814 [INFO] Ответ: 200
+2025-01-05 21:05:15,521 [INFO] Получен запрос: GET http://localhost:8000/api/v1/protected-route
+2025-01-05 21:05:15,523 [INFO] Ответ: 401

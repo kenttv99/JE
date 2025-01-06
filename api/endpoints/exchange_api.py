@@ -1,9 +1,11 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from psycopg2 import connect, OperationalError
 import logging
 from pydantic import BaseModel
 from psycopg2.extras import RealDictCursor
-from api.garantex_api import fetch_garantex_rates
+from api.endpoints.garantex_api import fetch_garantex_rates
+from api.auth import hash_password, verify_password, create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES
+from datetime import timedelta
 
 # Настройка логирования
 logging.basicConfig(
@@ -203,3 +205,33 @@ async def get_exchange_orders(filter: OrderFilter):
         raise HTTPException(status_code=500, detail=f"Ошибка получения заявок: {e}")
     finally:
         conn.close()
+        
+# Маршрут для авторизации пользователей
+@router.post("/auth/login")
+async def login(email: str, password: str):
+    conn = connect_to_db()
+    try:
+        cursor = conn.cursor()
+        query = "SELECT password_hash FROM users WHERE email = %s;"
+        cursor.execute(query, (email,))
+        user = cursor.fetchone()
+
+        if user is None or not verify_password(password, user[0]):
+            raise HTTPException(status_code=401, detail="Неверный email или пароль")
+        
+        # Генерация токена
+        access_token = create_access_token(
+            data={"sub": email},
+            expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        )
+        return {"access_token": access_token, "token_type": "bearer"}
+    except Exception as e:
+        logging.error(f"Ошибка при авторизации: {e}")
+        raise HTTPException(status_code=500, detail="Ошибка сервера")
+    finally:
+        conn.close()
+
+# Пример защищенного маршрута
+@router.get("/protected-route")
+async def protected_route(current_user: dict = Depends(get_current_user)):
+    return {"message": "Вы авторизованы!", "email": current_user["email"]}
