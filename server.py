@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from api.endpoints.exchange_api import router as exchange_router
 from api.endpoints.auth_routers import router as auth_router  # Подключаем маршруты для аутентификации
 from api.endpoints.user_orders_routers import router as user_orders_router
+from api.endpoints.referrals_routers import router as referrals_router
 import logging
 from fastapi.openapi.utils import get_openapi
 
@@ -19,6 +20,7 @@ app = FastAPI(
 app.include_router(exchange_router, prefix="/api/v1", tags=["Exchange"]) #обмен
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authorization"])  # Регистрация маршрутов для аутентификации
 app.include_router(user_orders_router, prefix="/api/v1/orders", tags=["Orders"]) # Пользовательские роутеры
+app.include_router(referrals_router, prefix="/api/v1/referrals", tags=["Referrals"]) # Пользовательские роутеры
 
 # Middleware для логирования
 @app.middleware("http")

@@ -4,9 +4,10 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 
-
-# Enums
 class OrderStatus(str, Enum):
+    """
+    Перечисление возможных статусов заказа.
+    """
     pending = "pending"
     waiting_confirmation = "waiting_confirmation"
     processing = "processing"
@@ -14,23 +15,30 @@ class OrderStatus(str, Enum):
     completed = "completed"
     canceled = "canceled"
 
-
 class OrderTypeEnum(str, Enum):
+    """
+    Перечисление типов заказа.
+    """
     buy = "buy"
     sell = "sell"
 
-
-# User Schemas
 class UserBase(BaseModel):
+    """
+    Базовая схема для пользователя.
+    """
     email: EmailStr
     full_name: Optional[str] = None
 
-
 class UserCreate(UserBase):
+    """
+    Схема для создания нового пользователя.
+    """
     password: str
 
-
 class UserResponse(UserBase):
+    """
+    Схема ответа с информацией о пользователе.
+    """
     id: int
     created_at: datetime
     referral_code: Optional[str] = None
@@ -39,30 +47,38 @@ class UserResponse(UserBase):
     class Config:
         from_attributes = True
 
-
-# Referral Schemas
 class ReferralData(BaseModel):
+    """
+    Схема данных для реферальной системы.
+    """
     referred_users: List[UserResponse]
     bonus_earned: Decimal
 
-
-# Exchange Order Schemas
 class ExchangeOrderBase(BaseModel):
+    """
+    Базовая схема для заказа обмена валют.
+    """
     order_type: OrderTypeEnum
     currency: str
     amount: Decimal
     total_rub: Decimal
 
-
 class ExchangeOrderRequest(ExchangeOrderBase):
+    """
+    Схема запроса на создание заказа обмена валют.
+    """
     pass
-
 
 class ExchangeOrderCreate(ExchangeOrderBase):
+    """
+    Схема для создания нового заказа обмена валют.
+    """
     pass
 
-
 class ExchangeOrderResponse(ExchangeOrderBase):
+    """
+    Схема ответа с информацией о заказе обмена валют.
+    """
     id: int
     user_id: int
     status: OrderStatus
@@ -72,8 +88,10 @@ class ExchangeOrderResponse(ExchangeOrderBase):
     class Config:
         from_attributes = True
 
-
 class OrderResponse(BaseModel):
+    """
+    Схема ответа с информацией о заказе.
+    """
     id: int
     order_type: OrderTypeEnum
     currency: str
@@ -86,26 +104,32 @@ class OrderResponse(BaseModel):
     class Config:
         from_attributes = True
 
-
-# Exchange Rate Schemas
 class ExchangeRateResponse(BaseModel):
+    """
+    Схема ответа с информацией о курсе обмена валют.
+    """
     currency: str
     rate: Decimal
     timestamp: datetime
 
-
-# Payment Schemas
 class PaymentBase(BaseModel):
+    """
+    Базовая схема для платежа.
+    """
     payment_method: str
     bank: str
     payment_details: str
 
-
 class PaymentCreate(PaymentBase):
+    """
+    Схема для создания нового платежа.
+    """
     order_id: int
 
-
 class PaymentResponse(PaymentBase):
+    """
+    Схема ответа с информацией о платеже.
+    """
     id: int
     status: OrderStatus
     created_at: datetime
@@ -114,19 +138,30 @@ class PaymentResponse(PaymentBase):
     class Config:
         from_attributes = True
 
-
-# Authentication Schemas
 class LoginRequest(BaseModel):
+    """
+    Схема запроса на вход.
+    """
     email: EmailStr
     password: str
 
-
 class RegisterRequest(BaseModel):
+    """
+    Схема запроса на регистрацию.
+    """
     email: EmailStr
     password: str
     full_name: str
 
-
-# Update Order Status Schema
 class UpdateOrderStatusRequest(BaseModel):
+    """
+    Схема запроса на обновление статуса заказа.
+    """
     status: OrderStatus
+
+class UserUpdateRequest(BaseModel):
+    """
+    Схема запроса на обновление профиля пользователя.
+    """
+    email: Optional[EmailStr] = None
+    full_name: Optional[str] = None
