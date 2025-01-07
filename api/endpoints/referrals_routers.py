@@ -17,18 +17,21 @@ router = APIRouter()
 # Получение данных реферальной системы
 @router.get("/referrals", response_model=ReferralData)
 def get_referrals(
-    current_user: dict = Depends(get_current_user), 
+    current_user: User = Depends(get_current_user), 
     db: Session = Depends(get_db)
 ):
     """
     Получение данных реферальной системы для текущего пользователя.
     """
-    user = db.query(User).filter(User.id == current_user["id"]).first()
+    user = db.query(User).filter(User.id == current_user.id).first()
     if not user:
-        logger.error("Пользователь с id %s не найден", current_user["id"])
+        logger.error("Пользователь с id %s не найден", current_user.id)
         raise HTTPException(status_code=404, detail="Пользователь не найден")
 
     referred_users = user.referred_users
+    if referred_users is None:
+        referred_users = []
+
     bonus_earned = sum(getattr(ref_user, "referral_bonus", 0) for ref_user in referred_users)
 
     response_data = ReferralData(
@@ -51,15 +54,15 @@ def get_referrals(
 # Генерация реферального кода
 @router.post("/referrals/generate", response_model=str)
 def generate_referral_code(
-    current_user: dict = Depends(get_current_user), 
+    current_user: User = Depends(get_current_user), 
     db: Session = Depends(get_db)
 ):
     """
     Генерация реферального кода для текущего пользователя.
     """
-    user = db.query(User).filter(User.id == current_user["id"]).first()
+    user = db.query(User).filter(User.id == current_user.id).first()
     if not user:
-        logger.error("Пользователь с id %s не найден", current_user["id"])
+        logger.error("Пользователь с id %s не найден", current_user.id)
         raise HTTPException(status_code=404, detail="Пользователь не найден")
 
     if not user.referral_code:

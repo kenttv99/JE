@@ -4,6 +4,12 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 
+class TokenData(BaseModel):
+    """
+    Схема данных токена для аутентификации.
+    """
+    username: Optional[str] = None
+
 class OrderStatus(str, Enum):
     """
     Перечисление возможных статусов заказа.

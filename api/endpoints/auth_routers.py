@@ -27,7 +27,7 @@ def register_user(request: RegisterRequest, db: Session = Depends(get_db)):
     if existing_user:
         logger.warning("Регистрация не удалась: email %s уже зарегистрирован", request.email)
         raise HTTPException(status_code=400, detail="Email уже зарегистрирован")
-    
+
     hashed_password = hash_password(request.password)
     new_user = User(email=request.email, password_hash=hashed_password, full_name=request.full_name)
     db.add(new_user)
@@ -47,7 +47,7 @@ def login_user(request: LoginRequest, db: Session = Depends(get_db)):
     if not verify_password(request.password, user.password_hash):
         logger.warning("Неудачная попытка входа: неверный email или пароль для %s", request.email)
         raise HTTPException(status_code=401, detail="Неверный email или пароль")
-    
+
     access_token_expires = timedelta(minutes=30)
     access_token = create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
     logger.info("Пользователь %s успешно вошел в систему", request.email)
@@ -55,25 +55,25 @@ def login_user(request: LoginRequest, db: Session = Depends(get_db)):
 
 # Получение информации о текущем пользователе
 @router.get("/me")
-def get_me(current_user: dict = Depends(get_current_user)):
+def get_me(current_user: User = Depends(get_current_user)):
     """
     Возвращает информацию о текущем пользователе.
     """
-    logger.info("Запрос информации о текущем пользователе: %s", current_user["email"])
-    return {"email": current_user["email"]}
+    logger.info("Запрос информации о текущем пользователе: %s", current_user.email)
+    return {"email": current_user.email}
 
 # Пример защищенного маршрута
 @router.get("/protected-route")
-def protected_route(current_user: dict = Depends(get_current_user)):
+def protected_route(current_user: User = Depends(get_current_user)):
     """
     Пример защищенного маршрута, доступного только авторизованным пользователям.
     """
-    logger.info("Доступ к защищенному маршруту предоставлен пользователю: %s", current_user["email"])
-    return {"message": "Вы авторизованы!", "email": current_user["email"]}
+    logger.info("Доступ к защищенному маршруту предоставлен пользователю: %s", current_user.email)
+    return {"message": "Вы авторизованы!", "email": current_user.email}
 
 # Обновление профиля пользователя
 @router.put("/update_profile")
-def update_profile(user_update: UserUpdateRequest, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+def update_profile(user_update: UserUpdateRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     Обновление профиля пользователя.
     """

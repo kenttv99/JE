@@ -13,7 +13,7 @@ router = APIRouter()
 
 # Получение всех заявок пользователя
 @router.get("/orders", response_model=List[OrderResponse])
-def get_user_orders(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+def get_user_orders(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     Получение всех заявок текущего пользователя.
     """
@@ -26,7 +26,7 @@ def get_user_orders(db: Session = Depends(get_db), current_user: dict = Depends(
 # Создание новой заявки на обмен
 @router.post("/create_order")
 async def create_exchange_order(
-    order: ExchangeOrderRequest, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)
+    order: ExchangeOrderRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     """
     Создание новой заявки на обмен валюты для текущего пользователя.
@@ -52,7 +52,7 @@ async def create_exchange_order(
 
 # Отмена заявки на обмен
 @router.post("/orders/{order_id}/cancel")
-def cancel_order(order_id: int, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+def cancel_order(order_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     Отмена заявки на обмен валюты для текущего пользователя.
     """
@@ -61,8 +61,8 @@ def cancel_order(order_id: int, db: Session = Depends(get_db), current_user: dic
     if not order:
         raise HTTPException(status_code=404, detail="Заявка не найдена")
 
-    if order.status not in [OrderStatus.pending, OrderStatus.processing, OrderStatus.completed]:
-        raise HTTPException(status_code=400, detail="Заявку нельзя отменить")
+    # if order.status not in [OrderStatus.pending, OrderStatus.processing, OrderStatus.completed]:
+    #     raise HTTPException(status_code=400, detail="Заявку нельзя отменить")
 
     order.status = OrderStatus.canceled
     order.updated_at = datetime.utcnow()  # Обновление времени
@@ -93,7 +93,7 @@ def update_order_status(
         if status_request.status not in allowed_transitions[order.status]:
             raise HTTPException(
                 status_code=400,
-                detail=f"Недопустимый переход из статуса {order.status.value} в {status_request.status.value}",
+                detail=f"Недопустимый переход из статуса {order.status} в {status_request.status}",
             )
     else:
         raise HTTPException(status_code=400, detail="Изменение статуса для текущей заявки невозможно")
@@ -101,4 +101,5 @@ def update_order_status(
     order.status = status_request.status
     order.updated_at = datetime.utcnow()  # Обновление времени
     db.commit()
-    return {"message": "Статус заявки успешно обновлен", "order_id": order_id, "new_status": order.status.value}
+    db.refresh(order)
+    return {"message": "Статус заявки успешно обновлен", "order_id": order_id, "new_status": order.status}

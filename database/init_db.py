@@ -3,10 +3,12 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
 import logging
-from api.schemas import OrderStatus
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+# Абсолютный импорт
+from api.schemas import OrderStatus
 
 # Базовые настройки SQLAlchemy
 DATABASE_URL = "postgresql://postgres:assasin88@localhost:5432/crypto_exchange"
@@ -49,7 +51,7 @@ class ExchangeOrder(Base):
     currency = Column(String(10), nullable=False)
     amount = Column(DECIMAL(20, 8), nullable=False)
     total_rub = Column(DECIMAL(20, 2), nullable=False)
-    status = Column(Enum(OrderStatus), default=OrderStatus.pending)
+    status = Column(String, nullable=False, default=OrderStatus.pending.value)
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow)
 

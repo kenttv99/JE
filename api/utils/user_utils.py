@@ -1,14 +1,12 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, Depends
-from api.schemas import LoginRequest
 from database.init_db import User, SessionLocal
 
-def get_current_user_info(db: Session, current_user):
+def get_current_user_info(db: Session, current_user: User):
     """
-    Получение информации о текущем пользователе. Работает как со словарем, так и с объектом типа LoginRequest.
+    Получение информации о текущем пользователе.
     """
-    email = current_user.email if isinstance(current_user, LoginRequest) else current_user["email"]
-    user = db.query(User).filter(User.email == email).first()
+    user = db.query(User).filter(User.email == current_user.email).first()
     if not user:
         raise HTTPException(status_code=401, detail="Неверный email или пароль")
     return user
