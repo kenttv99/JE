@@ -53,7 +53,15 @@ async def register_user(request: RegisterRequest, db: AsyncSession = Depends(get
         updated_at=datetime.utcnow()
     )
     db.add(new_user)
-    await db.commit()
+    
+    # Используем транзакционный контекст для коммита
+    try:
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        logger.error("Ошибка при регистрации пользователя %s: %s", request.email, e)
+        raise HTTPException(status_code=500, detail="Ошибка регистрации пользователя")
+
     await db.refresh(new_user)
     logger.info("Пользователь %s успешно зарегистрирован", request.email)
     return {"message": "Пользователь успешно зарегистрирован"}
@@ -65,7 +73,7 @@ async def login_user(request: LoginRequest, db: AsyncSession = Depends(get_async
     logger.info("Попытка входа пользователя с email: %s", request.email)
     
     # Получение пользователя по email из базы данных
-    result = await db.execute(select(User).where(User.email == request.email))
+    result = await db.execute(select(User).filter(User.email == request.email))
     user = result.scalars().first()
     
     if not user:
@@ -81,7 +89,7 @@ async def login_user(request: LoginRequest, db: AsyncSession = Depends(get_async
     access_token_expires = timedelta(minutes=30)
     access_token = create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
     
-    logger.info("Пользователь %s успешно вошел в систему", request.email)
+    logger.info("Пользователь %s успешно вошёл в систему", request.email)
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -106,34 +114,36 @@ async def update_profile(
     current_user: User = Depends(get_current_user)
 ):
     """Обновление профиля текущего пользователя."""
+    user_email = current_user.email  # Сохраняем email заранее для логирования
+    logger.debug("Начало обновления профиля пользователя: %s", user_email)
     try:
         # Предварительно загружаем все необходимые атрибуты пользователя
         user = await get_current_user_info(db, current_user)
         if not user:
+            logger.warning("Пользователь не найден: %s", user_email)
             raise HTTPException(status_code=404, detail="Пользователь не найден")
 
-        # Обновляем поля пользователя
-        # user.email = user_update.email or user.email
+        # Обновляем только поле full_name, поле email не обновляется
         user.full_name = user_update.full_name or user.full_name
         user.updated_at = datetime.utcnow()
         
-        # Коммит изменений в базу данных
-        await db.commit()
-        logger.info("Профиль пользователя %s успешно обновлен", user.email)
+        # Коммит изменений в базу данных внутри транзакционного контекста
+        try:
+            await db.commit()
+        except Exception as e:
+            await db.rollback()
+            logger.error("Ошибка при коммите изменений профиля пользователя %s: %s", user_email, e)
+            raise HTTPException(status_code=500, detail="Ошибка обновления профиля")
+
+        logger.info("Профиль пользователя %s успешно обновлен", user_email)
         return {"message": "Профиль успешно обновлен"}
 
     except HTTPException as http_exc:
         # Пробрасываем уже обработанные HTTP-исключения
         raise http_exc
     except Exception as e:
-        # Обработка общих исключений
-        try:
-            # Пытаемся получить email пользователя без инициации дополнительных запросов
-            user_email = user.email if user else "Неизвестный пользователь"
-        except Exception:
-            user_email = "Неизвестный пользователь"
-        
-        logger.error("Ошибка при обновлении профиля пользователя %s: %s", user_email, e)
+        # Обработка общих исключений без дополнительных асинхронных вызовов
+        logger.error("Неизвестная ошибка при обновлении профиля пользователя %s: %s", user_email, e)
         raise HTTPException(status_code=500, detail="Ошибка обновления профиля")
 
 
@@ -163,7 +173,14 @@ async def change_password(
         current_user.password_hash = hashed_new_password
         current_user.updated_at = datetime.utcnow()
 
-        await db.commit()
+        # Коммит изменений в базу данных внутри транзакционного контекста
+        try:
+            await db.commit()
+        except Exception as e:
+            await db.rollback()
+            logger.error("Ошибка при коммите изменения пароля пользователя %s: %s", user_email, e)
+            raise HTTPException(status_code=500, detail="Ошибка изменения пароля")
+
         logger.info("Пользователь %s успешно изменил пароль", user_email)
         return {"message": "Пароль успешно изменен"}
     
@@ -171,7 +188,6 @@ async def change_password(
         # Уже обработанные HTTP исключения
         raise http_exc
     except Exception as e:
-        # Обработка неожиданных исключений
-        logger.error("Ошибка при изменении пароля пользователя %s: %s", user_email, str(e))
-        await db.rollback()
+        # Обработка неожиданных исключений без дополнительных асинхронных вызовов
+        logger.error("Неизвестная ошибка при изменении пароля пользователя %s: %s", user_email, e)
         raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера")
