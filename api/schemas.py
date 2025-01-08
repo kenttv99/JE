@@ -145,7 +145,7 @@ class UpdateOrderStatusRequest(BaseModel):
         from_attributes = True  # Обновлено
 
 class UserUpdateRequest(BaseModel):
-    email: Optional[EmailStr] = None
+    # email: Optional[EmailStr] = None
     full_name: Optional[str] = None
 
     class Config:

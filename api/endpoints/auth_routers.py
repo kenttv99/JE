@@ -101,29 +101,40 @@ async def protected_route(current_user: User = Depends(get_current_user)):
 
 @router.put("/update_profile")
 async def update_profile(
-    user_update: UserUpdateRequest,
-    db: AsyncSession = Depends(get_async_db),
+    user_update: UserUpdateRequest, 
+    db: AsyncSession = Depends(get_async_db), 
     current_user: User = Depends(get_current_user)
 ):
     """Обновление профиля текущего пользователя."""
-    user = await get_current_user_info(db, current_user)
-    if not user:
-        logger.error("Пользователь с email %s не найден", current_user.email)
-        raise HTTPException(status_code=404, detail="Пользователь не найден")
-
-    # Обновление полей пользователя
-    user.email = user_update.email or user.email
-    user.full_name = user_update.full_name or user.full_name
-    user.updated_at = datetime.utcnow()
-    
     try:
+        # Предварительно загружаем все необходимые атрибуты пользователя
+        user = await get_current_user_info(db, current_user)
+        if not user:
+            raise HTTPException(status_code=404, detail="Пользователь не найден")
+
+        # Обновляем поля пользователя
+        # user.email = user_update.email or user.email
+        user.full_name = user_update.full_name or user.full_name
+        user.updated_at = datetime.utcnow()
+        
+        # Коммит изменений в базу данных
         await db.commit()
         logger.info("Профиль пользователя %s успешно обновлен", user.email)
         return {"message": "Профиль успешно обновлен"}
+
+    except HTTPException as http_exc:
+        # Пробрасываем уже обработанные HTTP-исключения
+        raise http_exc
     except Exception as e:
-        await db.rollback()
-        logger.error("Ошибка при обновлении профиля пользователя %s: %s", user.email, e)
-        raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера")
+        # Обработка общих исключений
+        try:
+            # Пытаемся получить email пользователя без инициации дополнительных запросов
+            user_email = user.email if user else "Неизвестный пользователь"
+        except Exception:
+            user_email = "Неизвестный пользователь"
+        
+        logger.error("Ошибка при обновлении профиля пользователя %s: %s", user_email, e)
+        raise HTTPException(status_code=500, detail="Ошибка обновления профиля")
 
 
 @router.put("/change_password")
