@@ -175,3 +175,21 @@ class UserUpdateRequest(BaseModel):
     # email: Optional[EmailStr] = None
     full_name: Optional[str] = None
     password: Optional[str] = None
+    
+class RoleCreate(BaseModel):
+    """
+    Схема для создания новой роли.
+    """
+    name: str
+    description: Optional[str] = None
+
+class RoleResponse(BaseModel):
+    """
+    Схема ответа с информацией о роли.
+    """
+    id: int
+    name: str
+    description: Optional[str] = None
+
+    class Config:
+        from_attributes = True

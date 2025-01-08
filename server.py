@@ -5,6 +5,7 @@ from api.endpoints.exchange_routers import router as exchange_router
 from api.endpoints.auth_routers import router as auth_router
 from api.endpoints.user_orders_routers import router as user_orders_router
 from api.endpoints.referrals_routers import router as referrals_router
+from api.endpoints.roles_routers import router as roles_router
 from fastapi.openapi.utils import get_openapi
 
 # Настройка ротации логов
@@ -23,6 +24,7 @@ app.include_router(exchange_router, prefix="/api/v1", tags=["Exchange"])
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authorization"])
 app.include_router(user_orders_router, prefix="/api/v1/orders", tags=["Orders"])
 app.include_router(referrals_router, prefix="/api/v1/referrals", tags=["Referrals"])
+app.include_router(roles_router, prefix="/api/v1/roles", tags=["Roles"])
 
 # Middleware для логирования
 @app.middleware("http")
