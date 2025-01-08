@@ -9,6 +9,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 
 # Абсолютный импорт
 from api.schemas import OrderStatus
+from .init_data import init_data
 
 # Базовые настройки SQLAlchemy
 DATABASE_URL = "postgresql://postgres:assasin88@localhost:5432/crypto_exchange"
@@ -37,6 +38,7 @@ class User(Base):
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow)
     role_id = Column(Integer, ForeignKey('roles.id'), nullable=False)  # Добавляем связь с Role
+    is_superuser = Column(Boolean, default=False)  # Добавляем поле is_superuser
     
     # Связь с приглашёнными пользователями
     referred_users = relationship("User", backref="referrer", remote_side=[id])
@@ -91,30 +93,5 @@ def init_db():
     Base.metadata.create_all(bind=engine)
     logging.info("Все таблицы успешно созданы или уже существуют.")
     
-    # Инициализация ролей и пользователей
-    db = SessionLocal()
-    try:
-        if db.query(Role).count() == 0:
-            roles = [
-                Role(name="admin", description="Administrator role"),
-                Role(name="trader", description="Trader role"),
-                Role(name="user", description="Regular user role"),
-            ]
-            db.add_all(roles)
-            db.commit()
-
-        if db.query(User).count() == 0:
-            admin_role = db.query(Role).filter(Role.name == "admin").first()
-            example_user = User(
-                email="admin@example.com",
-                password_hash="hashed_password_placeholder",
-                role_id=admin_role.id,
-                is_superuser=True
-            )
-            db.add(example_user)
-            db.commit()
-    finally:
-        db.close()
-
 if __name__ == "__main__":
     init_db()
