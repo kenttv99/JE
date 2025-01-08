@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, DECIMAL, ForeignKey, TIMESTAMP, Text, Enum
+from sqlalchemy import create_engine, Column, Integer, String, DECIMAL, ForeignKey, TIMESTAMP, Text, Enum, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
@@ -16,7 +16,15 @@ engine = create_engine(DATABASE_URL)
 Base = declarative_base()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Модели таблиц
+# Определение модели Role
+class Role(Base):
+    __tablename__ = 'roles'
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True, nullable=False)
+    description = Column(String, nullable=True)
+
+# Обновление модели User для поддержки ролей
 class User(Base):
     __tablename__ = "users"
 
@@ -28,9 +36,12 @@ class User(Base):
     referral_code = Column(String(255), unique=True, nullable=True, default=None)
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow)
-
+    role_id = Column(Integer, ForeignKey('roles.id'), nullable=False)  # Добавляем связь с Role
+    
     # Связь с приглашёнными пользователями
     referred_users = relationship("User", backref="referrer", remote_side=[id])
+    role = relationship("Role", back_populates="users")
+    orders = relationship("ExchangeOrder", back_populates="user")  # Добавляем связь с заказами
 
 class ExchangeRate(Base):
     __tablename__ = "exchange_rates"
@@ -56,6 +67,7 @@ class ExchangeOrder(Base):
     updated_at = Column(TIMESTAMP, default=datetime.utcnow)
 
     user = relationship("User", back_populates="orders")
+    payments = relationship("Payment", back_populates="order")  # Добавляем связь с платежами
 
 class Payment(Base):
     __tablename__ = "payments"
@@ -71,14 +83,38 @@ class Payment(Base):
 
     order = relationship("ExchangeOrder", back_populates="payments")
 
-# Связь моделей
-User.orders = relationship("ExchangeOrder", back_populates="user")
-ExchangeOrder.payments = relationship("Payment", back_populates="order")
+# Обратная связь для Role
+Role.users = relationship("User", back_populates="role")
 
 # Создание таблиц
 def init_db():
     Base.metadata.create_all(bind=engine)
     logging.info("Все таблицы успешно созданы или уже существуют.")
+    
+    # Инициализация ролей и пользователей
+    db = SessionLocal()
+    try:
+        if db.query(Role).count() == 0:
+            roles = [
+                Role(name="admin", description="Administrator role"),
+                Role(name="trader", description="Trader role"),
+                Role(name="user", description="Regular user role"),
+            ]
+            db.add_all(roles)
+            db.commit()
+
+        if db.query(User).count() == 0:
+            admin_role = db.query(Role).filter(Role.name == "admin").first()
+            example_user = User(
+                email="admin@example.com",
+                password_hash="hashed_password_placeholder",
+                role_id=admin_role.id,
+                is_superuser=True
+            )
+            db.add(example_user)
+            db.commit()
+    finally:
+        db.close()
 
 if __name__ == "__main__":
     init_db()
