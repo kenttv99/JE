@@ -94,8 +94,10 @@ class OrderResponse(BaseModel):
 
 class ExchangeRateResponse(BaseModel):
     currency: str
-    rate: Decimal
-    timestamp: datetime
+    buy_rate: float
+    sell_rate: float
+    source: str
+    updated_at: datetime
 
     class Config:
         from_attributes = True  # Обновлено

@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 GARANTEX_API_URL = "https://garantex.org/api/v2/depth"
 
-def fetch_garantex_rates():
+async def fetch_garantex_rates():
     """
     Функция для получения курсов с Garantex.
     """
