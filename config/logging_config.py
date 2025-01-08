@@ -3,17 +3,28 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 def setup_logging():
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
+    # Создание логгера
+    logger = logging.getLogger("JE")  # Название логгера может быть любым
+    logger.setLevel(logging.INFO)  # Уровень логирования
 
-    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-
-    # Консольный обработчик
+    # Обработчик для консоли
     console_handler = logging.StreamHandler()
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
+    console_handler.setLevel(logging.INFO)
 
-    # Файловый обработчик с ротацией
-    file_handler = RotatingFileHandler("app.log", maxBytes=2000000, backupCount=5)
+    # Обработчик для файла с ротацией
+    file_handler = RotatingFileHandler("app.log", maxBytes=10**6, backupCount=3)
+    file_handler.setLevel(logging.ERROR)  # Логировать только ошибки в файл
+
+    # Форматтер
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    console_handler.setFormatter(formatter)
     file_handler.setFormatter(formatter)
+
+    # Добавление обработчиков к логгеру
+    logger.addHandler(console_handler)
     logger.addHandler(file_handler)
+
+    return logger
+
+# Инициализация логирования при импорте этого модуля
+logger = setup_logging()

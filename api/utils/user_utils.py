@@ -3,12 +3,13 @@ from sqlalchemy.future import select  # Добавляем импорт select
 from fastapi import HTTPException
 from database.init_db import User, get_async_db
 
-async def get_current_user_info(db: AsyncSession, current_user: User):
-    """Получает информацию о текущем пользователе."""
-    result = await db.execute(select(User).filter(User.email == current_user.email))
+async def get_current_user_info(db: AsyncSession, current_user: User) -> User:
+    # Пример логики для получения информации о пользователе
+    stmt = select(User).where(User.id == current_user.id)
+    result = await db.execute(stmt)
     user = result.scalars().first()
     if not user:
-        raise HTTPException(status_code=401, detail="Неверный email или пароль")
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
     return user
 
 async def get_user_by_email(db: AsyncSession, email: str):
