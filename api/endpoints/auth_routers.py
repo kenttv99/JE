@@ -12,7 +12,7 @@ from api.auth import (
     hash_password,
     get_current_user
 )
-from database.init_db import User, get_async_db
+from database.init_db import User, Role, get_async_db  # Импортируем модель Role
 from api.schemas import (
     LoginRequest,
     RegisterRequest,
@@ -44,13 +44,21 @@ async def register_user(request: RegisterRequest, db: AsyncSession = Depends(get
     # Хеширование пароля
     hashed_password = hash_password(request.password)
     
-    # Создание нового пользователя
+    # Получение роли по умолчанию (например, 'user')
+    result = await db.execute(select(Role).filter(Role.name == 'user'))
+    default_role = result.scalars().first()
+    if not default_role:
+        logger.error("Роль по умолчанию 'user' не найдена в базе данных.")
+        raise HTTPException(status_code=500, detail="Роль по умолчанию не найдена. Свяжитесь с администратором.")
+
+    # Создание нового пользователя с указанием role_id
     new_user = User(
         email=request.email,
         password_hash=hashed_password,
         full_name=request.full_name,
         created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        updated_at=datetime.utcnow(),
+        role_id=default_role.id  # Устанавливаем role_id
     )
     db.add(new_user)
     
