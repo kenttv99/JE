@@ -1,12 +1,13 @@
 from datetime import datetime
 from sqlalchemy.orm import Session
 from api.auth import hash_password
-from database.init_db import Role, User
 
 def init_roles(db: Session):
     """
     Инициализация ролей.
     """
+    from database.init_db import Role  # Импортируем модель внутри функции, чтобы избежать циклического импорта
+
     if db.query(Role).count() == 0:
         roles = [
             Role(name="admin", description="Administrator role"),
@@ -20,6 +21,8 @@ def init_users(db: Session):
     """
     Инициализация пользователей.
     """
+    from database.init_db import Role, User  # Импортируем модели внутри функции, чтобы избежать циклического импорта
+
     if db.query(User).count() == 0:
         admin_role = db.query(Role).filter(Role.name == "admin").first()
         example_user = User(

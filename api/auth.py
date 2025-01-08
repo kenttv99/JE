@@ -4,7 +4,6 @@ from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
 from fastapi import HTTPException, Depends
 from sqlalchemy.orm import Session
-from database.init_db import User, SessionLocal
 from api.schemas import TokenData
 
 SECRET_KEY = "123456789"  # Обязательно замените на надежный ключ
@@ -44,6 +43,7 @@ def get_db():
     """
     Получение сессии базы данных.
     """
+    from database.init_db import SessionLocal  # Импортируем внутри функции, чтобы избежать циклического импорта
     db = SessionLocal()
     try:
         yield db
@@ -54,6 +54,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     """
     Получение текущего пользователя на основе JWT токена.
     """
+    from database.init_db import User  # Импортируем внутри функции, чтобы избежать циклического импорта
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_email: str = payload.get("sub")

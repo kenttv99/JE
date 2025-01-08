@@ -93,5 +93,12 @@ def init_db():
     Base.metadata.create_all(bind=engine)
     logging.info("Все таблицы успешно созданы или уже существуют.")
     
+    # Инициализация данных
+    db = SessionLocal()
+    try:
+        init_data(db)
+    finally:
+        db.close()
+
 if __name__ == "__main__":
     init_db()
