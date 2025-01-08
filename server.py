@@ -1,5 +1,4 @@
 import logging
-from logging.handlers import RotatingFileHandler
 from fastapi import FastAPI, Request
 from fastapi.openapi.utils import get_openapi
 from api.endpoints.exchange_routers import router as exchange_router
@@ -8,9 +7,10 @@ from api.endpoints.user_orders_routers import router as user_orders_router
 from api.endpoints.referrals_routers import router as referrals_router
 from api.endpoints.roles_routers import router as roles_router
 
-# Настройка ротации логов
-handler = RotatingFileHandler("app.log", maxBytes=2000, backupCount=10)
-logging.basicConfig(handlers=[handler], level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+# Настройка логирования с ротацией
+from config.logging_config import setup_logging
+setup_logging()
+logger = logging.getLogger(__name__)
 
 # Инициализация приложения
 app = FastAPI(
@@ -30,9 +30,9 @@ app.include_router(roles_router, prefix="/api/v1/roles", tags=["Roles"])
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     """Логирование входящих запросов и исходящих ответов."""
-    logging.info(f"Получен запрос: {request.method} {request.url}")
+    logger.info(f"Получен запрос: {request.method} {request.url}")
     response = await call_next(request)
-    logging.info(f"Ответ: {response.status_code}")
+    logger.info(f"Ответ: {response.status_code}")
     return response
 
 # Кастомизация OpenAPI

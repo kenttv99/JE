@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
@@ -24,7 +25,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Проверяет соответствие пароля и его хэша."""
     return pwd_context.verify(plain_password, hashed_password)
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """Создает JWT токен с истечением срока действия."""
     to_encode = data.copy()
     if expires_delta:
@@ -39,14 +40,14 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
     """Получает текущего пользователя по JWT токену."""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_email: str = payload.get("sub")
+        user_email: Optional[str] = payload.get("sub")
         if user_email is None:
             raise HTTPException(status_code=401, detail="Не удалось проверить токен")
-        token_data = TokenData(username=user_email)
+        token_data = TokenData(email=user_email)
     except JWTError:
         raise HTTPException(status_code=401, detail="Не удалось проверить токен")
 
-    result = await db.execute(select(User).filter(User.email == token_data.username))
+    result = await db.execute(select(User).filter(User.email == token_data.email))
     user = result.scalars().first()
     if user is None:
         raise HTTPException(status_code=401, detail="Пользователь не найден")

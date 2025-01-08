@@ -7,7 +7,7 @@ from sqlalchemy.future import select  # Добавляем импорт select
 from api.auth import create_access_token, verify_password, hash_password, get_current_user
 from database.init_db import User, get_async_db
 from api.schemas import LoginRequest, RegisterRequest, UserUpdateRequest
-from api.utils.user_utils import get_current_user_info
+from api.utils.user_utils import get_current_user_info, get_user_by_email
 
 # Настройка логирования
 from config.logging_config import setup_logging
@@ -20,8 +20,7 @@ router = APIRouter()
 async def register_user(request: RegisterRequest, db: AsyncSession = Depends(get_async_db)):
     """Регистрация нового пользователя."""
     logger.info("Регистрация пользователя с email: %s", request.email)
-    result = await db.execute(select(User).filter(User.email == request.email))
-    existing_user = result.scalars().first()
+    existing_user = await get_user_by_email(db, request.email)
     if existing_user:
         logger.warning("Регистрация не удалась: email %s уже зарегистрирован", request.email)
         raise HTTPException(status_code=400, detail="Email уже зарегистрирован")
@@ -38,8 +37,8 @@ async def register_user(request: RegisterRequest, db: AsyncSession = Depends(get
 async def login_user(request: LoginRequest, db: AsyncSession = Depends(get_async_db)):
     """Авторизация пользователя."""
     logger.info("Попытка входа пользователя с email: %s", request.email)
-    user = await get_current_user_info(db, request)
-    if not verify_password(request.password, user.password_hash):
+    user = await get_user_by_email(db, request.email)
+    if not user or not verify_password(request.password, user.password_hash):
         logger.warning("Неудачная попытка входа: неверный email или пароль для %s", request.email)
         raise HTTPException(status_code=401, detail="Неверный email или пароль")
 

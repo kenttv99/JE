@@ -31,8 +31,7 @@ async def create_user(db: AsyncSession, email: str, hashed_password: str, full_n
 
 async def delete_user(db: AsyncSession, user_id: int):
     """Удаляет пользователя по ID."""
-    result = await db.execute(select(User).filter(User.id == user_id))
-    user = result.scalars().first()
+    user = await get_user_by_id(db, user_id)
     if user:
         await db.delete(user)
         await db.commit()

@@ -1,21 +1,30 @@
-from sqlalchemy import create_engine, Column, Integer, String, DECIMAL, ForeignKey, TIMESTAMP, Text, Enum, Boolean
+# database/init_db.py
+
+import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Text, DECIMAL, TIMESTAMP, Enum
 from datetime import datetime
-import logging
+from api.schemas import OrderStatus, OrderTypeEnum  # Убедитесь, что путь корректный
 
-# Настройка логирования
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-
-# Абсолютный импорт
-from api.schemas import OrderStatus
-
-# Базовые настройки SQLAlchemy
+# URL подключения к базе данных
 DATABASE_URL = "postgresql+asyncpg://postgres:assasin88@localhost:5432/crypto_exchange"
+
+# Создание асинхронного движка SQLAlchemy
 engine = create_async_engine(DATABASE_URL, echo=True, future=True)
+
+# Базовый класс для моделей
 Base = declarative_base()
-AsyncSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=AsyncSession)
+
+# Создание фабрики сессий
+AsyncSessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine,
+    class_=AsyncSession
+)
+
+# Определение моделей
 
 class Role(Base):
     __tablename__ = 'roles'
@@ -23,6 +32,9 @@ class Role(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True, nullable=False)
     description = Column(String, nullable=True)
+
+    # Связь с пользователями
+    users = relationship("User", back_populates="role")
 
 class User(Base):
     __tablename__ = "users"
@@ -38,6 +50,7 @@ class User(Base):
     role_id = Column(Integer, ForeignKey('roles.id'), nullable=False)
     is_superuser = Column(Boolean, default=False)
     
+    # Связи
     referred_users = relationship("User", backref="referrer", remote_side=[id])
     role = relationship("Role", back_populates="users")
     orders = relationship("ExchangeOrder", back_populates="user")
@@ -57,14 +70,15 @@ class ExchangeOrder(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    order_type = Column(Enum("buy", "sell", name="order_type"), nullable=False)
+    order_type = Column(Enum(OrderTypeEnum), nullable=False)
     currency = Column(String(10), nullable=False)
     amount = Column(DECIMAL(20, 8), nullable=False)
     total_rub = Column(DECIMAL(20, 2), nullable=False)
-    status = Column(String, nullable=False, default=OrderStatus.pending.value)
+    status = Column(Enum(OrderStatus), nullable=False, default=OrderStatus.pending.value)
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow)
 
+    # Связи
     user = relationship("User", back_populates="orders")
     payments = relationship("Payment", back_populates="order")
 
@@ -80,21 +94,25 @@ class Payment(Base):
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow)
 
+    # Связь с заказом
     order = relationship("ExchangeOrder", back_populates="payments")
 
-Role.users = relationship("User", back_populates="role")
-
 async def init_db():
-    """Инициализация базы данных и создание таблиц."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    logging.info("Все таблицы успешно созданы или уже существуют.")
+    """Инициализация базы данных."""
+    try:
+        async with engine.begin() as conn:
+            # Создание всех таблиц
+            await conn.run_sync(Base.metadata.create_all)
+            print("Таблицы успешно созданы.")
+    except Exception as e:
+        print(f"Произошла ошибка при инициализации базы данных: {e}")
+    finally:
+        await engine.dispose()
 
 async def get_async_db():
-    """Получение асинхронной сессии базы данных."""
+    """Создание асинхронной сессии базы данных."""
     async with AsyncSessionLocal() as session:
         yield session
 
 if __name__ == "__main__":
-    import asyncio
     asyncio.run(init_db())
