@@ -2,7 +2,7 @@ from typing import List, Optional
 from decimal import Decimal
 from datetime import datetime
 from enum import Enum
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 class TokenData(BaseModel):
     email: Optional[str] = None
@@ -169,6 +169,13 @@ class RoleResponse(BaseModel):
     id: int
     name: str
     description: Optional[str] = None
+
+    class Config:
+        from_attributes = True  # Обновлено
+        
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(..., min_length=6, description="Текущий пароль")
+    new_password: str = Field(..., min_length=6, description="Новый пароль")
 
     class Config:
         from_attributes = True  # Обновлено

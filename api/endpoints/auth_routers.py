@@ -1,3 +1,5 @@
+# api/endpoints/auth_routers.py
+
 import logging
 from fastapi import APIRouter, Depends, HTTPException
 from datetime import timedelta, datetime
@@ -6,8 +8,13 @@ from sqlalchemy.future import select  # Добавляем импорт select
 
 from api.auth import create_access_token, verify_password, hash_password, get_current_user
 from database.init_db import User, get_async_db
-from api.schemas import LoginRequest, RegisterRequest, UserUpdateRequest
-from api.utils.user_utils import get_current_user_info, get_user_by_email
+from api.schemas import (
+    LoginRequest,
+    RegisterRequest,
+    UserUpdateRequest,
+    ChangePasswordRequest  # Импортируем новую модель
+)
+from api.utils.user_utils import get_current_user_info
 
 # Настройка логирования
 from config.logging_config import setup_logging
@@ -20,13 +27,20 @@ router = APIRouter()
 async def register_user(request: RegisterRequest, db: AsyncSession = Depends(get_async_db)):
     """Регистрация нового пользователя."""
     logger.info("Регистрация пользователя с email: %s", request.email)
-    existing_user = await get_user_by_email(db, request.email)
+    result = await db.execute(select(User).filter(User.email == request.email))
+    existing_user = result.scalars().first()
     if existing_user:
         logger.warning("Регистрация не удалась: email %s уже зарегистрирован", request.email)
         raise HTTPException(status_code=400, detail="Email уже зарегистрирован")
 
     hashed_password = hash_password(request.password)
-    new_user = User(email=request.email, password_hash=hashed_password, full_name=request.full_name)
+    new_user = User(
+        email=request.email,
+        password_hash=hashed_password,
+        full_name=request.full_name,
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow()
+    )
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
@@ -37,7 +51,7 @@ async def register_user(request: RegisterRequest, db: AsyncSession = Depends(get
 async def login_user(request: LoginRequest, db: AsyncSession = Depends(get_async_db)):
     """Авторизация пользователя."""
     logger.info("Попытка входа пользователя с email: %s", request.email)
-    user = await get_user_by_email(db, request.email)
+    user = await get_current_user_info(db, request)
     if not user or not verify_password(request.password, user.password_hash):
         logger.warning("Неудачная попытка входа: неверный email или пароль для %s", request.email)
         raise HTTPException(status_code=401, detail="Неверный email или пароль")
@@ -51,7 +65,7 @@ async def login_user(request: LoginRequest, db: AsyncSession = Depends(get_async
 async def get_me(current_user: User = Depends(get_current_user)):
     """Получение информации о текущем пользователе."""
     logger.info("Запрос информации о текущем пользователе: %s", current_user.email)
-    return {"email": current_user.email}
+    return {"email": current_user.email, "full_name": current_user.full_name}
 
 @router.get("/protected-route")
 async def protected_route(current_user: User = Depends(get_current_user)):
@@ -60,14 +74,64 @@ async def protected_route(current_user: User = Depends(get_current_user)):
     return {"message": "Вы авторизованы!", "email": current_user.email}
 
 @router.put("/update_profile")
-async def update_profile(user_update: UserUpdateRequest, db: AsyncSession = Depends(get_async_db), current_user: User = Depends(get_current_user)):
+async def update_profile(
+    user_update: UserUpdateRequest,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user)
+):
     """Обновление профиля текущего пользователя."""
     user = await get_current_user_info(db, current_user)
     if not user:
+        logger.error("Пользователь с email %s не найден", current_user.email)
         raise HTTPException(status_code=404, detail="Пользователь не найден")
 
     user.email = user_update.email or user.email
     user.full_name = user_update.full_name or user.full_name
     user.updated_at = datetime.utcnow()
-    await db.commit()
-    return {"message": "Профиль успешно обновлен"}
+    try:
+        await db.commit()
+        logger.info("Профиль пользователя %s успешно обновлен", user.email)
+        return {"message": "Профиль успешно обновлен"}
+    except Exception as e:
+        await db.rollback()
+        logger.error("Ошибка при обновлении профиля пользователя %s: %s", user.email, e)
+        raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера")
+
+@router.put("/change_password")
+async def change_password(
+    request: ChangePasswordRequest,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Изменение пароля текущего пользователя."""
+    user_email = current_user.email  # Сохраняем email пользователя заранее
+    logger.info("Пользователь %s пытается изменить пароль", user_email)
+
+    try:
+        # Верификация текущего пароля
+        if not verify_password(request.current_password, current_user.password_hash):
+            logger.warning(
+                "Неудачная попытка изменения пароля пользователем %s: неверный текущий пароль",
+                user_email
+            )
+            raise HTTPException(status_code=401, detail="Неверный текущий пароль")
+
+        # Хэширование нового пароля
+        hashed_new_password = hash_password(request.new_password)
+
+        # Обновление пароля и времени обновления
+        current_user.password_hash = hashed_new_password
+        current_user.updated_at = datetime.utcnow()
+
+        await db.commit()
+        logger.info("Пользователь %s успешно изменил пароль", user_email)
+        return {"message": "Пароль успешно изменен"}
+    
+    except HTTPException as http_exc:
+        # Уже обработанные HTTP исключения
+        raise http_exc
+    except Exception as e:
+        # Обработка неожиданных исключений
+        logger.error("Ошибка при изменении пароля пользователя %s: %s", user_email, str(e))
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера")
