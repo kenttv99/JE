@@ -8,3 +8,4 @@ sqlalchemy
 pydantic[email]
 requests
 bcrypt
+asyncpg

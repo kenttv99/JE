@@ -5,7 +5,8 @@ from database.init_db import ExchangeOrder, OrderStatus, User
 from typing import List, Optional
 from api.auth import get_current_user
 from api.schemas import UpdateOrderStatusRequest, OrderResponse, ExchangeOrderRequest
-from api.utils.user_utils import get_current_user_info, get_db
+from api.utils.user_utils import get_current_user_info
+from database.init_db import get_async_db
 from datetime import datetime
 
 # Создаем роутер
@@ -14,7 +15,7 @@ router = APIRouter()
 # Получение всех заявок пользователя с поддержкой сортировки и фильтрации
 @router.get("/orders", response_model=List[OrderResponse])
 def get_user_orders(
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
     status: Optional[OrderStatus] = None,
     sort_by: Optional[str] = None,
@@ -53,7 +54,7 @@ def get_user_orders(
 # Создание новой заявки на обмен
 @router.post("/create_order")
 async def create_exchange_order(
-    order: ExchangeOrderRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+    order: ExchangeOrderRequest, db: Session = Depends(get_async_db), current_user: User = Depends(get_current_user)
 ):
     """
     Создание новой заявки на обмен валюты для текущего пользователя.
@@ -79,7 +80,7 @@ async def create_exchange_order(
 
 # Отмена заявки на обмен
 @router.post("/orders/{order_id}/cancel")
-def cancel_order(order_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def cancel_order(order_id: int, db: Session = Depends(get_async_db), current_user: User = Depends(get_current_user)):
     """
     Отмена заявки на обмен валюты для текущего пользователя.
     """
@@ -96,7 +97,7 @@ def cancel_order(order_id: int, db: Session = Depends(get_db), current_user: Use
 # Обновление статуса заявки на обмен
 @router.post("/orders/{order_id}/change_status")
 def update_order_status(
-    order_id: int, status_request: UpdateOrderStatusRequest, db: Session = Depends(get_db)
+    order_id: int, status_request: UpdateOrderStatusRequest, db: Session = Depends(get_async_db)
 ):
     """
     Обновление статуса заявки на обмен валюты.

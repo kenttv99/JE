@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database.init_db import Role
-from api.utils.user_utils import get_db  # Исправленный импорт
+from database.init_db import get_async_db  # Исправленный импорт
 from api.schemas import RoleCreate, RoleResponse
 from typing import List
 
 router = APIRouter()
 
 @router.post("/roles", response_model=RoleResponse)
-def create_role(role: RoleCreate, db: Session = Depends(get_db)):
+def create_role(role: RoleCreate, db: Session = Depends(get_async_db)):
     """
     Создание новой роли.
 
@@ -26,7 +26,7 @@ def create_role(role: RoleCreate, db: Session = Depends(get_db)):
     return new_role
 
 @router.get("/roles", response_model=List[RoleResponse])
-def get_roles(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+def get_roles(skip: int = 0, limit: int = 10, db: Session = Depends(get_async_db)):
     """
     Получение списка ролей с пагинацией.
 
@@ -39,7 +39,7 @@ def get_roles(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     return roles
 
 @router.get("/roles/{role_id}", response_model=RoleResponse)
-def get_role(role_id: int, db: Session = Depends(get_db)):
+def get_role(role_id: int, db: Session = Depends(get_async_db)):
     """
     Получение конкретной роли по ID.
 
@@ -53,7 +53,7 @@ def get_role(role_id: int, db: Session = Depends(get_db)):
     return role
 
 @router.put("/roles/{role_id}", response_model=RoleResponse)
-def update_role(role_id: int, updated_role: RoleCreate, db: Session = Depends(get_db)):
+def update_role(role_id: int, updated_role: RoleCreate, db: Session = Depends(get_async_db)):
     """
     Обновление конкретной роли по ID.
 
@@ -72,7 +72,7 @@ def update_role(role_id: int, updated_role: RoleCreate, db: Session = Depends(ge
     return role
 
 @router.delete("/roles/{role_id}")
-def delete_role(role_id: int, db: Session = Depends(get_db)):
+def delete_role(role_id: int, db: Session = Depends(get_async_db)):
     """
     Удаление конкретной роли по ID.
 

@@ -1,4 +1,5 @@
 from sqlalchemy import create_engine, Column, Integer, String, DECIMAL, ForeignKey, TIMESTAMP, Text, Enum, Boolean
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
@@ -9,15 +10,13 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 
 # Абсолютный импорт
 from api.schemas import OrderStatus
-from .init_data import init_data
 
 # Базовые настройки SQLAlchemy
-DATABASE_URL = "postgresql://postgres:assasin88@localhost:5432/crypto_exchange"
-engine = create_engine(DATABASE_URL)
+DATABASE_URL = "postgresql+asyncpg://postgres:assasin88@localhost:5432/crypto_exchange"
+engine = create_async_engine(DATABASE_URL, echo=True, future=True)
 Base = declarative_base()
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+AsyncSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=AsyncSession)
 
-# Определение модели Role
 class Role(Base):
     __tablename__ = 'roles'
     
@@ -25,7 +24,6 @@ class Role(Base):
     name = Column(String, unique=True, index=True, nullable=False)
     description = Column(String, nullable=True)
 
-# Обновление модели User для поддержки ролей и реферальной ссылки
 class User(Base):
     __tablename__ = "users"
 
@@ -35,16 +33,14 @@ class User(Base):
     full_name = Column(String(255))
     referrer_id = Column(Integer, ForeignKey("users.id"), nullable=True, default=None)
     referral_code = Column(String(255), unique=True, nullable=True, default=None)
-    referral_link = Column(String(255), nullable=True, default=None)  # Добавляем поле для реферальной ссылки
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow)
-    role_id = Column(Integer, ForeignKey('roles.id'), nullable=False)  # Добавляем связь с Role
-    is_superuser = Column(Boolean, default=False)  # Добавляем поле is_superuser
+    role_id = Column(Integer, ForeignKey('roles.id'), nullable=False)
+    is_superuser = Column(Boolean, default=False)
     
-    # Связь с приглашёнными пользователями
     referred_users = relationship("User", backref="referrer", remote_side=[id])
     role = relationship("Role", back_populates="users")
-    orders = relationship("ExchangeOrder", back_populates="user")  # Добавляем связь с заказами
+    orders = relationship("ExchangeOrder", back_populates="user")
 
 class ExchangeRate(Base):
     __tablename__ = "exchange_rates"
@@ -70,7 +66,7 @@ class ExchangeOrder(Base):
     updated_at = Column(TIMESTAMP, default=datetime.utcnow)
 
     user = relationship("User", back_populates="orders")
-    payments = relationship("Payment", back_populates="order")  # Добавляем связь с платежами
+    payments = relationship("Payment", back_populates="order")
 
 class Payment(Base):
     __tablename__ = "payments"
@@ -86,13 +82,19 @@ class Payment(Base):
 
     order = relationship("ExchangeOrder", back_populates="payments")
 
-# Обратная связь для Role
 Role.users = relationship("User", back_populates="role")
 
-# Создание таблиц
-def init_db():
-    Base.metadata.create_all(bind=engine)
+async def init_db():
+    """Инициализация базы данных и создание таблиц."""
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     logging.info("Все таблицы успешно созданы или уже существуют.")
-    
+
+async def get_async_db():
+    """Получение асинхронной сессии базы данных."""
+    async with AsyncSessionLocal() as session:
+        yield session
+
 if __name__ == "__main__":
-    init_db()
+    import asyncio
+    asyncio.run(init_db())

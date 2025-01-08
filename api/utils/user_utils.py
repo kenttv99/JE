@@ -1,53 +1,38 @@
-from sqlalchemy.orm import Session
-from fastapi import HTTPException, Depends
-from database.init_db import User, SessionLocal
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select  # Добавляем импорт select
+from fastapi import HTTPException
+from database.init_db import User, get_async_db
 
-def get_current_user_info(db: Session, current_user: User):
-    """
-    Получение информации о текущем пользователе.
-    """
-    user = db.query(User).filter(User.email == current_user.email).first()
+async def get_current_user_info(db: AsyncSession, current_user: User):
+    """Получает информацию о текущем пользователе."""
+    result = await db.execute(select(User).filter(User.email == current_user.email))
+    user = result.scalars().first()
     if not user:
         raise HTTPException(status_code=401, detail="Неверный email или пароль")
     return user
 
-def get_user_by_email(db: Session, email: str):
-    """
-    Получение пользователя по email.
-    """
-    return db.query(User).filter(User.email == email).first()
+async def get_user_by_email(db: AsyncSession, email: str):
+    """Ищет пользователя по email."""
+    result = await db.execute(select(User).filter(User.email == email))
+    return result.scalars().first()
 
-def get_user_by_id(db: Session, user_id: int):
-    """
-    Получение пользователя по ID.
-    """
-    return db.query(User).filter(User.id == user_id).first()
+async def get_user_by_id(db: AsyncSession, user_id: int):
+    """Ищет пользователя по ID."""
+    result = await db.execute(select(User).filter(User.id == user_id))
+    return result.scalars().first()
 
-def create_user(db: Session, email: str, hashed_password: str, full_name: str = None):
-    """
-    Создание нового пользователя.
-    """
+async def create_user(db: AsyncSession, email: str, hashed_password: str, full_name: str = None):
+    """Создает нового пользователя с указанными данными."""
     new_user = User(email=email, password_hash=hashed_password, full_name=full_name)
     db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    await db.commit()
+    await db.refresh(new_user)
     return new_user
 
-def delete_user(db: Session, user_id: int):
-    """
-    Удаление пользователя по ID.
-    """
-    user = db.query(User).filter(User.id == user_id).first()
+async def delete_user(db: AsyncSession, user_id: int):
+    """Удаляет пользователя по ID."""
+    result = await db.execute(select(User).filter(User.id == user_id))
+    user = result.scalars().first()
     if user:
-        db.delete(user)
-        db.commit()
-
-def get_db():
-    """
-    Получение сессии базы данных.
-    """
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+        await db.delete(user)
+        await db.commit()

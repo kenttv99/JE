@@ -9,7 +9,7 @@ import logging
 from config.logging_config import setup_logging
 setup_logging()
 logger = logging.getLogger("referrals")
-from api.utils.user_utils import get_db  # Исправленный импорт
+from database.init_db import get_async_db  # Исправленный импорт
 
 # Создаем роутер
 router = APIRouter()
@@ -18,7 +18,7 @@ router = APIRouter()
 @router.get("/referrals", response_model=ReferralData)
 def get_referrals(
     current_user: User = Depends(get_current_user), 
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_async_db)
 ):
     """
     Получение данных реферальной системы для текущего пользователя.
@@ -55,7 +55,7 @@ def get_referrals(
 @router.post("/referrals/generate", response_model=str)
 def generate_referral_code(
     current_user: User = Depends(get_current_user), 
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_async_db)
 ):
     """
     Генерация реферального кода для текущего пользователя.
@@ -77,7 +77,7 @@ def generate_referral_code(
 @router.get("/referrals/code", response_model=dict)
 def get_referral_code(
     current_user: User = Depends(get_current_user), 
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_async_db)
 ):
     """
     Получение уже созданного промокода и реферальной ссылки для текущего пользователя.
