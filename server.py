@@ -1,13 +1,15 @@
+import logging
+from logging.handlers import RotatingFileHandler
 from fastapi import FastAPI, Request
 from api.endpoints.exchange_api import router as exchange_router
-from api.endpoints.auth_routers import router as auth_router  # Подключаем маршруты для аутентификации
+from api.endpoints.auth_routers import router as auth_router
 from api.endpoints.user_orders_routers import router as user_orders_router
 from api.endpoints.referrals_routers import router as referrals_router
-import logging
 from fastapi.openapi.utils import get_openapi
 
-# Настройка логирования
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+# Настройка ротации логов
+handler = RotatingFileHandler("app.log", maxBytes=2000, backupCount=10)
+logging.basicConfig(handlers=[handler], level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # Инициализация приложения
 app = FastAPI(
@@ -17,10 +19,10 @@ app = FastAPI(
 )
 
 # Подключение маршрутов
-app.include_router(exchange_router, prefix="/api/v1", tags=["Exchange"]) #обмен
-app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authorization"])  # Регистрация маршрутов для аутентификации
-app.include_router(user_orders_router, prefix="/api/v1/orders", tags=["Orders"]) # Пользовательские роутеры
-app.include_router(referrals_router, prefix="/api/v1/referrals", tags=["Referrals"]) # Пользовательские роутеры
+app.include_router(exchange_router, prefix="/api/v1", tags=["Exchange"])
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authorization"])
+app.include_router(user_orders_router, prefix="/api/v1/orders", tags=["Orders"])
+app.include_router(referrals_router, prefix="/api/v1/referrals", tags=["Referrals"])
 
 # Middleware для логирования
 @app.middleware("http")
