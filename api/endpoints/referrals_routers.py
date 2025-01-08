@@ -1,37 +1,41 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from datetime import datetime
 from api.auth import get_current_user
-from database.init_db import User
+from database.init_db import User, get_async_db
 from api.schemas import ReferralData, UserResponse
 import logging
 
 from config.logging_config import setup_logging
 setup_logging()
 logger = logging.getLogger("referrals")
-from database.init_db import get_async_db  # Исправленный импорт
 
-# Создаем роутер
 router = APIRouter()
 
 # Получение данных реферальной системы
 @router.get("/referrals", response_model=ReferralData)
-def get_referrals(
+async def get_referrals(
     current_user: User = Depends(get_current_user), 
-    db: Session = Depends(get_async_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
-    Получение данных реферальной системы для текущего пользователя.
+    Получение данных реферальной системы для текущего пользователя (асинхронная версия).
+
+    Основное изменение: Вместо db.query(...) используем select(...) и await db.execute(...).
     """
-    user = db.query(User).filter(User.id == current_user.id).first()
+    # Формируем запрос для выбора пользователя по current_user.id
+    stmt = select(User).where(User.id == current_user.id)
+    result = await db.execute(stmt)
+    user = result.scalars().first()
+
     if not user:
         logger.error("Пользователь с id %s не найден", current_user.id)
         raise HTTPException(status_code=404, detail="Пользователь не найден")
 
-    referred_users = user.referred_users
-    if referred_users is None:
-        referred_users = []
-
+    # Получаем список рефералов
+    referred_users = user.referred_users if user.referred_users else []
+    # Суммируем бонусы
     bonus_earned = sum(getattr(ref_user, "referral_bonus", 0) for ref_user in referred_users)
 
     response_data = ReferralData(
@@ -51,45 +55,59 @@ def get_referrals(
 
     return response_data
 
+
 # Генерация реферального кода
 @router.post("/referrals/generate", response_model=str)
-def generate_referral_code(
+async def generate_referral_code(
     current_user: User = Depends(get_current_user), 
-    db: Session = Depends(get_async_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
-    Генерация реферального кода для текущего пользователя.
+    Генерация реферального кода для текущего пользователя (асинхронная версия).
     """
-    user = db.query(User).filter(User.id == current_user.id).first()
+    # Получаем пользователя с помощью select() и await db.execute(...)
+    stmt = select(User).where(User.id == current_user.id)
+    result = await db.execute(stmt)
+    user = result.scalars().first()
+
     if not user:
         logger.error("Пользователь с id %s не найден", current_user.id)
         raise HTTPException(status_code=404, detail="Пользователь не найден")
 
+    # Если у пользователя ещё нет кода, генерируем новый
     if not user.referral_code:
         user.referral_code = f"REF-{user.id}-{int(datetime.utcnow().timestamp())}"
-        db.commit()
-        db.refresh(user)
+        # commit и refresh также вызываем асинхронно
+        await db.commit()
+        await db.refresh(user)
         logger.info("Реферальный код сгенерирован: %s", user.referral_code)
 
     return user.referral_code
 
+
 # Получение уже созданного промокода и реферальной ссылки
 @router.get("/referrals/code", response_model=dict)
-def get_referral_code(
+async def get_referral_code(
     current_user: User = Depends(get_current_user), 
-    db: Session = Depends(get_async_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
-    Получение уже созданного промокода и реферальной ссылки для текущего пользователя.
+    Получение уже созданного промокода и реферальной ссылки для текущего пользователя (асинхронная версия).
     """
-    user = db.query(User).filter(User.id == current_user.id).first()
+    # Получаем пользователя через select() и await db.execute(...)
+    stmt = select(User).where(User.id == current_user.id)
+    result = await db.execute(stmt)
+    user = result.scalars().first()
+
     if not user:
         logger.error("Пользователь с id %s не найден", current_user.id)
         raise HTTPException(status_code=404, detail="Пользователь не найден")
 
+    # Проверяем, что у пользователя уже есть реферальный код
     if not user.referral_code:
         raise HTTPException(status_code=404, detail="Реферальный код не найден")
 
+    # Формируем реферальную ссылку
     referral_link = f"https://example.com/referral/{user.referral_code}"  # Шаблонная ссылка
 
     return {"referral_code": user.referral_code, "referral_link": referral_link}

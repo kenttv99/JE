@@ -1,88 +1,108 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from database.init_db import Role
-from database.init_db import get_async_db  # Исправленный импорт
-from api.schemas import RoleCreate, RoleResponse
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from typing import List
+
+from database.init_db import Role, get_async_db
+from api.schemas import RoleCreate, RoleResponse
 
 router = APIRouter()
 
 @router.post("/roles", response_model=RoleResponse)
-def create_role(role: RoleCreate, db: Session = Depends(get_async_db)):
+async def create_role(role: RoleCreate, db: AsyncSession = Depends(get_async_db)):
     """
-    Создание новой роли.
+    Создание новой роли (асинхронная версия).
 
     :param role: RoleCreate - Схема создания роли.
-    :param db: Session - Сессия базы данных.
+    :param db: AsyncSession - Асинхронная сессия базы данных.
     :return: RoleResponse - Схема ответа с созданной ролью.
     """
-    db_role = db.query(Role).filter(Role.name == role.name).first()
+    # Проверяем наличие роли с тем же именем
+    stmt = select(Role).where(Role.name == role.name)
+    result = await db.execute(stmt)
+    db_role = result.scalars().first()
+
     if db_role:
         raise HTTPException(status_code=400, detail="Роль уже существует")
+
     new_role = Role(name=role.name, description=role.description)
     db.add(new_role)
-    db.commit()
-    db.refresh(new_role)
+    await db.commit()
+    await db.refresh(new_role)
     return new_role
 
 @router.get("/roles", response_model=List[RoleResponse])
-def get_roles(skip: int = 0, limit: int = 10, db: Session = Depends(get_async_db)):
+async def get_roles(skip: int = 0, limit: int = 10, db: AsyncSession = Depends(get_async_db)):
     """
-    Получение списка ролей с пагинацией.
+    Получение списка ролей с пагинацией (асинхронная версия).
 
     :param skip: int - Количество записей, которые нужно пропустить.
     :param limit: int - Максимальное количество записей для возврата.
-    :param db: Session - Сессия базы данных.
+    :param db: AsyncSession - Асинхронная сессия базы данных.
     :return: List[RoleResponse] - Список схем ответов с ролями.
     """
-    roles = db.query(Role).offset(skip).limit(limit).all()
+    stmt = select(Role).offset(skip).limit(limit)
+    result = await db.execute(stmt)
+    roles = result.scalars().all()
     return roles
 
 @router.get("/roles/{role_id}", response_model=RoleResponse)
-def get_role(role_id: int, db: Session = Depends(get_async_db)):
+async def get_role(role_id: int, db: AsyncSession = Depends(get_async_db)):
     """
-    Получение конкретной роли по ID.
+    Получение конкретной роли по ID (асинхронная версия).
 
     :param role_id: int - ID роли для получения.
-    :param db: Session - Сессия базы данных.
+    :param db: AsyncSession - Асинхронная сессия базы данных.
     :return: RoleResponse - Схема ответа с ролью.
     """
-    role = db.query(Role).filter(Role.id == role_id).first()
+    stmt = select(Role).where(Role.id == role_id)
+    result = await db.execute(stmt)
+    role = result.scalars().first()
+
     if role is None:
         raise HTTPException(status_code=404, detail="Роль не найдена")
+
     return role
 
 @router.put("/roles/{role_id}", response_model=RoleResponse)
-def update_role(role_id: int, updated_role: RoleCreate, db: Session = Depends(get_async_db)):
+async def update_role(role_id: int, updated_role: RoleCreate, db: AsyncSession = Depends(get_async_db)):
     """
-    Обновление конкретной роли по ID.
+    Обновление конкретной роли по ID (асинхронная версия).
 
     :param role_id: int - ID роли для обновления.
     :param updated_role: RoleCreate - Схема обновления роли.
-    :param db: Session - Сессия базы данных.
+    :param db: AsyncSession - Асинхронная сессия базы данных.
     :return: RoleResponse - Схема ответа с обновленной ролью.
     """
-    role = db.query(Role).filter(Role.id == role_id).first()
+    stmt = select(Role).where(Role.id == role_id)
+    result = await db.execute(stmt)
+    role = result.scalars().first()
+
     if role is None:
         raise HTTPException(status_code=404, detail="Роль не найдена")
+
     role.name = updated_role.name
     role.description = updated_role.description
-    db.commit()
-    db.refresh(role)
+    await db.commit()
+    await db.refresh(role)
     return role
 
 @router.delete("/roles/{role_id}")
-def delete_role(role_id: int, db: Session = Depends(get_async_db)):
+async def delete_role(role_id: int, db: AsyncSession = Depends(get_async_db)):
     """
-    Удаление конкретной роли по ID.
+    Удаление конкретной роли по ID (асинхронная версия).
 
     :param role_id: int - ID роли для удаления.
-    :param db: Session - Сессия базы данных.
+    :param db: AsyncSession - Асинхронная сессия базы данных.
     :return: dict - Сообщение об успешном удалении.
     """
-    role = db.query(Role).filter(Role.id == role_id).first()
+    stmt = select(Role).where(Role.id == role_id)
+    result = await db.execute(stmt)
+    role = result.scalars().first()
+
     if role is None:
         raise HTTPException(status_code=404, detail="Роль не найдена")
-    db.delete(role)
-    db.commit()
+
+    await db.delete(role)
+    await db.commit()
     return {"message": "Роль успешно удалена"}
