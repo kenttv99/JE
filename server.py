@@ -1,7 +1,7 @@
 import logging
 from logging.handlers import RotatingFileHandler
 from fastapi import FastAPI, Request
-from api.endpoints.exchange_api import router as exchange_router
+from api.endpoints.exchange_routers import router as exchange_router
 from api.endpoints.auth_routers import router as auth_router
 from api.endpoints.user_orders_routers import router as user_orders_router
 from api.endpoints.referrals_routers import router as referrals_router

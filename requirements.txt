@@ -3,6 +3,8 @@ uvicorn
 fastapi
 python-jose 
 passlib
+passlib[argon2]==1.7.4
 sqlalchemy
 pydantic[email]
 requests
+bcrypt

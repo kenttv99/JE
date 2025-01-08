@@ -53,7 +53,8 @@ class ExchangeRate(Base):
     buy_rate = Column(DECIMAL(20, 8), nullable=False)
     sell_rate = Column(DECIMAL(20, 8), nullable=False)
     source = Column(String(255), nullable=False)
-    updated_at = Column(TIMESTAMP, default=datetime.utcnow)
+    rate = Column(DECIMAL(20, 8), nullable=False)  # Добавляем поле rate
+    timestamp = Column(TIMESTAMP, default=datetime.utcnow)  # Добавляем поле timestamp
 
 class ExchangeOrder(Base):
     __tablename__ = "exchange_orders"

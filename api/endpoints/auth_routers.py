@@ -81,8 +81,10 @@ def update_profile(user_update: UserUpdateRequest, db: Session = Depends(get_db)
     if not user:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
 
-    user.email = user_update.email or user.email
-    user.full_name = user_update.full_name or user.full_name
+    if user_update.full_name:
+        user.full_name = user_update.full_name
+    if user_update.password:
+        user.password_hash = hash_password(user_update.password)
     user.updated_at = datetime.utcnow()  # Обновление времени
     db.commit()
     return {"message": "Профиль успешно обновлен"}

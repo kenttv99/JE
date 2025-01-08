@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
+from datetime import timedelta, datetime
 from sqlalchemy.orm import Session
 from database.init_db import ExchangeOrder, OrderStatus, ExchangeRate
 from typing import List
@@ -29,7 +30,9 @@ async def update_exchange_rates(db: Session = Depends(get_db)):
         currency="USDT",
         buy_rate=rates["buy_rate"],
         sell_rate=rates["sell_rate"],
-        source="Garantex"
+        source="Garantex",
+        rate=(rates["buy_rate"] + rates["sell_rate"]) / 2,  # Пример вычисления среднего курса
+        timestamp=datetime.utcnow()  # Устанавливаем текущую временную метку
     )
     db.add(new_rate)
     db.commit()

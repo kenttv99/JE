@@ -115,8 +115,11 @@ class ExchangeRateResponse(BaseModel):
     Схема ответа с информацией о курсе обмена валют.
     """
     currency: str
-    rate: Decimal
-    timestamp: datetime
+    buy_rate: Decimal
+    sell_rate: Decimal
+    source: str
+    rate: Decimal  # Добавляем поле rate
+    timestamp: datetime  # Добавляем поле timestamp
 
 class PaymentBase(BaseModel):
     """
@@ -169,5 +172,6 @@ class UserUpdateRequest(BaseModel):
     """
     Схема запроса на обновление профиля пользователя.
     """
-    email: Optional[EmailStr] = None
+    # email: Optional[EmailStr] = None
     full_name: Optional[str] = None
+    password: Optional[str] = None
