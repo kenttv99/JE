@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 from database.init_db import ExchangeOrder, OrderStatus, User
-from typing import List
+from typing import List, Optional
 from api.auth import get_current_user
 from api.schemas import UpdateOrderStatusRequest, OrderResponse, ExchangeOrderRequest
 from api.utils.user_utils import get_current_user_info, get_db
@@ -11,16 +11,43 @@ from datetime import datetime
 # Создаем роутер
 router = APIRouter()
 
-# Получение всех заявок пользователя
+# Получение всех заявок пользователя с поддержкой сортировки и фильтрации
 @router.get("/orders", response_model=List[OrderResponse])
-def get_user_orders(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def get_user_orders(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    status: Optional[OrderStatus] = None,
+    sort_by: Optional[str] = None,
+    order: Optional[str] = "asc"
+):
     """
-    Получение всех заявок текущего пользователя.
+    Получение всех заявок текущего пользователя с поддержкой сортировки и фильтрации.
+
+    :param status: OrderStatus - Фильтр по статусу заявки.
+    :param sort_by: str - Поле для сортировки (например, "created_at").
+    :param order: str - Порядок сортировки ("asc" или "desc").
+    :param db: Session - Сессия базы данных.
+    :param current_user: User - Текущий пользователь.
+    :return: List[OrderResponse] - Список схем ответов с заявками.
     """
     user = get_current_user_info(db, current_user)
-    orders = db.query(ExchangeOrder).filter(ExchangeOrder.user_id == user.id).all()
+    query = db.query(ExchangeOrder).filter(ExchangeOrder.user_id == user.id)
+
+    if status:
+        query = query.filter(ExchangeOrder.status == status)
+
+    if sort_by:
+        order_by_column = getattr(ExchangeOrder, sort_by, None)
+        if order_by_column is not None:
+            if order == "desc":
+                order_by_column = order_by_column.desc()
+            query = query.order_by(order_by_column)
+
+    orders = query.all()
+
     if not orders:
         raise HTTPException(status_code=404, detail="Заявки не найдены")
+
     return jsonable_encoder(orders)
 
 # Создание новой заявки на обмен
@@ -60,9 +87,6 @@ def cancel_order(order_id: int, db: Session = Depends(get_db), current_user: Use
     order = db.query(ExchangeOrder).filter(ExchangeOrder.id == order_id, ExchangeOrder.user_id == user.id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Заявка не найдена")
-
-    # if order.status not in [OrderStatus.pending, OrderStatus.processing, OrderStatus.completed]:
-    #     raise HTTPException(status_code=400, detail="Заявку нельзя отменить")
 
     order.status = OrderStatus.canceled
     order.updated_at = datetime.utcnow()  # Обновление времени

@@ -25,7 +25,7 @@ class Role(Base):
     name = Column(String, unique=True, index=True, nullable=False)
     description = Column(String, nullable=True)
 
-# Обновление модели User для поддержки ролей
+# Обновление модели User для поддержки ролей и реферальной ссылки
 class User(Base):
     __tablename__ = "users"
 
@@ -35,6 +35,7 @@ class User(Base):
     full_name = Column(String(255))
     referrer_id = Column(Integer, ForeignKey("users.id"), nullable=True, default=None)
     referral_code = Column(String(255), unique=True, nullable=True, default=None)
+    referral_link = Column(String(255), nullable=True, default=None)  # Добавляем поле для реферальной ссылки
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow)
     role_id = Column(Integer, ForeignKey('roles.id'), nullable=False)  # Добавляем связь с Role
@@ -53,8 +54,7 @@ class ExchangeRate(Base):
     buy_rate = Column(DECIMAL(20, 8), nullable=False)
     sell_rate = Column(DECIMAL(20, 8), nullable=False)
     source = Column(String(255), nullable=False)
-    rate = Column(DECIMAL(20, 8), nullable=False)  # Добавляем поле rate
-    timestamp = Column(TIMESTAMP, default=datetime.utcnow)  # Добавляем поле timestamp
+    updated_at = Column(TIMESTAMP, default=datetime.utcnow)
 
 class ExchangeOrder(Base):
     __tablename__ = "exchange_orders"
@@ -94,12 +94,5 @@ def init_db():
     Base.metadata.create_all(bind=engine)
     logging.info("Все таблицы успешно созданы или уже существуют.")
     
-    # Инициализация данных
-    db = SessionLocal()
-    try:
-        init_data(db)
-    finally:
-        db.close()
-
 if __name__ == "__main__":
     init_db()

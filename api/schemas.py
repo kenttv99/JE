@@ -49,6 +49,7 @@ class UserResponse(UserBase):
     created_at: datetime
     referral_code: Optional[str] = None
     referred_by: Optional[str] = None
+    referral_link: Optional[str] = None  # Поле для реферальной ссылки
 
     class Config:
         from_attributes = True
@@ -115,11 +116,8 @@ class ExchangeRateResponse(BaseModel):
     Схема ответа с информацией о курсе обмена валют.
     """
     currency: str
-    buy_rate: Decimal
-    sell_rate: Decimal
-    source: str
-    rate: Decimal  # Добавляем поле rate
-    timestamp: datetime  # Добавляем поле timestamp
+    rate: Decimal
+    timestamp: datetime
 
 class PaymentBase(BaseModel):
     """
@@ -172,10 +170,16 @@ class UserUpdateRequest(BaseModel):
     """
     Схема запроса на обновление профиля пользователя.
     """
-    # email: Optional[EmailStr] = None
+    email: Optional[EmailStr] = None
     full_name: Optional[str] = None
-    password: Optional[str] = None
-    
+
+class ReferralCodeResponse(BaseModel):
+    """
+    Схема ответа с реферальным кодом и ссылкой.
+    """
+    referral_code: str
+    referral_link: str
+
 class RoleCreate(BaseModel):
     """
     Схема для создания новой роли.

@@ -72,3 +72,24 @@ def generate_referral_code(
         logger.info("Реферальный код сгенерирован: %s", user.referral_code)
 
     return user.referral_code
+
+# Получение уже созданного промокода и реферальной ссылки
+@router.get("/referrals/code", response_model=dict)
+def get_referral_code(
+    current_user: User = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    """
+    Получение уже созданного промокода и реферальной ссылки для текущего пользователя.
+    """
+    user = db.query(User).filter(User.id == current_user.id).first()
+    if not user:
+        logger.error("Пользователь с id %s не найден", current_user.id)
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+
+    if not user.referral_code:
+        raise HTTPException(status_code=404, detail="Реферальный код не найден")
+
+    referral_link = f"https://example.com/referral/{user.referral_code}"  # Шаблонная ссылка
+
+    return {"referral_code": user.referral_code, "referral_link": referral_link}
