@@ -1,10 +1,12 @@
 # api/endpoints/user_orders_routers.py
 
+from decimal import Decimal
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload
+from api.enums import OrderTypeEnum
 from database.init_db import ExchangeOrder, OrderStatus, User, get_async_db, PaymentMethod, PaymentMethodEnum  # Добавлен PaymentMethodEnum
 from typing import List, Optional
 from api.auth import get_current_user
@@ -12,6 +14,12 @@ from api.schemas import UpdateOrderStatusRequest, OrderResponse, ExchangeOrderRe
 from api.utils.user_utils import get_current_user_info
 from datetime import datetime
 import logging
+
+from garantex_api import (
+    fetch_usdt_rub_garantex_rates,
+    fetch_btc_rub_garantex_rates
+)
+
 
 # Настройка логирования
 from config.logging_config import setup_logging
@@ -99,29 +107,66 @@ async def get_user_orders(
 # Создание новой заявки на обмен
 @router.post("/create_order")
 async def create_exchange_order(
-    order: ExchangeOrderRequest, 
-    db: AsyncSession = Depends(get_async_db), 
+    order: ExchangeOrderRequest,
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user)
 ):
     """
-    Создание новой заявки на обмен валюты для текущего пользователя.
+    Создание новой заявки на обмен валюты для текущего пользователя с учетом курсов BTC/RUB с Garantex.
+    Пользователь может указать:
+    - amount (количество BTC), тогда total_rub рассчитывается автоматически;
+    - total_rub (сумма в рублях), тогда amount рассчитывается автоматически.
+    
+    В зависимости от order_type (buy или sell) используются соответствующие курсы:
+    - При order_type=Buy используется buy_rate (asks[0] в Garantex).
+    - При order_type=Sell используется sell_rate (bids[0] в Garantex).
     """
     try:
-        # Используем async_sessionmaker для создания новой сессии
+        # Шаг 1: Получаем курс BTC/RUB от Garantex
+        garantex_data = await fetch_btc_rub_garantex_rates()
+        if not garantex_data:
+            raise HTTPException(
+                status_code=500, detail="Не удалось получить курсы BTC/RUB с Garantex"
+            )
+
+        # Шаг 2: Определяем нужный курс в зависимости от типа заявки
+        if order.order_type == OrderTypeEnum.buy:
+            rate = garantex_data["buy_rate"]  # Минимальная цена продажи (asks[0])
+        else:
+            rate = garantex_data["sell_rate"]  # Максимальная цена покупки (bids[0])
+
+        # Шаг 3: Расчет недостающего поля (amount или total_rub)
+        input_amount = order.amount
+        input_total_rub = order.total_rub
+
+        if input_amount is not None and input_total_rub is None:
+            # Рассчитываем total_rub на основании amount и курса
+            calculated_total = input_amount * Decimal(rate)
+            # При покупке рассчитывали цену покупки, при продаже — цену продажи
+            # Для sell это будет (amount * sell_rate)
+            order.total_rub = calculated_total.quantize(Decimal('1.00'))
+        elif input_total_rub is not None and input_amount is None:
+            # Рассчитываем amount на основании total_rub и курса
+            calculated_amount = input_total_rub / Decimal(rate)
+            order.amount = calculated_amount.quantize(Decimal('0.00000001'))
+        # Если (amount и total_rub) уже пришли заполненными или оба пустые
+        # - логика валидации остановится на уровне схемы (validator)
+
+        # Шаг 4: Ищем указанный метод оплаты
         stmt = (
             select(PaymentMethod)
             .where(PaymentMethod.method_name == order.payment_method)
         )
-        
-        # Используем правильный асинхронный метод выполнения
         result = await db.execute(stmt)
         payment_method = result.scalar_one_or_none()
 
         if not payment_method:
             logger.warning(f"Метод оплаты {order.payment_method} не найден")
-            raise HTTPException(status_code=404, detail="Выбранный метод оплаты не найден")
+            raise HTTPException(
+                status_code=404, detail="Выбранный метод оплаты не найден"
+            )
 
-        # Создаём новый заказ
+        # Шаг 5: Создаем новый объект заявки
         new_order = ExchangeOrder(
             user_id=current_user.id,
             order_type=order.order_type,
@@ -131,28 +176,39 @@ async def create_exchange_order(
             status=OrderStatus.pending,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
-            crypto_address=f"default_address_{order.currency}",
-            crypto_network=order.currency,
+            crypto_address=order.crypto_address,
+            crypto_network=order.crypto_network,
             payment_method=payment_method
         )
 
-        # Добавляем и сохраняем изменения
+        # Шаг 6: Сохраняем объект заявки в БД
         db.add(new_order)
         await db.flush()
         await db.commit()
 
-        logger.info(f"Пользователь {current_user.email} успешно создал заявку")
+        logger.info(
+            f"Пользователь {current_user.email} успешно создал заявку. "
+            f"Order ID: {new_order.id}, Type: {new_order.order_type}, Amount: {new_order.amount}, Total RUB: {new_order.total_rub}"
+        )
         return {
             "message": "Заявка на обмен успешно создана",
-            "order_id": new_order.id
+            "order_id": new_order.id,
+            "amount": str(new_order.amount),
+            "total_rub": str(new_order.total_rub),
+            "order_type": new_order.order_type.value
         }
 
     except HTTPException as http_exc:
         logger.error(f"HTTP ошибка при создании заявки: {http_exc.detail}")
         raise http_exc
     except Exception as e:
+        # Откатываем изменения в случае ошибки
+        await db.rollback()
         logger.error(f"Неожиданная ошибка при создании заявки: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Ошибка создания заявки: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ошибка создания заявки: {str(e)}"
+        )
 
 
 # Отмена заявки на обмен

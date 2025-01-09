@@ -5,6 +5,7 @@ from decimal import Decimal
 from datetime import datetime
 from pydantic import BaseModel, EmailStr, Field
 from api.enums import OrderStatus, OrderTypeEnum, AMLStatusEnum, PaymentMethodEnum
+from pydantic import validator, Field
 
 # -----------------------
 # Схемы для PaymentMethod
@@ -89,12 +90,22 @@ class ExchangeOrderCreate(ExchangeOrderBase):
 
 class ExchangeOrderRequest(ExchangeOrderBase):
     """
-    Схема для запроса создания нового заказа обмена.
+    Схема для запроса создания нового заказа обмена, наследуемая от ExchangeOrderBase.
     """
-    payment_method: PaymentMethodEnum  # Поле для выбора метода оплаты
+    amount: Optional[Decimal] = Field(None, example=Decimal('0.5'))
+    total_rub: Optional[Decimal] = Field(None, example=Decimal('1500000'))
+    payment_method: PaymentMethodEnum
 
-    class Config:
-        from_attributes = True
+    @validator('amount', 'total_rub', always=True)
+    def validate_amounts(cls, v, values):
+        """
+        Проверяет, что хотя бы одно из полей (amount или total_rub) указано.
+        """
+        amount = values.get('amount')
+        total_rub = values.get('total_rub')
+        if amount is None and total_rub is None:
+            raise ValueError("Необходимо указать либо amount, либо total_rub.")
+        return v
 
 
 class ExchangeOrderResponse(ExchangeOrderBase):
