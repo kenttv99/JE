@@ -5,8 +5,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from api.schemas import PaymentCreate, PaymentResponse, PaymentUpdate
-from database.init_db import get_async_db
-from api.schemas import Payment, ExchangeOrder
+from database.init_db import get_async_db, Payment, ExchangeOrder
 from sqlalchemy.ext.asyncio import AsyncSession
 import asyncio
 

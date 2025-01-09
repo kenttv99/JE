@@ -11,20 +11,20 @@ class TokenData(BaseModel):
     email: Optional[str] = None
 
     class Config:
-        orm_mode = True  # Обновлено
+        from_attributes = True  # Обновлено
 
 class UserBase(BaseModel):
     email: EmailStr
     full_name: Optional[str] = None
 
     class Config:
-        orm_mode = True  # Обновлено
+        from_attributes = True  # Обновлено
 
 class UserCreate(UserBase):
     password: str
 
     class Config:
-        orm_mode = True  # Обновлено
+        from_attributes = True  # Обновлено
 
 class UserResponse(UserBase):
     id: int
@@ -34,14 +34,14 @@ class UserResponse(UserBase):
     referral_link: Optional[str] = None  # Поле для реферальной ссылки
 
     class Config:
-        orm_mode = True  # Обновлено
+        from_attributes = True  # Обновлено
 
 class ReferralData(BaseModel):
     referred_users: List[UserResponse]
     bonus_earned: Decimal
 
     class Config:
-        orm_mode = True  # Обновлено
+        from_attributes = True  # Обновлено
 
 class ExchangeOrderBase(BaseModel):
     order_type: OrderTypeEnum
@@ -52,15 +52,15 @@ class ExchangeOrderBase(BaseModel):
     crypto_network: str
 
     class Config:
-        orm_mode = True  # Обновлено
+        from_attributes = True  # Обновлено
 
 class ExchangeOrderRequest(ExchangeOrderBase):
     class Config:
-        orm_mode = True  # Обновлено
+        from_attributes = True  # Обновлено
 
 class ExchangeOrderCreate(ExchangeOrderBase):
     class Config:
-        orm_mode = True  # Обновлено
+        from_attributes = True  # Обновлено
 
 class ExchangeOrderResponse(ExchangeOrderBase):
     id: int
@@ -71,7 +71,7 @@ class ExchangeOrderResponse(ExchangeOrderBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True  # Обновлено
+        from_attributes = True  # Обновлено
 
 class OrderResponse(BaseModel):
     id: int
@@ -85,7 +85,7 @@ class OrderResponse(BaseModel):
     updated_at: datetime
 
     class Config:
-        orm_mode = True  # Обновлено
+        from_attributes = True  # Обновлено
 
 class ExchangeRateResponse(BaseModel):
     currency: str
@@ -95,7 +95,7 @@ class ExchangeRateResponse(BaseModel):
     updated_at: datetime
 
     class Config:
-        orm_mode = True  # Обновлено
+        from_attributes = True  # Обновлено
 
 class PaymentBase(BaseModel):
     payment_method: str
@@ -106,13 +106,13 @@ class PaymentBase(BaseModel):
     fee_percentage: Decimal = Decimal('0.00')  # Новое поле
 
     class Config:
-        orm_mode = True  # Обновлено
+        from_attributes = True  # Обновлено
 
 class PaymentCreate(PaymentBase):
     order_id: int
 
     class Config:
-        orm_mode = True  # Обновлено
+        from_attributes = True  # Обновлено
 
 class PaymentUpdate(BaseModel):
     payment_method: Optional[str] = None
@@ -123,7 +123,7 @@ class PaymentUpdate(BaseModel):
     fee_percentage: Optional[Decimal] = None  # Новое поле
 
     class Config:
-        orm_mode = True  # Обновлено
+        from_attributes = True  # Обновлено
 
 class PaymentResponse(PaymentBase):
     id: int
@@ -132,14 +132,14 @@ class PaymentResponse(PaymentBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True  # Обновлено
+        from_attributes = True  # Обновлено
 
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
 
     class Config:
-        orm_mode = True  # Обновлено
+        from_attributes = True  # Обновлено
 
 class RegisterRequest(BaseModel):
     email: EmailStr
@@ -147,34 +147,34 @@ class RegisterRequest(BaseModel):
     full_name: str
 
     class Config:
-        orm_mode = True  # Обновлено
+        from_attributes = True  # Обновлено
 
 class UpdateOrderStatusRequest(BaseModel):
     status: OrderStatus
 
     class Config:
-        orm_mode = True  # Обновлено
+        from_attributes = True  # Обновлено
 
 class UserUpdateRequest(BaseModel):
     # email: Optional[EmailStr] = None
     full_name: Optional[str] = None
 
     class Config:
-        orm_mode = True  # Обновлено
+        from_attributes = True  # Обновлено
 
 class ReferralCodeResponse(BaseModel):
     referral_code: str
     referral_link: str
 
     class Config:
-        orm_mode = True  # Обновлено
+        from_attributes = True  # Обновлено
 
 class RoleCreate(BaseModel):
     name: str
     description: Optional[str] = None
 
     class Config:
-        orm_mode = True  # Обновлено
+        from_attributes = True  # Обновлено
 
 class RoleResponse(BaseModel):
     id: int
@@ -182,11 +182,11 @@ class RoleResponse(BaseModel):
     description: Optional[str] = None
 
     class Config:
-        orm_mode = True  # Обновлено
+        from_attributes = True  # Обновлено
 
 class ChangePasswordRequest(BaseModel):
     current_password: str = Field(..., min_length=6, description="Текущий пароль")
     new_password: str = Field(..., min_length=6, description="Новый пароль")
 
     class Config:
-        orm_mode = True  # Обновлено
+        from_attributes = True  # Обновлено
