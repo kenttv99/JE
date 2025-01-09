@@ -2,23 +2,25 @@
 
 from enum import Enum
 
-class OrderStatus(str, Enum):
-    pending = "pending"
-    waiting_confirmation = "waiting_confirmation"
-    processing = "processing"
-    arbitrage = "arbitrage"
-    completed = "completed"
-    canceled = "canceled"
+class OrderStatus(Enum):
+    pending = "Pending"
+    processing = "Processing"
+    completed = "Completed"
+    canceled = "Canceled"
+    arbitrage = "Arbitrage"
+    waiting_confirmation = "Waiting Confirmation"
 
-class OrderTypeEnum(str, Enum):
-    buy = "buy"
-    sell = "sell"
+class OrderTypeEnum(Enum):
+    buy = "Buy"
+    sell = "Sell"
 
-class PaymentTypeEnum(str, Enum):
-    buy = "buy"
-    sell = "sell"
+class AMLStatusEnum(Enum):
+    pending = "Pending"
+    approved = "Approved"
+    rejected = "Rejected"
 
-class AMLStatusEnum(str, Enum):
-    passed = "passed"
-    failed = "failed"
-    pending = "pending"
+class PaymentMethodEnum(Enum):
+    CREDIT_CARD = "Credit Card"
+    BANK_TRANSFER = "Bank Transfer"
+    PAYPAL = "PayPal"
+    CRYPTO = "Crypto"

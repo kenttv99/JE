@@ -1,12 +1,14 @@
+# api/endpoints/user_orders_routers.py
+
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload
-from database.init_db import ExchangeOrder, OrderStatus, User, get_async_db
+from database.init_db import ExchangeOrder, OrderStatus, User, get_async_db, PaymentMethod, PaymentMethodEnum  # Добавлен PaymentMethodEnum
 from typing import List, Optional
 from api.auth import get_current_user
-from api.schemas import UpdateOrderStatusRequest, OrderResponse, ExchangeOrderRequest
+from api.schemas import UpdateOrderStatusRequest, OrderResponse, ExchangeOrderRequest, PaymentMethodSchema
 from api.utils.user_utils import get_current_user_info
 from datetime import datetime
 import logging
@@ -18,6 +20,29 @@ logger = logging.getLogger(__name__)
 
 # Создаем роутер
 router = APIRouter()
+
+
+# Получение всех методов оплаты
+@router.get("/payment_methods", response_model=List[PaymentMethodSchema])
+async def get_payment_methods(db: AsyncSession = Depends(get_async_db)):
+    """
+    Получение списка всех доступных методов оплаты.
+    """
+    try:
+        stmt = select(PaymentMethod)
+        result = await db.execute(stmt)
+        payment_methods = result.scalars().all()
+
+        if not payment_methods:
+            raise HTTPException(status_code=404, detail="Методы оплаты не найдены")
+
+        return jsonable_encoder(payment_methods)
+    except HTTPException as http_exc:
+        logger.error(f"Ошибка при получении методов оплаты: {http_exc.detail}")
+        raise http_exc
+    except Exception as e:
+        logger.error(f"Неизвестная ошибка при получении методов оплаты: {e}")
+        raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера")
 
 
 # Получение всех заявок пользователя с поддержкой сортировки и фильтрации
@@ -41,7 +66,7 @@ async def get_user_orders(
     """
     try:
         user = await get_current_user_info(db, current_user)
-        stmt = select(ExchangeOrder).filter(ExchangeOrder.user_id == user.id)
+        stmt = select(ExchangeOrder).options(joinedload(ExchangeOrder.payment_method)).filter(ExchangeOrder.user_id == user.id)
 
         if status:
             stmt = stmt.filter(ExchangeOrder.status == status)
@@ -81,6 +106,15 @@ async def create_exchange_order(
     """
     try:
         user = await get_current_user_info(db, current_user)
+        # Получение объекта PaymentMethod на основе переданного метода
+        stmt = select(PaymentMethod).filter(PaymentMethod.method_name == order.payment_method)
+        result = await db.execute(stmt)
+        payment_method = result.scalars().first()
+
+        if not payment_method:
+            logger.warning(f"Метод оплаты {order.payment_method} не найден")
+            raise HTTPException(status_code=404, detail="Выбранный метод оплаты не найден")
+
         new_order = ExchangeOrder(
             user_id=user.id,
             order_type=order.order_type,
@@ -89,13 +123,16 @@ async def create_exchange_order(
             total_rub=order.total_rub,
             status=OrderStatus.pending,
             created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            updated_at=datetime.utcnow(),
+            payment_method=payment_method  # Присвоение метода оплаты
         )
         db.add(new_order)
         await db.commit()
         await db.refresh(new_order)
-        logger.info(f"Пользователь ID {user.id} успешно создал заявку ID {new_order.id}")
+        logger.info(f"Пользователь ID {user.id} успешно создал заявку ID {new_order.id} с методом оплаты {payment_method.method_name.value}")
         return {"message": "Заявка на обмен успешно создана", "order_id": new_order.id}
+    except HTTPException as http_exc:
+        raise http_exc
     except Exception as e:
         await db.rollback()
         logger.error(f"Ошибка при создании заявки пользователем ID {current_user.id}: {e}")
