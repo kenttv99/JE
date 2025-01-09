@@ -4,7 +4,12 @@ import asyncio
 from typing import AsyncGenerator
 from decimal import Decimal  # Импорт Decimal
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.orm import (
+    declarative_base,
+    relationship,
+    backref,
+    selectinload
+)
 from contextlib import asynccontextmanager
 from sqlalchemy import (
     Column,
@@ -70,8 +75,14 @@ class User(Base):
     role_id = Column(Integer, ForeignKey('roles.id'), nullable=False)
     is_superuser = Column(Boolean, default=False)
     
-    # Связи
-    referred_users = relationship("User", backref="referrer", remote_side=[id])
+    # Изменяем определение связи
+    referred_users = relationship(
+        "User",
+        primaryjoin="User.id==User.referrer_id",
+        remote_side="User.referrer_id",
+        lazy="selectin",
+        viewonly=True  # Добавляем это свойство
+    )
     role = relationship("Role", back_populates="users")
     orders = relationship("ExchangeOrder", back_populates="user")
 

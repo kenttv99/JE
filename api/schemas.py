@@ -203,7 +203,7 @@ class RegisterRequest(BaseModel):
 
 class UpdateOrderStatusRequest(BaseModel):
     status: OrderStatus
-    payment_method: Optional[PaymentMethodEnum] = None
+    # payment_method: Optional[PaymentMethodEnum] = None
 
     class Config:
         from_attributes = True  # Обновлено

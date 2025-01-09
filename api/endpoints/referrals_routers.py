@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from sqlalchemy import select
 from datetime import datetime
 from api.auth import get_current_user
@@ -19,41 +20,39 @@ async def get_referrals(
     current_user: User = Depends(get_current_user), 
     db: AsyncSession = Depends(get_async_db)
 ):
-    """
-    Получение данных реферальной системы для текущего пользователя (асинхронная версия).
+    try:
+        # Используем только прямой запрос, так как он более надежный
+        stmt = select(User).where(User.referrer_id == current_user.id)
+        result = await db.execute(stmt)
+        referrals = result.scalars().all()
 
-    Основное изменение: Вместо db.query(...) используем select(...) и await db.execute(...).
-    """
-    # Формируем запрос для выбора пользователя по current_user.id
-    stmt = select(User).where(User.id == current_user.id)
-    result = await db.execute(stmt)
-    user = result.scalars().first()
+        logger.info(f"Найдено рефералов: {len(referrals)}")
+        
+        response_data = ReferralData(
+            referred_users=[
+                UserResponse(
+                    id=ref.id,
+                    email=ref.email,
+                    full_name=ref.full_name,
+                    created_at=ref.created_at,
+                    referral_code=ref.referral_code,
+                    referred_by=current_user.referral_code,
+                )
+                for ref in referrals
+            ],
+            bonus_earned=0  # Или ваша логика подсчета бонусов
+        )
 
-    if not user:
-        logger.error("Пользователь с id %s не найден", current_user.id)
-        raise HTTPException(status_code=404, detail="Пользователь не найден")
+        logger.info(f"Отправляем данные о {len(response_data.referred_users)} рефералах")
+        return response_data
 
-    # Получаем список рефералов
-    referred_users = user.referred_users if user.referred_users else []
-    # Суммируем бонусы
-    bonus_earned = sum(getattr(ref_user, "referral_bonus", 0) for ref_user in referred_users)
-
-    response_data = ReferralData(
-        referred_users=[
-            UserResponse(
-                id=ref_user.id,
-                email=ref_user.email,
-                full_name=ref_user.full_name,
-                created_at=ref_user.created_at,
-                referral_code=ref_user.referral_code,
-                referred_by=user.referral_code,
-            )
-            for ref_user in referred_users
-        ],
-        bonus_earned=bonus_earned,
-    )
-
-    return response_data
+    except Exception as e:
+        logger.error(f"Ошибка при получении данных рефералов: {str(e)}")
+        await db.rollback()
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Ошибка при получении данных рефералов: {str(e)}"
+        )
 
 
 # Генерация реферального кода
@@ -111,3 +110,50 @@ async def get_referral_code(
     referral_link = f"https://example.com/referral/{user.referral_code}"  # Шаблонная ссылка
 
     return {"referral_code": user.referral_code, "referral_link": referral_link}
+
+@router.get("/referrals/test")
+async def test_referrals(
+    current_user: User = Depends(get_current_user), 
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    Тестовый эндпоинт для отладки реферальной системы
+    """
+    try:
+        # Базовая информация о текущем пользователе
+        user_data = {
+            "current_user": {
+                "id": current_user.id,
+                "email": current_user.email,
+                "referral_code": current_user.referral_code,
+                "referrer_id": current_user.referrer_id
+            }
+        }
+
+        # Метод 1: Прямой запрос рефералов (это основной метод, который мы будем использовать)
+        direct_stmt = select(User).where(User.referrer_id == current_user.id)
+        direct_result = await db.execute(direct_stmt)
+        direct_referrals = direct_result.scalars().all()
+        
+        user_data["direct_check"] = [
+            {
+                "id": ref.id,
+                "email": ref.email,
+                "referrer_id": ref.referrer_id,
+                "referral_code": ref.referral_code
+            }
+            for ref in direct_referrals
+        ]
+
+        # Добавляем простую отладочную информацию
+        user_data["debug"] = {
+            "direct_referrals_count": len(direct_referrals),
+            "current_user_has_referrals": len(direct_referrals) > 0
+        }
+
+        return user_data
+
+    except Exception as e:
+        logger.error(f"Ошибка при тестировании рефералов: {str(e)}")
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))

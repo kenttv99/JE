@@ -209,7 +209,7 @@ async def update_order_status(
             raise HTTPException(status_code=404, detail="Заявка не найдена")
 
         allowed_transitions = {
-            OrderStatus.pending: [OrderStatus.processing, OrderStatus.canceled],
+            OrderStatus.pending: [OrderStatus.processing, OrderStatus.canceled, OrderStatus.completed],
             OrderStatus.processing: [OrderStatus.completed, OrderStatus.arbitrage, OrderStatus.waiting_confirmation],
             OrderStatus.waiting_confirmation: [OrderStatus.completed, OrderStatus.arbitrage],
             OrderStatus.completed: [OrderStatus.canceled, OrderStatus.processing, OrderStatus.pending, OrderStatus.arbitrage, OrderStatus.waiting_confirmation],
