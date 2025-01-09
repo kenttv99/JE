@@ -107,14 +107,6 @@ async def get_me(current_user: User = Depends(get_current_user)):
     logger.info("Запрос информации о текущем пользователе: %s", current_user.email)
     return {"email": current_user.email, "full_name": current_user.full_name}
 
-
-@router.get("/protected-route")
-async def protected_route(current_user: User = Depends(get_current_user)):
-    """Пример защищенного маршрута."""
-    logger.info("Доступ к защищенному маршруту предоставлен пользователю: %s", current_user.email)
-    return {"message": "Вы авторизованы!", "email": current_user.email}
-
-
 @router.put("/update_profile")
 async def update_profile(
     user_update: UserUpdateRequest, 
