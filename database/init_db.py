@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Text, DECIMAL, TIMESTAMP, Enum
 from datetime import datetime
-from api.enums import OrderStatus, OrderTypeEnum  # Обновлен импорт
+from api.enums import OrderStatus  # Убедитесь, что OrderStatus импортирован
 
 # URL подключения к базе данных
 DATABASE_URL = "postgresql+asyncpg://postgres:assasin88@localhost:5432/crypto_exchange"
@@ -70,13 +70,18 @@ class ExchangeOrder(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    order_type = Column(Enum(OrderTypeEnum), nullable=False)
+    order_type = Column(Enum('buy', 'sell', name='ordertypeenum'), nullable=False)
     currency = Column(String(10), nullable=False)
     amount = Column(DECIMAL(20, 8), nullable=False)
     total_rub = Column(DECIMAL(20, 2), nullable=False)
-    status = Column(Enum(OrderStatus), nullable=False, default=OrderStatus.pending.value)
+    status = Column(Enum('pending', 'waiting_confirmation', 'processing', 'arbitrage', 'completed', 'canceled', name='orderstatus'), nullable=False, default='pending')
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow)
+    
+    # Поля для AML проверки
+    crypto_address = Column(String(255), nullable=False)
+    crypto_network = Column(String(100), nullable=False)
+    aml_status = Column(Enum('passed', 'failed', 'pending', name='amlstatusenum'), nullable=False, default='pending')
 
     # Связи
     user = relationship("User", back_populates="orders")
@@ -90,9 +95,14 @@ class Payment(Base):
     payment_method = Column(String(50), nullable=False)
     bank = Column(String(100), nullable=False)
     payment_details = Column(Text, nullable=False)
-    status = Column(Enum(OrderStatus), default=OrderStatus.pending)
+    status = Column(Enum(OrderStatus), default='pending')
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow)
+
+    # Новые поля
+    can_buy = Column(Boolean, default=True, nullable=False)     # Возможность использовать для покупки
+    can_sell = Column(Boolean, default=False, nullable=False)   # Возможность использовать для продажи
+    fee_percentage = Column(DECIMAL(5, 2), default=0.0, nullable=False)  # Комиссия за транзакцию
 
     # Связь с заказом
     order = relationship("ExchangeOrder", back_populates="payments")

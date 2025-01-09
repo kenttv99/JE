@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select  # Добавляем импорт select
 from fastapi import HTTPException
-from database.init_db import User, get_async_db
+from database.init_db import User
 
 async def get_current_user_info(db: AsyncSession, current_user: User) -> User:
     # Пример логики для получения информации о пользователе

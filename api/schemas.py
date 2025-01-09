@@ -3,29 +3,28 @@
 from typing import List, Optional
 from decimal import Decimal
 from datetime import datetime
-from enum import Enum  # Этот импорт больше не нужен, удалите его
 from pydantic import BaseModel, EmailStr, Field
 
-from .enums import OrderStatus, OrderTypeEnum, PaymentTypeEnum, AMLStatusEnum  # Добавлен импорт Enum
+from .enums import OrderStatus, OrderTypeEnum, AMLStatusEnum  # Убедитесь, что AMLStatusEnum импортирован
 
 class TokenData(BaseModel):
     email: Optional[str] = None
 
     class Config:
-        from_attributes = True  # Обновлено
+        orm_mode = True  # Обновлено
 
 class UserBase(BaseModel):
     email: EmailStr
     full_name: Optional[str] = None
 
     class Config:
-        from_attributes = True  # Обновлено
+        orm_mode = True  # Обновлено
 
 class UserCreate(UserBase):
     password: str
 
     class Config:
-        from_attributes = True  # Обновлено
+        orm_mode = True  # Обновлено
 
 class UserResponse(UserBase):
     id: int
@@ -35,41 +34,44 @@ class UserResponse(UserBase):
     referral_link: Optional[str] = None  # Поле для реферальной ссылки
 
     class Config:
-        from_attributes = True  # Обновлено
+        orm_mode = True  # Обновлено
 
 class ReferralData(BaseModel):
     referred_users: List[UserResponse]
     bonus_earned: Decimal
 
     class Config:
-        from_attributes = True  # Обновлено
+        orm_mode = True  # Обновлено
 
 class ExchangeOrderBase(BaseModel):
     order_type: OrderTypeEnum
     currency: str
     amount: Decimal
     total_rub: Decimal
+    crypto_address: str
+    crypto_network: str
 
     class Config:
-        from_attributes = True  # Обновлено
+        orm_mode = True  # Обновлено
 
 class ExchangeOrderRequest(ExchangeOrderBase):
     class Config:
-        from_attributes = True  # Обновлено
+        orm_mode = True  # Обновлено
 
 class ExchangeOrderCreate(ExchangeOrderBase):
     class Config:
-        from_attributes = True  # Обновлено
+        orm_mode = True  # Обновлено
 
 class ExchangeOrderResponse(ExchangeOrderBase):
     id: int
     user_id: int
     status: OrderStatus
+    aml_status: AMLStatusEnum
     created_at: datetime
     updated_at: datetime
 
     class Config:
-        from_attributes = True  # Обновлено
+        orm_mode = True  # Обновлено
 
 class OrderResponse(BaseModel):
     id: int
@@ -78,11 +80,12 @@ class OrderResponse(BaseModel):
     amount: Decimal
     total_rub: Decimal
     status: OrderStatus
+    aml_status: AMLStatusEnum
     created_at: datetime
     updated_at: datetime
 
     class Config:
-        from_attributes = True  # Обновлено
+        orm_mode = True  # Обновлено
 
 class ExchangeRateResponse(BaseModel):
     currency: str
@@ -92,21 +95,35 @@ class ExchangeRateResponse(BaseModel):
     updated_at: datetime
 
     class Config:
-        from_attributes = True  # Обновлено
+        orm_mode = True  # Обновлено
 
 class PaymentBase(BaseModel):
     payment_method: str
     bank: str
     payment_details: str
+    can_buy: bool = True
+    can_sell: bool = False
+    fee_percentage: Decimal = Decimal('0.00')  # Новое поле
 
     class Config:
-        from_attributes = True  # Обновлено
+        orm_mode = True  # Обновлено
 
 class PaymentCreate(PaymentBase):
     order_id: int
 
     class Config:
-        from_attributes = True  # Обновлено
+        orm_mode = True  # Обновлено
+
+class PaymentUpdate(BaseModel):
+    payment_method: Optional[str] = None
+    bank: Optional[str] = None
+    payment_details: Optional[str] = None
+    can_buy: Optional[bool] = None
+    can_sell: Optional[bool] = None
+    fee_percentage: Optional[Decimal] = None  # Новое поле
+
+    class Config:
+        orm_mode = True  # Обновлено
 
 class PaymentResponse(PaymentBase):
     id: int
@@ -115,14 +132,14 @@ class PaymentResponse(PaymentBase):
     updated_at: datetime
 
     class Config:
-        from_attributes = True  # Обновлено
+        orm_mode = True  # Обновлено
 
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
 
     class Config:
-        from_attributes = True  # Обновлено
+        orm_mode = True  # Обновлено
 
 class RegisterRequest(BaseModel):
     email: EmailStr
@@ -130,34 +147,34 @@ class RegisterRequest(BaseModel):
     full_name: str
 
     class Config:
-        from_attributes = True  # Обновлено
+        orm_mode = True  # Обновлено
 
 class UpdateOrderStatusRequest(BaseModel):
     status: OrderStatus
 
     class Config:
-        from_attributes = True  # Обновлено
+        orm_mode = True  # Обновлено
 
 class UserUpdateRequest(BaseModel):
     # email: Optional[EmailStr] = None
     full_name: Optional[str] = None
 
     class Config:
-        from_attributes = True  # Обновлено
+        orm_mode = True  # Обновлено
 
 class ReferralCodeResponse(BaseModel):
     referral_code: str
     referral_link: str
 
     class Config:
-        from_attributes = True  # Обновлено
+        orm_mode = True  # Обновлено
 
 class RoleCreate(BaseModel):
     name: str
     description: Optional[str] = None
 
     class Config:
-        from_attributes = True  # Обновлено
+        orm_mode = True  # Обновлено
 
 class RoleResponse(BaseModel):
     id: int
@@ -165,11 +182,11 @@ class RoleResponse(BaseModel):
     description: Optional[str] = None
 
     class Config:
-        from_attributes = True  # Обновлено
-        
+        orm_mode = True  # Обновлено
+
 class ChangePasswordRequest(BaseModel):
     current_password: str = Field(..., min_length=6, description="Текущий пароль")
     new_password: str = Field(..., min_length=6, description="Новый пароль")
 
     class Config:
-        from_attributes = True  # Обновлено
+        orm_mode = True  # Обновлено

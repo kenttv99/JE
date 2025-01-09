@@ -6,6 +6,7 @@ from api.endpoints.auth_routers import router as auth_router
 from api.endpoints.user_orders_routers import router as user_orders_router
 from api.endpoints.referrals_routers import router as referrals_router
 from api.endpoints.roles_routers import router as roles_router
+from api.endpoints.payments_routers import router as payments_routers
 
 # Настройка логирования с ротацией
 from config.logging_config import setup_logging
@@ -25,6 +26,7 @@ app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authorization"])
 app.include_router(user_orders_router, prefix="/api/v1/orders", tags=["Orders"])
 app.include_router(referrals_router, prefix="/api/v1/referrals", tags=["Referrals"])
 app.include_router(roles_router, prefix="/api/v1/roles", tags=["Roles"])
+app.include_router(payments_routers, prefix="/api/v1/payments", tags=["Payments"])
 
 # Middleware для логирования
 @app.middleware("http")
