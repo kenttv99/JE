@@ -1,26 +1,18 @@
+# api/endpoints/exchange_routers.py
+
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import delete
-from database.init_db import ExchangeRate, get_async_db
-from typing import List
-from api.endpoints.garantex_api import fetch_usdt_rub_garantex_rates
-from api.schemas import ExchangeRateResponse
-import logging
 from datetime import datetime
+from typing import List
 
-
-from garantex_api import (
+from database.init_db import ExchangeRate, get_async_db
+from api.garantex_api import (
     fetch_usdt_rub_garantex_rates,
     fetch_btc_rub_garantex_rates
 )
-
-# Настройка логирования
-from config.logging_config import setup_logging
-setup_logging()
-logger = logging.getLogger(__name__)
-
-
+from api.schemas import ExchangeRateResponse
 
 router = APIRouter()
 
@@ -31,22 +23,14 @@ async def health_check():
 
 @router.post("/update_rates")
 async def update_exchange_rates(db: AsyncSession = Depends(get_async_db)):
-    """
-    Обновляет курсы USDT/RUB и BTC/RUB из Garantex и сохраняет их в базе данных.
-    
-    Этот маршрут выполняет следующие действия:
-    1. Получает текущие курсы для USDT и BTC с помощью функций из `garantex_api`.
-    2. Обновляет существующие записи в базе данных или создает новые, если таких записей нет.
-    3. Возвращает сообщение об успешном обновлении курсов.
-    """
+    """Обновление курсов обмена валют для USDT и BTC."""
     try:
-        # Шаг 1: Получаем курсы из Garantex
+        # Шаг 1: Получаем курсы USDT/RUB и BTC/RUB из Garantex
         usdt_rates = await fetch_usdt_rub_garantex_rates()
         btc_rates = await fetch_btc_rub_garantex_rates()
 
         if not usdt_rates or not btc_rates:
-            logger.error("Не удалось получить некоторые курсы из Garantex")
-            raise HTTPException(status_code=500, detail="Ошибка получения курсов из Garantex")
+            raise HTTPException(status_code=500, detail="Не удалось получить курсы с Garantex")
 
         # Список валют для обновления
         currencies = [
@@ -67,9 +51,8 @@ async def update_exchange_rates(db: AsyncSession = Depends(get_async_db)):
                 # Обновляем существующую запись
                 rate_obj.buy_rate = rates["buy_rate"]
                 rate_obj.sell_rate = rates["sell_rate"]
-                rate_obj.source = rates.get("source", "Garantex")  # Используем источник по умолчанию, если не указан
+                rate_obj.source = rates.get("source", "Garantex")
                 rate_obj.updated_at = datetime.utcnow()
-                logger.info(f"Курсы {currency}/RUB обновлены в базе данных")
             else:
                 # Создаем новую запись
                 new_rate = ExchangeRate(
@@ -80,26 +63,28 @@ async def update_exchange_rates(db: AsyncSession = Depends(get_async_db)):
                     updated_at=datetime.utcnow()
                 )
                 db.add(new_rate)
-                logger.info(f"Курсы {currency}/RUB добавлены в базу данных")
 
-        # Шаг 3: Сохраняем все изменения в базе данных
+        # Шаг 2: Сохраняем все изменения в базе данных
         await db.commit()
 
         return {"message": "Курсы успешно обновлены"}
 
     except HTTPException as http_exc:
-        logger.error(f"HTTP ошибка при обновлении курсов: {http_exc.detail}")
         raise http_exc
     except Exception as e:
         await db.rollback()
-        logger.error(f"Неожиданная ошибка при обновлении курсов: {e}")
-        raise HTTPException(status_code=500, detail="Ошибка обновления курсов")
+        raise HTTPException(status_code=500, detail=f"Ошибка обновления курсов: {str(e)}")
 
 @router.get("/get_rates", response_model=List[ExchangeRateResponse])
 async def get_exchange_rates(db: AsyncSession = Depends(get_async_db)):
     """Получение текущих курсов обмена валют."""
-    result = await db.execute(select(ExchangeRate))
-    rates = result.scalars().all()
-    if not rates:
-        raise HTTPException(status_code=404, detail="Курсы не найдены")
-    return rates
+    try:
+        result = await db.execute(select(ExchangeRate))
+        rates = result.scalars().all()
+        if not rates:
+            raise HTTPException(status_code=404, detail="Курсы не найдены")
+        return rates
+    except HTTPException as http_err:
+        raise http_err
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Ошибка получения курсов")
