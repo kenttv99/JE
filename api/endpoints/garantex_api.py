@@ -1,8 +1,9 @@
-import requests
+import httpx
 import logging
 import json
 
 from config.logging_config import setup_logging
+
 setup_logging()
 logger = logging.getLogger(__name__)
 
@@ -10,13 +11,14 @@ GARANTEX_API_URL = "https://garantex.org/api/v2/depth"
 
 async def fetch_garantex_rates():
     """
-    Функция для получения курсов с Garantex.
+    Асинхронная функция для получения курсов с Garantex.
     """
     try:
         logger.info("Запрос курсов с Garantex начат")
-        response = requests.get(GARANTEX_API_URL, params={"market": "usdtrub"})
-        response.raise_for_status()
-        data = response.json()
+        async with httpx.AsyncClient() as client:
+            response = await client.get(GARANTEX_API_URL, params={"market": "usdtrub"})
+            response.raise_for_status()
+            data = response.json()
 
         # Извлечение минимальной цены продажи и максимальной цены покупки
         if data.get("asks") and data.get("bids"):
@@ -27,7 +29,7 @@ async def fetch_garantex_rates():
         else:
             logger.warning("Данные о курсах отсутствуют в ответе API.")
             return None
-    except requests.HTTPError as http_err:
+    except httpx.HTTPError as http_err:
         logger.error(f"HTTP ошибка при запросе курсов: {http_err}")
         return None
     except Exception as e:

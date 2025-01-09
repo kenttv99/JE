@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select  # Добавляем импорт select
+from sqlalchemy.future import select
 from sqlalchemy import delete
 from database.init_db import ExchangeRate, get_async_db
 from typing import List
@@ -21,7 +21,10 @@ async def update_exchange_rates(db: AsyncSession = Depends(get_async_db)):
     if not rates:
         raise HTTPException(status_code=500, detail="Не удалось получить курсы с Garantex")
 
-    await db.execute(delete(ExchangeRate))  # Удаление старых записей
+    # Удаление старых записей
+    await db.execute(delete(ExchangeRate))
+    
+    # Добавление новых курсов
     new_rate = ExchangeRate(
         currency="USDT",
         buy_rate=rates["buy_rate"],

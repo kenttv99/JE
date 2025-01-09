@@ -3,6 +3,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 def setup_logging():
+    """Настройка логирования для приложения."""
     # Создание логгера
     logger = logging.getLogger("JE")  # Название логгера может быть любым
     logger.setLevel(logging.INFO)  # Уровень логирования
