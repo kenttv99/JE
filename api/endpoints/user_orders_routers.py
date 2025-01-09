@@ -99,24 +99,31 @@ async def get_user_orders(
 # Создание новой заявки на обмен
 @router.post("/create_order")
 async def create_exchange_order(
-    order: ExchangeOrderRequest, db: AsyncSession = Depends(get_async_db), current_user: User = Depends(get_current_user)
+    order: ExchangeOrderRequest, 
+    db: AsyncSession = Depends(get_async_db), 
+    current_user: User = Depends(get_current_user)
 ):
     """
     Создание новой заявки на обмен валюты для текущего пользователя.
     """
     try:
-        user = await get_current_user_info(db, current_user)
-        # Получение объекта PaymentMethod на основе переданного метода
-        stmt = select(PaymentMethod).filter(PaymentMethod.method_name == order.payment_method)
+        # Используем async_sessionmaker для создания новой сессии
+        stmt = (
+            select(PaymentMethod)
+            .where(PaymentMethod.method_name == order.payment_method)
+        )
+        
+        # Используем правильный асинхронный метод выполнения
         result = await db.execute(stmt)
-        payment_method = result.scalars().first()
+        payment_method = result.scalar_one_or_none()
 
         if not payment_method:
             logger.warning(f"Метод оплаты {order.payment_method} не найден")
             raise HTTPException(status_code=404, detail="Выбранный метод оплаты не найден")
 
+        # Создаём новый заказ
         new_order = ExchangeOrder(
-            user_id=user.id,
+            user_id=current_user.id,
             order_type=order.order_type,
             currency=order.currency,
             amount=order.amount,
@@ -124,19 +131,28 @@ async def create_exchange_order(
             status=OrderStatus.pending,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
-            payment_method=payment_method  # Присвоение метода оплаты
+            crypto_address=f"default_address_{order.currency}",
+            crypto_network=order.currency,
+            payment_method=payment_method
         )
+
+        # Добавляем и сохраняем изменения
         db.add(new_order)
+        await db.flush()
         await db.commit()
-        await db.refresh(new_order)
-        logger.info(f"Пользователь ID {user.id} успешно создал заявку ID {new_order.id} с методом оплаты {payment_method.method_name.value}")
-        return {"message": "Заявка на обмен успешно создана", "order_id": new_order.id}
+
+        logger.info(f"Пользователь {current_user.email} успешно создал заявку")
+        return {
+            "message": "Заявка на обмен успешно создана",
+            "order_id": new_order.id
+        }
+
     except HTTPException as http_exc:
+        logger.error(f"HTTP ошибка при создании заявки: {http_exc.detail}")
         raise http_exc
     except Exception as e:
-        await db.rollback()
-        logger.error(f"Ошибка при создании заявки пользователем ID {current_user.id}: {e}")
-        raise HTTPException(status_code=500, detail="Ошибка создания заявки")
+        logger.error(f"Неожиданная ошибка при создании заявки: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Ошибка создания заявки: {str(e)}")
 
 
 # Отмена заявки на обмен

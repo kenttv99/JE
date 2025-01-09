@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.auth import hash_password
 from database.init_db import AsyncSessionLocal, init_db
-from database.init_db import Role, User  # Убедитесь, что пути корректны
+from database.init_db import Role, User, PaymentMethod, PaymentMethodEnum  # Добавляем PaymentMethod и PaymentMethodEnum
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -39,6 +39,32 @@ async def init_roles(db: AsyncSession):
     except SQLAlchemyError as e:
         await db.rollback()
         logger.error(f"Произошла ошибка при инициализации ролей: {e}")
+
+async def init_payment_methods(db: AsyncSession):
+    """
+    Асинхронная инициализация методов оплаты.
+    """
+    try:
+        # Построение запроса для подсчёта количества методов оплаты
+        stmt = select(func.count()).select_from(PaymentMethod)
+        count = await db.scalar(stmt)
+        
+        if count == 0:
+            # Если методов оплаты нет, добавляем стандартные методы
+            payment_methods = [
+                PaymentMethod(method_name=PaymentMethodEnum.CREDIT_CARD, description="Оплата кредитной картой"),
+                PaymentMethod(method_name=PaymentMethodEnum.BANK_TRANSFER, description="Банковский перевод"),
+                PaymentMethod(method_name=PaymentMethodEnum.PAYPAL, description="Оплата через PayPal"),
+                PaymentMethod(method_name=PaymentMethodEnum.CRYPTO, description="Оплата криптовалютой"),
+            ]
+            db.add_all(payment_methods)
+            await db.commit()
+            logger.info("Методы оплаты успешно инициализированы")
+        else:
+            logger.info("Методы оплаты уже существуют в базе данных")
+    except SQLAlchemyError as e:
+        await db.rollback()
+        logger.error(f"Произошла ошибка при инициализации методов оплаты: {e}")
 
 async def init_users(db: AsyncSession):
     """
@@ -82,6 +108,7 @@ async def init_data(db: AsyncSession):
     Общая асинхронная инициализация данных.
     """
     await init_roles(db)
+    await init_payment_methods(db)  # Добавляем инициализацию методов оплаты
     await init_users(db)
 
 async def main():

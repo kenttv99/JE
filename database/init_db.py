@@ -1,9 +1,11 @@
 # database/init_db.py
 
 import asyncio
+from typing import AsyncGenerator
 from decimal import Decimal  # Импорт Decimal
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.orm import declarative_base, relationship
+from contextlib import asynccontextmanager
 from sqlalchemy import (
     Column,
     Integer,
@@ -20,9 +22,8 @@ from api.enums import (
     OrderStatus,
     OrderTypeEnum,
     AMLStatusEnum,
+    PaymentMethodEnum,  # Импортируем PaymentMethodEnum из api.enums
 )
-# Импорт Enum для PaymentMethod, если необходимо
-from enum import Enum as PyEnum
 
 # URL подключения к базе данных
 DATABASE_URL = "postgresql+asyncpg://postgres:assasin88@localhost:5432/crypto_exchange"
@@ -33,14 +34,14 @@ engine = create_async_engine(DATABASE_URL, echo=True, future=True)
 # Базовый класс для моделей
 Base = declarative_base()
 
-# Создание фабрики сессий
-AsyncSessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine,
+# Создание асинхронной фабрики сессий
+AsyncSessionLocal = async_sessionmaker(
+    engine,
     class_=AsyncSession,
+    expire_on_commit=False,
+    autocommit=False,
+    autoflush=False
 )
-
 
 # Определение моделей
 
@@ -103,11 +104,14 @@ class ExchangeOrder(Base):
     crypto_address = Column(String(255), nullable=False)
     crypto_network = Column(String(100), nullable=False)
     aml_status = Column(Enum(AMLStatusEnum, name='amlstatusenum'), nullable=False, default=AMLStatusEnum.pending)
+    
+    # Foreign key для PaymentMethod
+    payment_method_id = Column(Integer, ForeignKey("payment_methods.id"), nullable=False)
 
     # Связи
     user = relationship("User", back_populates="orders")
     payments = relationship("Payment", back_populates="order", cascade="all, delete-orphan")
-    payment_method = relationship("PaymentMethod", back_populates="order")  # Новая связь с PaymentMethod
+    payment_method = relationship("PaymentMethod", back_populates="orders")
 
 
 class Payment(Base):
@@ -131,13 +135,6 @@ class Payment(Base):
     order = relationship("ExchangeOrder", back_populates="payments")
 
 
-# Новая модель PaymentMethod
-class PaymentMethodEnum(PyEnum):
-    CREDIT_CARD = "Credit Card"
-    BANK_TRANSFER = "Bank Transfer"
-    PAYPAL = "PayPal"
-    CRYPTO = "Crypto"
-
 class PaymentMethod(Base):
     __tablename__ = "payment_methods"
 
@@ -146,8 +143,7 @@ class PaymentMethod(Base):
     description = Column(String(255), nullable=True)
 
     # Связь с ордерами
-    order_id = Column(Integer, ForeignKey("exchange_orders.id"), nullable=False)
-    order = relationship("ExchangeOrder", back_populates="payment_method")
+    orders = relationship("ExchangeOrder", back_populates="payment_method")
 
 
 async def init_db():
@@ -163,10 +159,26 @@ async def init_db():
         await engine.dispose()
 
 
-async def get_async_db():
-    """Создание асинхронной сессии базы данных."""
+@asynccontextmanager
+async def get_session() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
-        yield session
+        async with session.begin():
+            try:
+                yield session
+            except Exception:
+                await session.rollback()
+                raise
+            finally:
+                await session.close()
+
+# Dependency для FastAPI
+async def get_async_db() -> AsyncGenerator[AsyncSession, None]:
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise
 
 
 if __name__ == "__main__":

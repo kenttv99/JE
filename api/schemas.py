@@ -44,10 +44,7 @@ class PaymentMethodResponse(PaymentMethodBase):
 
     class Config:
         from_attributes = True
-        
-# api/schemas.py
 
-# Существующие схемы...
 
 class PaymentMethodSchema(BaseModel):
     id: int
@@ -56,30 +53,6 @@ class PaymentMethodSchema(BaseModel):
 
     class Config:
         from_attributes = True
-
-class ExchangeOrderRequest(BaseModel):
-    order_type: OrderTypeEnum
-    currency: str
-    amount: float
-    total_rub: float
-    payment_method: PaymentMethodEnum  # Новое поле для выбора метода оплаты
-
-class OrderResponse(BaseModel):
-    id: int
-    order_type: OrderTypeEnum
-    currency: str
-    amount: float
-    total_rub: float
-    status: OrderStatus
-    created_at: datetime
-    updated_at: datetime
-    payment_method: PaymentMethodSchema  # Включение информации о методе оплаты
-
-    class Config:
-        from_attributes = True
-
-# Другие схемы...
-
 
 # -----------------------
 # Схемы для ExchangeOrder
@@ -100,13 +73,6 @@ class ExchangeOrderBase(BaseModel):
         from_attributes = True
 
 
-class ExchangeOrderRequest(ExchangeOrderBase):
-    """
-    Схема для запроса создания нового заказа обмена.
-    """
-    pass  # Наследует все поля от ExchangeOrderBase
-
-
 class ExchangeOrderCreate(ExchangeOrderBase):
     """
     Схема для создания заказа обмена с указанием метода оплаты (опционально).
@@ -116,6 +82,16 @@ class ExchangeOrderCreate(ExchangeOrderBase):
         description="ID выбранного метода оплаты",
         example=1
     )
+
+    class Config:
+        from_attributes = True
+
+
+class ExchangeOrderRequest(ExchangeOrderBase):
+    """
+    Схема для запроса создания нового заказа обмена.
+    """
+    payment_method: PaymentMethodEnum  # Поле для выбора метода оплаты
 
     class Config:
         from_attributes = True
@@ -135,6 +111,10 @@ class ExchangeOrderResponse(ExchangeOrderBase):
 
     class Config:
         from_attributes = True
+
+# -----------------------
+# Схемы для аутентификации и пользователей
+# -----------------------
 
 class TokenData(BaseModel):
     email: Optional[str] = None
@@ -187,6 +167,7 @@ class OrderResponse(BaseModel):
     aml_status: AMLStatusEnum
     created_at: datetime
     updated_at: datetime
+    payment_method: Optional[PaymentMethodSchema] = None  # Включение информации о методе оплаты
 
     class Config:
         from_attributes = True  # Обновлено
@@ -201,6 +182,7 @@ class ExchangeRateResponse(BaseModel):
 
     class Config:
         from_attributes = True  # Обновлено
+
 
 class LoginRequest(BaseModel):
     email: EmailStr
