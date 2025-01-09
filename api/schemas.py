@@ -1,26 +1,18 @@
+# api/schemas.py
+
 from typing import List, Optional
 from decimal import Decimal
 from datetime import datetime
-from enum import Enum
+from enum import Enum  # Этот импорт больше не нужен, удалите его
 from pydantic import BaseModel, EmailStr, Field
+
+from .enums import OrderStatus, OrderTypeEnum, PaymentTypeEnum, AMLStatusEnum  # Добавлен импорт Enum
 
 class TokenData(BaseModel):
     email: Optional[str] = None
 
     class Config:
         from_attributes = True  # Обновлено
-
-class OrderStatus(str, Enum):
-    pending = "pending"
-    waiting_confirmation = "waiting_confirmation"
-    processing = "processing"
-    arbitrage = "arbitrage"
-    completed = "completed"
-    canceled = "canceled"
-
-class OrderTypeEnum(str, Enum):
-    buy = "buy"
-    sell = "sell"
 
 class UserBase(BaseModel):
     email: EmailStr

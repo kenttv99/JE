@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Text, DECIMAL, TIMESTAMP, Enum
 from datetime import datetime
-from api.schemas import OrderStatus, OrderTypeEnum  # Убедитесь, что путь корректный
+from api.enums import OrderStatus, OrderTypeEnum  # Обновлен импорт
 
 # URL подключения к базе данных
 DATABASE_URL = "postgresql+asyncpg://postgres:assasin88@localhost:5432/crypto_exchange"
