@@ -108,6 +108,7 @@ class ExchangeOrder(Base):
     currency = Column(String(10), nullable=False)
     amount = Column(DECIMAL(20, 8), nullable=False)
     total_rub = Column(DECIMAL(20, 2), nullable=False)
+    median_rate = Column(DECIMAL(20, 8), nullable=False)
     status = Column(Enum(OrderStatus, name='orderstatus'), nullable=False, default=OrderStatus.pending)
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)

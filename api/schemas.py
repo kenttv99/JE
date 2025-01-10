@@ -177,6 +177,7 @@ class OrderResponse(BaseModel):
     currency: str
     amount: Decimal
     total_rub: Decimal
+    median_rate: Decimal
     status: OrderStatus
     aml_status: AMLStatusEnum
     created_at: datetime
@@ -189,9 +190,9 @@ class OrderResponse(BaseModel):
 
 class ExchangeRateResponse(BaseModel):
     currency: str
-    buy_rate: float
-    sell_rate: float
-    median_rate: float
+    buy_rate: Decimal
+    sell_rate: Decimal
+    median_rate: Decimal
     source: str
     updated_at: datetime
 

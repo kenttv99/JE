@@ -11,8 +11,8 @@ class OrderStatus(Enum):
     waiting_confirmation = "Waiting Confirmation"
 
 class OrderTypeEnum(Enum):
-    buy = "Buy"
-    sell = "Sell"
+    buy = "buy"
+    sell = "sell"
 
 class AMLStatusEnum(Enum):
     pending = "Pending"

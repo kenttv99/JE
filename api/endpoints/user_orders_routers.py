@@ -1,20 +1,20 @@
 # api/endpoints/user_orders_routers.py
 
+from decimal import Decimal
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload
-from database.init_db import ExchangeOrder, OrderStatus, User, get_async_db, PaymentMethod, PaymentMethodEnum  # Добавлен PaymentMethodEnum
+from api.enums import OrderTypeEnum
+from database.init_db import ExchangeOrder, OrderStatus, User, get_async_db, PaymentMethod, PaymentMethodEnum, ExchangeRate  # Добавлен ExchangeRate
 from typing import List, Optional
 from api.auth import get_current_user
 from api.schemas import UpdateOrderStatusRequest, OrderResponse, ExchangeOrderRequest, PaymentMethodSchema
 from api.utils.user_utils import get_current_user_info
 from datetime import datetime
 import logging
-from decimal import Decimal
-from api.enums import OrderTypeEnum
-from .garantex_api import fetch_btc_rub_garantex_rates
+
 
 # Настройка логирования
 from config.logging_config import setup_logging
@@ -107,47 +107,45 @@ async def create_exchange_order(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Создание новой заявки на обмен валюты для текущего пользователя с учетом курсов BTC/RUB с Garantex.
+    Создание новой заявки на обмен валюты для текущего пользователя с учетом median_rate.
     Пользователь может указать:
     - amount (количество BTC), тогда total_rub рассчитывается автоматически;
     - total_rub (сумма в рублях), тогда amount рассчитывается автоматически.
-    
-    В зависимости от order_type (buy или sell) используются соответствующие курсы:
-    - При order_type=Buy используется buy_rate (asks[0] в Garantex).
-    - При order_type=Sell используется sell_rate (bids[0] в Garantex).
     """
     try:
-        # Шаг 1: Получаем курс BTC/RUB от Garantex
-        garantex_data = await fetch_btc_rub_garantex_rates()
-        if not garantex_data:
+        # Шаг 1: Получаем median_rate для BTC/RUB из базы данных
+        stmt = select(ExchangeRate).where(ExchangeRate.currency == order.currency)
+        result = await db.execute(stmt)
+        exchange_rate = result.scalar_one_or_none()
+
+        if not exchange_rate:
             raise HTTPException(
-                status_code=500, detail="Не удалось получить курсы BTC/RUB с Garantex"
+                status_code=500, detail=f"Не удалось найти информацию о курсе для {order.currency}"
             )
 
-        # Шаг 2: Определяем нужный курс в зависимости от типа заявки
-        if order.order_type == OrderTypeEnum.buy:
-            rate = garantex_data["buy_rate"]  # Минимальная цена продажи (asks[0])
-        else:
-            rate = garantex_data["sell_rate"]  # Максимальная цена покупки (bids[0])
+        median_rate = exchange_rate.median_rate
 
-        # Шаг 3: Расчет недостающего поля (amount или total_rub)
+        if median_rate is None:
+            raise HTTPException(
+                status_code=500, detail=f"Median rate для {order.currency} не установлен"
+            )
+
+        # Шаг 2: Расчет недостающего поля (amount или total_rub) с использованием median_rate
         input_amount = order.amount
         input_total_rub = order.total_rub
 
         if input_amount is not None and input_total_rub is None:
-            # Рассчитываем total_rub на основании amount и курса
-            calculated_total = input_amount * Decimal(rate)
-            # При покупке рассчитывали цену покупки, при продаже — цену продажи
-            # Для sell это будет (amount * sell_rate)
+            # Рассчитываем total_rub на основании amount и median_rate
+            calculated_total = input_amount * median_rate
             order.total_rub = calculated_total.quantize(Decimal('1.00'))
         elif input_total_rub is not None and input_amount is None:
-            # Рассчитываем amount на основании total_rub и курса
-            calculated_amount = input_total_rub / Decimal(rate)
+            # Рассчитываем amount на основании total_rub и median_rate
+            calculated_amount = input_total_rub / median_rate
             order.amount = calculated_amount.quantize(Decimal('0.00000001'))
         # Если (amount и total_rub) уже пришли заполненными или оба пустые
         # - логика валидации остановится на уровне схемы (validator)
 
-        # Шаг 4: Ищем указанный метод оплаты
+        # Шаг 3: Ищем указанный метод оплаты
         stmt = (
             select(PaymentMethod)
             .where(PaymentMethod.method_name == order.payment_method)
@@ -161,7 +159,7 @@ async def create_exchange_order(
                 status_code=404, detail="Выбранный метод оплаты не найден"
             )
 
-        # Шаг 5: Создаем новый объект заявки
+        # Шаг 4: Создаем новый объект заявки
         new_order = ExchangeOrder(
             user_id=current_user.id,
             order_type=order.order_type,
@@ -176,7 +174,7 @@ async def create_exchange_order(
             payment_method=payment_method
         )
 
-        # Шаг 6: Сохраняем объект заявки в БД
+        # Шаг 5: Сохраняем объект заявки в БД
         db.add(new_order)
         await db.flush()
         await db.commit()

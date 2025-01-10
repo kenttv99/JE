@@ -6,6 +6,7 @@ from sqlalchemy.future import select
 from sqlalchemy import delete
 from datetime import datetime
 from typing import List
+from decimal import Decimal
 
 from database.init_db import ExchangeRate, get_async_db
 from .garantex_api import (
@@ -23,7 +24,7 @@ async def health_check():
 
 @router.post("/update_rates")
 async def update_exchange_rates(db: AsyncSession = Depends(get_async_db)):
-    """Обновление курсов обмена валют для USDT и BTC."""
+    """Обновление курсов обмена валют для USDT и BTC с добавлением median_rate."""
     try:
         # Шаг 1: Получаем курсы USDT/RUB и BTC/RUB из Garantex
         usdt_rates = await fetch_usdt_rub_garantex_rates()
@@ -42,6 +43,10 @@ async def update_exchange_rates(db: AsyncSession = Depends(get_async_db)):
             currency = item["currency"]
             rates = item["rates"]
 
+            buy_rate = Decimal(str(rates["buy_rate"]))
+            sell_rate = Decimal(str(rates["sell_rate"]))
+            median_rate = (buy_rate + sell_rate) / 2  # Вычисляем средний курс
+
             # Проверяем, существует ли уже запись для этой валюты
             stmt = select(ExchangeRate).where(ExchangeRate.currency == currency)
             result = await db.execute(stmt)
@@ -49,16 +54,18 @@ async def update_exchange_rates(db: AsyncSession = Depends(get_async_db)):
 
             if rate_obj:
                 # Обновляем существующую запись
-                rate_obj.buy_rate = rates["buy_rate"]
-                rate_obj.sell_rate = rates["sell_rate"]
+                rate_obj.buy_rate = buy_rate
+                rate_obj.sell_rate = sell_rate
+                rate_obj.median_rate = median_rate  # Обновляем средний курс
                 rate_obj.source = rates.get("source", "Garantex")
                 rate_obj.updated_at = datetime.utcnow()
             else:
                 # Создаем новую запись
                 new_rate = ExchangeRate(
                     currency=currency,
-                    buy_rate=rates["buy_rate"],
-                    sell_rate=rates["sell_rate"],
+                    buy_rate=buy_rate,
+                    sell_rate=sell_rate,
+                    median_rate=median_rate,  # Устанавливаем средний курс при создании
                     source=rates.get("source", "Garantex"),
                     updated_at=datetime.utcnow()
                 )
@@ -77,7 +84,7 @@ async def update_exchange_rates(db: AsyncSession = Depends(get_async_db)):
 
 @router.get("/get_rates", response_model=List[ExchangeRateResponse])
 async def get_exchange_rates(db: AsyncSession = Depends(get_async_db)):
-    """Получение текущих курсов обмена валют."""
+    """Получение текущих курсов обмена валют с учетом median_rate."""
     try:
         result = await db.execute(select(ExchangeRate))
         rates = result.scalars().all()
