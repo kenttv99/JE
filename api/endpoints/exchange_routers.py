@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import List
 
 from database.init_db import ExchangeRate, get_async_db
-from api.garantex_api import (
+from .garantex_api import (
     fetch_usdt_rub_garantex_rates,
     fetch_btc_rub_garantex_rates
 )

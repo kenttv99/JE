@@ -94,6 +94,7 @@ class ExchangeRate(Base):
     currency = Column(String(10), nullable=False)
     buy_rate = Column(DECIMAL(20, 8), nullable=False)
     sell_rate = Column(DECIMAL(20, 8), nullable=False)
+    median_rate = Column(DECIMAL(20, 8), nullable=False)
     source = Column(String(255), nullable=False)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
 

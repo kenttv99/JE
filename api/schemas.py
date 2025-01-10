@@ -5,7 +5,7 @@ from decimal import Decimal
 from datetime import datetime
 from pydantic import BaseModel, EmailStr, Field
 from api.enums import OrderStatus, OrderTypeEnum, AMLStatusEnum, PaymentMethodEnum
-from pydantic import validator, Field
+from pydantic import model_validator, Field
 
 # -----------------------
 # Схемы для PaymentMethod
@@ -63,12 +63,12 @@ class ExchangeOrderBase(BaseModel):
     """
     Базовая схема для заказа обмена.
     """
-    order_type: OrderTypeEnum = Field(..., example=OrderTypeEnum.buy)
+    order_type: OrderTypeEnum = Field(..., example="buy")
     currency: str = Field(..., example="BTC")
-    amount: Decimal = Field(..., example=Decimal('0.5'))
-    total_rub: Decimal = Field(..., example=Decimal('1500000'))
-    crypto_address: str = Field(..., example="1BoatSLRHtKNngkdXEeobR76b53LETtpyT")
-    crypto_network: str = Field(..., example="Bitcoin")
+    amount: Optional[Decimal] = Field(None, example=Decimal('0.5'))
+    total_rub: Optional[Decimal] = Field(None, example=Decimal('1500000'))
+    crypto_address: Optional[str] = Field(None, example="1BoatSLRHtKNngkdXEeobR76b53LETtpyT")
+    crypto_network: Optional[str] = Field(None, example="Bitcoin")
 
     class Config:
         from_attributes = True
@@ -96,16 +96,19 @@ class ExchangeOrderRequest(ExchangeOrderBase):
     total_rub: Optional[Decimal] = Field(None, example=Decimal('1500000'))
     payment_method: PaymentMethodEnum
 
-    @validator('amount', 'total_rub', always=True)
-    def validate_amounts(cls, v, values):
-        """
-        Проверяет, что хотя бы одно из полей (amount или total_rub) указано.
-        """
-        amount = values.get('amount')
-        total_rub = values.get('total_rub')
-        if amount is None and total_rub is None:
-            raise ValueError("Необходимо указать либо amount, либо total_rub.")
-        return v
+    @model_validator(mode='after')
+    def check_amount_or_total_rub(self):
+        if (self.amount is None and self.total_rub is None):
+            raise ValueError('Необходимо указать либо amount, либо total_rub.')
+        if (self.amount is not None and self.total_rub is not None):
+            raise ValueError('Необходимо указать либо amount, либо total_rub, но не оба одновременно.')
+        return self
+
+    class Config:
+        from_attributes = True
+
+    class Config:
+        from_attributes = True
 
 
 class ExchangeOrderResponse(ExchangeOrderBase):
@@ -188,6 +191,7 @@ class ExchangeRateResponse(BaseModel):
     currency: str
     buy_rate: float
     sell_rate: float
+    median_rate: float
     source: str
     updated_at: datetime
 

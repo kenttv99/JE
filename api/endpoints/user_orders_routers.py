@@ -1,12 +1,10 @@
 # api/endpoints/user_orders_routers.py
 
-from decimal import Decimal
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload
-from api.enums import OrderTypeEnum
 from database.init_db import ExchangeOrder, OrderStatus, User, get_async_db, PaymentMethod, PaymentMethodEnum  # Добавлен PaymentMethodEnum
 from typing import List, Optional
 from api.auth import get_current_user
@@ -14,12 +12,9 @@ from api.schemas import UpdateOrderStatusRequest, OrderResponse, ExchangeOrderRe
 from api.utils.user_utils import get_current_user_info
 from datetime import datetime
 import logging
-
-from garantex_api import (
-    fetch_usdt_rub_garantex_rates,
-    fetch_btc_rub_garantex_rates
-)
-
+from decimal import Decimal
+from api.enums import OrderTypeEnum
+from .garantex_api import fetch_btc_rub_garantex_rates
 
 # Настройка логирования
 from config.logging_config import setup_logging
