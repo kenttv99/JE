@@ -148,7 +148,7 @@ async def create_exchange_order(
         # Шаг 3: Ищем указанный метод оплаты
         stmt = (
             select(PaymentMethod)
-            .where(PaymentMethod.method_name == order.payment_method)
+            .where(PaymentMethod.method_name == PaymentMethodEnum[order.payment_method.name])
         )
         result = await db.execute(stmt)
         payment_method = result.scalar_one_or_none()
@@ -156,7 +156,8 @@ async def create_exchange_order(
         if not payment_method:
             logger.warning(f"Метод оплаты {order.payment_method} не найден")
             raise HTTPException(
-                status_code=404, detail="Выбранный метод оплаты не найден"
+                status_code=404, 
+                detail=f"Метод оплаты {order.payment_method} не найден. Доступные методы: {[method.name for method in PaymentMethodEnum]}"
             )
 
         # Шаг 4: Создаем новый объект заявки

@@ -130,9 +130,10 @@ async def get_me(
         if not user:
             raise HTTPException(status_code=404, detail="Пользователь не найден")
 
-        # Формируем запрос для получения отфильтрованных заказов
+        # Формируем запрос для получения отфильтрованных заказов с загрузкой payment_method
         orders_query = (
             select(ExchangeOrder)
+            .options(selectinload(ExchangeOrder.payment_method))  # Добавляем загрузку payment_method
             .filter(ExchangeOrder.user_id == user.id)
         )
 
@@ -146,7 +147,7 @@ async def get_me(
 
         # Получаем отфильтрованные заказы
         orders_result = await db.execute(orders_query)
-        filtered_orders = orders_result.scalars().all()
+        filtered_orders = orders_result.unique().scalars().all()  # Добавляем unique() для избежания дубликатов
 
         # Формируем ответ
         return UserDetailedResponse(
@@ -156,7 +157,7 @@ async def get_me(
             phone_number=user.phone_number,
             telegram_username=user.telegram_username,
             avatar_url=user.avatar_url,
-            verification_level=user.verification_level,
+            verification_level=user.verification_level if user.verification_level else VerificationLevelEnum.UNVERIFIED,
             created_at=user.created_at,
             updated_at=user.updated_at,
             orders=filtered_orders,
@@ -172,6 +173,8 @@ async def get_me(
             status_code=500,
             detail="Внутренняя ошибка сервера при получении информации о пользователе"
         )
+    finally:
+        await db.rollback()  # Добавляем rollback в finally для очистки сессии
 
 @router.put("/update_profile")
 async def update_profile(
