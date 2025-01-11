@@ -166,6 +166,7 @@ async def create_exchange_order(
             currency=order.currency,
             amount=order.amount,
             total_rub=order.total_rub,
+            median_rate=median_rate,
             status=OrderStatus.pending,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
@@ -188,6 +189,7 @@ async def create_exchange_order(
             "order_id": new_order.id,
             "amount": str(new_order.amount),
             "total_rub": str(new_order.total_rub),
+            "median_rate": str(median_rate),
             "order_type": new_order.order_type.value
         }
 

@@ -20,7 +20,7 @@ class AMLStatusEnum(Enum):
     rejected = "Rejected"
 
 class PaymentMethodEnum(Enum):
-    CREDIT_CARD = "Credit Card"
-    BANK_TRANSFER = "Bank Transfer"
-    PAYPAL = "PayPal"
-    CRYPTO = "Crypto"
+    SBP = "SBP"
+    BANK_TRANSFER = "SCHET"
+    CARD = "CARD"
+    CRYPTO = "CRYPTO"

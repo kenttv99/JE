@@ -52,9 +52,9 @@ async def init_payment_methods(db: AsyncSession):
         if count == 0:
             # Если методов оплаты нет, добавляем стандартные методы
             payment_methods = [
-                PaymentMethod(method_name=PaymentMethodEnum.CREDIT_CARD, description="Оплата кредитной картой"),
-                PaymentMethod(method_name=PaymentMethodEnum.BANK_TRANSFER, description="Банковский перевод"),
-                PaymentMethod(method_name=PaymentMethodEnum.PAYPAL, description="Оплата через PayPal"),
+                PaymentMethod(method_name=PaymentMethodEnum.SBP, description="SBP"),
+                PaymentMethod(method_name=PaymentMethodEnum.BANK_TRANSFER, description="BANK_TRANSFER"),
+                PaymentMethod(method_name=PaymentMethodEnum.CARD, description="CARD"),
                 PaymentMethod(method_name=PaymentMethodEnum.CRYPTO, description="Оплата криптовалютой"),
             ]
             db.add_all(payment_methods)
