@@ -24,3 +24,10 @@ class PaymentMethodEnum(Enum):
     BANK_TRANSFER = "SCHET"
     CARD = "CARD"
     CRYPTO = "CRYPTO"
+
+# Добавляем новый enum для уровней верификации
+class VerificationLevelEnum(Enum):
+    UNVERIFIED = "Unverified"
+    BASIC = "Basic Verification"
+    ADVANCED = "Advanced Verification"
+    

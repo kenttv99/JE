@@ -27,7 +27,8 @@ from api.enums import (
     OrderStatus,
     OrderTypeEnum,
     AMLStatusEnum,
-    PaymentMethodEnum,  # Импортируем PaymentMethodEnum из api.enums
+    PaymentMethodEnum, # Импортируем PaymentMethodEnum из api.enums
+    VerificationLevelEnum
 )
 
 # URL подключения к базе данных
@@ -67,7 +68,15 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, nullable=False)
     password_hash = Column(Text, nullable=False)
-    full_name = Column(String(255))
+    full_name = Column(String(255), nullable=True)
+    phone_number = Column(String(20), nullable=True)
+    telegram_username = Column(String(100), nullable=True)
+    avatar_url = Column(String(255), nullable=True)
+    verification_level = Column(
+        Enum(VerificationLevelEnum),
+        default=VerificationLevelEnum.UNVERIFIED,
+        nullable=False
+    )
     referrer_id = Column(Integer, ForeignKey("users.id"), nullable=True, default=None)
     referral_code = Column(String(255), unique=True, nullable=True, default=None)
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
@@ -75,13 +84,13 @@ class User(Base):
     role_id = Column(Integer, ForeignKey('roles.id'), nullable=False)
     is_superuser = Column(Boolean, default=False)
     
-    # Изменяем определение связи
+    # Существующие связи остаются без изменений
     referred_users = relationship(
         "User",
         primaryjoin="User.id==User.referrer_id",
         remote_side="User.referrer_id",
         lazy="selectin",
-        viewonly=True  # Добавляем это свойство
+        viewonly=True
     )
     role = relationship("Role", back_populates="users")
     orders = relationship("ExchangeOrder", back_populates="user")

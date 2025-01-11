@@ -4,8 +4,14 @@ from typing import List, Optional
 from decimal import Decimal
 from datetime import datetime
 from pydantic import BaseModel, EmailStr, Field
-from api.enums import OrderStatus, OrderTypeEnum, AMLStatusEnum, PaymentMethodEnum
 from pydantic import model_validator, Field
+from api.enums import (
+    OrderStatus,
+    OrderTypeEnum,
+    AMLStatusEnum,
+    PaymentMethodEnum,
+    VerificationLevelEnum
+)
 
 # -----------------------
 # Схемы для PaymentMethod
@@ -226,11 +232,12 @@ class UpdateOrderStatusRequest(BaseModel):
 
 
 class UserUpdateRequest(BaseModel):
-    # email: Optional[EmailStr] = None
     full_name: Optional[str] = None
+    phone_number: Optional[str] = None
+    telegram_username: Optional[str] = None
 
     class Config:
-        from_attributes = True  # Обновлено
+        from_attributes = True
 
 
 class ReferralCodeResponse(BaseModel):
@@ -264,3 +271,20 @@ class ChangePasswordRequest(BaseModel):
 
     class Config:
         from_attributes = True  # Обновлено
+        
+class UserDetailedResponse(BaseModel):
+    """Расширенная схема ответа с информацией о пользователе"""
+    id: int
+    email: EmailStr
+    full_name: Optional[str]
+    phone_number: Optional[str] = None
+    telegram_username: Optional[str] = None
+    avatar_url: Optional[str] = None
+    verification_level: VerificationLevelEnum
+    created_at: datetime
+    updated_at: datetime
+    orders: List[OrderResponse] = []
+    referral_code: Optional[str] = None
+
+    class Config:
+        from_attributes = True

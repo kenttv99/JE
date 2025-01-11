@@ -1,10 +1,12 @@
 # api/endpoints/auth_routers.py
 
 import logging
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from datetime import timedelta, datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select  # Добавляем импорт select
+from sqlalchemy.orm import selectinload
+from typing import Optional, List
 
 from api.auth import (
     create_access_token,
@@ -12,14 +14,17 @@ from api.auth import (
     hash_password,
     get_current_user
 )
-from database.init_db import User, Role, get_async_db  # Импортируем модель Role
+from database.init_db import User, Role, ExchangeOrder, get_async_db
 from api.schemas import (
     LoginRequest,
     RegisterRequest,
     UserUpdateRequest,
-    ChangePasswordRequest  # Импортируем новую модель
+    ChangePasswordRequest,  # Импортируем новую модель
+    UserDetailedResponse,   # Добавляем новую схему
+    OrderResponse          # Добавляем схему для ответа с заказами
 )
 from api.utils.user_utils import get_current_user_info
+from api.enums import OrderStatus, VerificationLevelEnum
 
 # Настройка логирования
 from config.logging_config import setup_logging
@@ -101,11 +106,72 @@ async def login_user(request: LoginRequest, db: AsyncSession = Depends(get_async
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@router.get("/me")
-async def get_me(current_user: User = Depends(get_current_user)):
-    """Получение информации о текущем пользователе."""
-    logger.info("Запрос информации о текущем пользователе: %s", current_user.email)
-    return {"email": current_user.email, "full_name": current_user.full_name}
+@router.get("/me", response_model=UserDetailedResponse)
+async def get_me(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user),
+    start_date: Optional[datetime] = Query(None, description="Фильтр заказов: начальная дата"),
+    end_date: Optional[datetime] = Query(None, description="Фильтр заказов: конечная дата"),
+    status: Optional[OrderStatus] = Query(None, description="Фильтр заказов: статус")
+):
+    """
+    Получение детальной информации о текущем пользователе, включая историю заказов с фильтрацией.
+    """
+    try:
+        # Получаем информацию о пользователе с предзагрузкой заказов
+        stmt = (
+            select(User)
+            .options(selectinload(User.orders))
+            .filter(User.id == current_user.id)
+        )
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
+
+        if not user:
+            raise HTTPException(status_code=404, detail="Пользователь не найден")
+
+        # Формируем запрос для получения отфильтрованных заказов
+        orders_query = (
+            select(ExchangeOrder)
+            .filter(ExchangeOrder.user_id == user.id)
+        )
+
+        # Применяем фильтры
+        if start_date:
+            orders_query = orders_query.filter(ExchangeOrder.created_at >= start_date)
+        if end_date:
+            orders_query = orders_query.filter(ExchangeOrder.created_at <= end_date)
+        if status:
+            orders_query = orders_query.filter(ExchangeOrder.status == status)
+
+        # Получаем отфильтрованные заказы
+        orders_result = await db.execute(orders_query)
+        filtered_orders = orders_result.scalars().all()
+
+        # Формируем ответ
+        return UserDetailedResponse(
+            id=user.id,
+            email=user.email,
+            full_name=user.full_name,
+            phone_number=user.phone_number,
+            telegram_username=user.telegram_username,
+            avatar_url=user.avatar_url,
+            verification_level=user.verification_level,
+            created_at=user.created_at,
+            updated_at=user.updated_at,
+            orders=filtered_orders,
+            referral_code=user.referral_code
+        )
+
+    except HTTPException as http_exc:
+        logger.error(f"HTTP ошибка при получении информации о пользователе: {http_exc.detail}")
+        raise http_exc
+    except Exception as e:
+        logger.error(f"Неожиданная ошибка при получении информации о пользователе: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail="Внутренняя ошибка сервера при получении информации о пользователе"
+        )
 
 @router.put("/update_profile")
 async def update_profile(
