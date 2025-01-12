@@ -4,6 +4,7 @@ import asyncio
 from typing import AsyncGenerator
 from decimal import Decimal  # Импорт Decimal
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from constants import DATABASE_URL
 from sqlalchemy.orm import (
     declarative_base,
     relationship,
@@ -30,9 +31,6 @@ from api.enums import (
     PaymentMethodEnum, # Импортируем PaymentMethodEnum из api.enums
     VerificationLevelEnum
 )
-
-# URL подключения к базе данных
-DATABASE_URL = "postgresql+asyncpg://postgres:assasin88@localhost:5432/crypto_exchange"
 
 # Создание асинхронного движка SQLAlchemy
 engine = create_async_engine(DATABASE_URL, echo=True, future=True)

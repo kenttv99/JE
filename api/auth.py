@@ -8,11 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from database.init_db import User, get_async_db
 from api.schemas import TokenData
-
-# Важно: Замените SECRET_KEY на надежный ключ и храните его в переменных окружения
-SECRET_KEY = "123456789"  # TODO: Замените на надежный ключ в продакшене
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+from constants import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

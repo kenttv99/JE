@@ -8,6 +8,8 @@ from api.endpoints.referrals_routers import router as referrals_router
 from api.endpoints.roles_routers import router as roles_router
 from api.endpoints.payments_routers import router as payments_routers
 
+
+
 # Настройка логирования с ротацией
 from config.logging_config import setup_logging
 setup_logging()

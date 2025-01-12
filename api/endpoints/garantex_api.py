@@ -2,13 +2,12 @@
 
 import httpx
 import logging
-
+# Импорт URL для API Garantex
+from constants import GARANTEX_API_URL
 from config.logging_config import setup_logging
 
 setup_logging()
 logger = logging.getLogger(__name__)
-
-GARANTEX_API_URL = "https://garantex.org/api/v2/depth"
 
 async def fetch_usdt_rub_garantex_rates():
     """

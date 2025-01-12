@@ -2,6 +2,7 @@
 import logging
 from logging.handlers import RotatingFileHandler
 
+
 def setup_logging():
     """Настройка логирования для приложения."""
     # Создание логгера
