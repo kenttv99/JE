@@ -4,6 +4,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { login } from '@/lib/api';
 import NavigationButtons from '@/components/NavigationButtons';
+import { AxiosError } from 'axios';
+import { ApiResponse } from '@/types/api';
+
+interface ErrorResponse {
+  message: string;
+  status: number;
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -17,9 +24,15 @@ export default function LoginPage() {
       const response = await login(email, password);
       localStorage.setItem('token', `Bearer ${response.data.access_token}`);
       router.push('/profile');
-    } catch (err) {
-      console.error('Ошибка при авторизации:', err);
-      setError('Неверный email или пароль');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        const axiosError = err as AxiosError<ApiResponse<ErrorResponse>>;
+        console.error('Ошибка при авторизации:', axiosError.response?.data?.message || axiosError.message);
+        setError(axiosError.response?.data?.message || 'Неверный email или пароль');
+      } else {
+        console.error('Неизвестная ошибка при авторизации:', err);
+        setError('Произошла ошибка при авторизации');
+      }
     }
   };
 
