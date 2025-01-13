@@ -1,11 +1,18 @@
-// frontend/src/app/pages/profile.tsx
-
 "use client";
 
 import { useState, useEffect } from 'react';
 import { User } from '@/types/user';
+import { ApiResponse } from '@/types/api';
 import { getUserProfile } from '@/lib/api';
-import NavigationButtons from '../../components/NavigationButtons';
+import NavigationButtons from '@/components/NavigationButtons';
+
+// Helper component for displaying user information
+const InfoItem = ({ label, value }: { label: string; value: string }) => (
+  <div className="mb-4">
+    <dt className="text-sm font-medium text-gray-500">{label}</dt>
+    <dd className="mt-1 text-sm text-gray-900">{value}</dd>
+  </div>
+);
 
 export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
@@ -15,11 +22,11 @@ export default function ProfilePage() {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const response = await getUserProfile();
+        const response: ApiResponse<User> = await getUserProfile();
         setUser(response.data);
         setLoading(false);
       } catch (err) {
-        console.error('Ошибка при загрузке профиля:', err); // Используем переменную err для логирования ошибки
+        console.error('Ошибка при загрузке профиля:', err);
         setError('Ошибка при загрузке профиля');
         setLoading(false);
       }
@@ -104,11 +111,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-// Компонент для отображения пары ключ-значение
-const InfoItem = ({ label, value }: { label: string; value: string }) => (
-  <div className="flex flex-col">
-    <span className="text-sm text-gray-500">{label}</span>
-    <span className="text-base font-medium text-gray-900">{value}</span>
-  </div>
-);

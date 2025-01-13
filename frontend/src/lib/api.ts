@@ -1,33 +1,21 @@
 import axios from 'axios';
-import type { User } from '@/types/user';
+import { ApiResponse } from '@/types/api';
+import { User } from '@/types/user';
 
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Improved type safety and browser check
-api.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('token');
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-  }
-  return config;
-});
-
-export interface ApiResponse<T> {
-  data: T;
-  status: number;
-  message?: string;
-}
-
-export const getUserProfile = async (): Promise<User> => {
-  const response = await api.get<ApiResponse<User>>('/auth/profile');
-  return response.data.data; // Fixed to return the actual user data
+export const getUserProfile = async (): Promise<ApiResponse<User>> => {
+  const token = localStorage.getItem('token');
+  const response = await axios.get<ApiResponse<User>>('/api/v1/users/me', {
+    headers: {
+      Authorization: token || '',
+    },
+  });
+  return response.data;
 };
 
-export default api;
+export const login = async (email: string, password: string): Promise<ApiResponse<{ access_token: string }>> => {
+  const response = await axios.post<ApiResponse<{ access_token: string }>>('/api/v1/auth/login', {
+    email,
+    password,
+  });
+  return response.data;
+};

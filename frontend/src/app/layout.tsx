@@ -3,7 +3,6 @@ import { GeistSans } from 'geist/font';
 import "./globals.css";
 import Link from 'next/link';
 
-// No need to configure the fonts as they come pre-configured
 export const metadata: Metadata = {
   title: "JIVA PAY - Личный кабинет",
   description: "Личный кабинет пользователя JIVA PAY",

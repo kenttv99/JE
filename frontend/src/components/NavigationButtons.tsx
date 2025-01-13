@@ -1,34 +1,26 @@
-"use client";
+import Link from 'next/link';
 
-import { useRouter } from 'next/navigation';
-
-const NavigationButtons = () => {
-  const router = useRouter();
-
-  const handleLoginClick = () => {
-    router.push('./login');
-  };
-
-  const handleProfileClick = () => {
-    router.push('./profile');
-  };
-
+export default function NavigationButtons() {
   return (
-    <div className="flex gap-4 mt-4">
-      <button 
-        onClick={handleLoginClick}
+    <div className="flex gap-4 mt-8">
+      <Link
+        href="/"
         className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
       >
-        Авторизоваться
-      </button>
-      <button 
-        onClick={handleProfileClick}
+        На главную
+      </Link>
+      <Link
+        href="/login"
         className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
       >
-        Перейти в Профиль
-      </button>
+        Войти
+      </Link>
+      <Link
+        href="/profile"
+        className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
+      >
+        Профиль
+      </Link>
     </div>
   );
-};
-
-export default NavigationButtons;
+}
