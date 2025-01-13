@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { User } from '@/types/user'; // Добавляем импорт типа User
+import type { User } from '@/types/user';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1',
@@ -8,28 +8,26 @@ const api = axios.create({
   },
 });
 
-// Добавляем типы для конфига
+// Improved type safety and browser check
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    if (config.headers) { // Проверка наличия headers
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('token');
+    if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
   }
   return config;
 });
 
-// Типизируем ответ от API
-interface ApiResponse<T> {
+export interface ApiResponse<T> {
   data: T;
   status: number;
   message?: string;
 }
 
-// Добавляем типизацию для функции получения профиля
-export const getUserProfile = async (): Promise<ApiResponse<User>> => {
+export const getUserProfile = async (): Promise<User> => {
   const response = await api.get<ApiResponse<User>>('/auth/profile');
-  return response.data;
+  return response.data.data; // Fixed to return the actual user data
 };
 
 export default api;
