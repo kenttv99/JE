@@ -1,8 +1,9 @@
-// frontend/src/pages/login.tsx
+// frontend/src/app/pages/login.tsx
 
 import { useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/router';
+import NavigationButtons from '../../components/NavigationButtons';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -17,8 +18,8 @@ const LoginPage = () => {
       const { access_token } = response.data;
       localStorage.setItem('token', `Bearer ${access_token}`);
       router.push('/profile'); // Перенаправление на страницу профиля после успешной авторизации
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
+      console.error('Ошибка при авторизации:', err); // Используем переменную err для логирования ошибки
       setError('Неверный email или пароль');
     }
   };
@@ -50,6 +51,7 @@ const LoginPage = () => {
         {error && <p className="error">{error}</p>}
         <button type="submit">Войти</button>
       </form>
+      <NavigationButtons />
       <style jsx>{`
         .login-page {
           max-width: 400px;

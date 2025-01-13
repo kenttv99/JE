@@ -1,8 +1,11 @@
+// frontend/src/app/pages/profile.tsx
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { User } from '@/types/user';
 import { getUserProfile } from '@/lib/api';
+import NavigationButtons from '../../components/NavigationButtons';
 
 export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
@@ -15,8 +18,8 @@ export default function ProfilePage() {
         const response = await getUserProfile();
         setUser(response.data);
         setLoading(false);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (err) {
+        console.error('Ошибка при загрузке профиля:', err); // Используем переменную err для логирования ошибки
         setError('Ошибка при загрузке профиля');
         setLoading(false);
       }
@@ -97,6 +100,7 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+      <NavigationButtons />
     </div>
   );
 }
