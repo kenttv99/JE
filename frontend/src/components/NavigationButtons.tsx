@@ -1,6 +1,4 @@
-// frontend/src/components/NavigationButtons.tsx
-
-"use client"; // Добавление директивы для указания, что это клиентский компонент
+"use client";
 
 import { useRouter } from 'next/navigation';
 
@@ -8,46 +6,27 @@ const NavigationButtons = () => {
   const router = useRouter();
 
   const handleLoginClick = () => {
-    router.push('/login');
+    router.push('./login');
   };
 
   const handleProfileClick = () => {
-    router.push('/profile');
+    router.push('./profile');
   };
 
   return (
-    <div className="navigation-buttons">
-      <button onClick={handleLoginClick} className="mt-4 px-4 py-2 bg-blue-500 text-white rounded">
+    <div className="flex gap-4 mt-4">
+      <button 
+        onClick={handleLoginClick}
+        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+      >
         Авторизоваться
       </button>
-      <button onClick={handleProfileClick} className="mt-4 px-4 py-2 bg-green-500 text-white rounded">
+      <button 
+        onClick={handleProfileClick}
+        className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+      >
         Перейти в Профиль
       </button>
-      <style jsx>{`
-        .navigation-buttons {
-          display: flex;
-          gap: 16px;
-          margin-top: 16px;
-        }
-        button {
-          padding: 8px 16px;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-        }
-        .bg-blue-500 {
-          background-color: #3b82f6;
-        }
-        .bg-green-500 {
-          background-color: #10b981;
-        }
-        .text-white {
-          color: white;
-        }
-        .rounded {
-          border-radius: 4px;
-        }
-      `}</style>
     </div>
   );
 };

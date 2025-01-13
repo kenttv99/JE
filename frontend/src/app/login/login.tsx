@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
-import NavigationButtons from '../../../components/NavigationButtons';
+import NavigationButtons from '../../components/NavigationButtons';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
