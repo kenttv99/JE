@@ -106,7 +106,7 @@ async def login_user(request: LoginRequest, db: AsyncSession = Depends(get_async
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@router.get("/me", response_model=UserDetailedResponse)
+@router.get("/profile", response_model=UserDetailedResponse)
 async def get_me(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),

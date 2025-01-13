@@ -7,13 +7,7 @@ from api.endpoints.user_orders_routers import router as user_orders_router
 from api.endpoints.referrals_routers import router as referrals_router
 from api.endpoints.roles_routers import router as roles_router
 from api.endpoints.payments_routers import router as payments_routers
-
-
-
-# Настройка логирования с ротацией
-from config.logging_config import setup_logging
-setup_logging()
-logger = logging.getLogger(__name__)
+from fastapi.middleware.cors import CORSMiddleware
 
 # Инициализация приложения
 app = FastAPI(
@@ -21,6 +15,26 @@ app = FastAPI(
     version="1.0.0",
     description="API для управления криптовалютным обменником",
 )
+
+#CORS
+origins = [
+    "http://localhost:3000",  # Замените на адрес вашего фронтенда
+    "https://example.com",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# Настройка логирования с ротацией
+from config.logging_config import setup_logging
+setup_logging()
+logger = logging.getLogger(__name__)
 
 # Подключение маршрутов
 app.include_router(exchange_router, prefix="/api/v1", tags=["Exchange"])
