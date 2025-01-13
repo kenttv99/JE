@@ -1,9 +1,11 @@
 // frontend/src/app/pages/login.tsx
 
+"use client";
+
 import { useState } from 'react';
 import axios from 'axios';
-import { useRouter } from 'next/router';
-import NavigationButtons from '../../components/NavigationButtons';
+import { useRouter } from 'next/navigation';
+import NavigationButtons from '../../../components/NavigationButtons';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');

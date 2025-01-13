@@ -1,5 +1,7 @@
 // frontend/src/components/NavigationButtons.tsx
 
+"use client"; // Добавление директивы для указания, что это клиентский компонент
+
 import { useRouter } from 'next/navigation';
 
 const NavigationButtons = () => {

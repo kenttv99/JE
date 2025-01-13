@@ -1,11 +1,11 @@
 // frontend/src/app/pages/profile.tsx
 
-'use client';
+"use client";
 
 import { useState, useEffect } from 'react';
 import { User } from '@/types/user';
 import { getUserProfile } from '@/lib/api';
-import NavigationButtons from '../../components/NavigationButtons';
+import NavigationButtons from '../../../components/NavigationButtons';
 
 export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
