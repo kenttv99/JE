@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { User } from '@/types/user';
-import { ApiResponse } from '@/types/api';
 import { getUserProfile } from '@/lib/api';
 import NavigationButtons from '@/components/NavigationButtons';
+import { useRouter } from 'next/navigation';
 
-// Helper component for displaying user information
 const InfoItem = ({ label, value }: { label: string; value: string }) => (
   <div className="mb-4">
     <dt className="text-sm font-medium text-gray-500">{label}</dt>
@@ -18,22 +17,29 @@ export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const response: ApiResponse<User> = await getUserProfile();
-        setUser(response.data);
-        setLoading(false);
+        const token = localStorage.getItem('token');
+        if (!token) {
+          router.push('/login');
+          return;
+        }
+
+        const userData = await getUserProfile();
+        setUser(userData);
       } catch (err) {
         console.error('Ошибка при загрузке профиля:', err);
         setError('Ошибка при загрузке профиля');
+      } finally {
         setLoading(false);
       }
     };
 
     fetchUserProfile();
-  }, []);
+  }, [router]);
 
   if (loading) {
     return (
@@ -66,8 +72,11 @@ export default function ProfilePage() {
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Основная информация</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <InfoItem label="Email" value={user.email} />
-                <InfoItem label="Полное имя" value={user.full_name} />
-                <InfoItem label="Уровень верификации" value={user.verification_level} />
+                <InfoItem label="Полное имя" value={user.full_name || 'Не указано'} />
+                <InfoItem 
+                  label="Уровень верификации" 
+                  value={user.verification_level || 'Базовый'} 
+                />
                 <InfoItem 
                   label="Дата регистрации" 
                   value={new Date(user.created_at).toLocaleDateString('ru-RU')} 
@@ -106,8 +115,10 @@ export default function ProfilePage() {
             )}
           </div>
         </div>
+        <div className="mt-6">
+          <NavigationButtons />
+        </div>
       </div>
-      <NavigationButtons />
     </div>
   );
 }

@@ -1,8 +1,7 @@
 import axios from 'axios';
-import { ApiResponse } from '@/types/api';
+// import { ApiResponse } from '@/types/api';
 import { User } from '@/types/user';
 
-// Add interface for auth response
 interface AuthResponse {
   access_token: string;
   token_type: string;
@@ -15,14 +14,26 @@ const api = axios.create({
   },
 });
 
-export const getUserProfile = async (): Promise<ApiResponse<User>> => {
+export const getUserProfile = async (): Promise<User> => {
   const token = localStorage.getItem('token');
-  const response = await api.get<ApiResponse<User>>('/api/v1/users/me', {
-    headers: {
-      Authorization: token || '',
-    },
-  });
-  return response.data;
+  try {
+    const response = await api.get<User>('/api/v1/auth/profile', {
+      headers: {
+        Authorization: token || '',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('Profile error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        url: error.config?.url
+      });
+      throw new Error(error.response?.data?.message || 'Ошибка загрузки профиля');
+    }
+    throw error;
+  }
 };
 
 export const login = async (email: string, password: string): Promise<AuthResponse> => {
