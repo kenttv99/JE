@@ -4,13 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { login } from '@/lib/api';
 import NavigationButtons from '@/components/NavigationButtons';
-import { AxiosError } from 'axios';
-import { ApiResponse } from '@/types/api';
-
-interface ErrorResponse {
-  message: string;
-  status: number;
-}
+// import axios from 'axios';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -22,26 +16,27 @@ export default function LoginPage() {
     e.preventDefault();
     try {
       const response = await login(email, password);
-      localStorage.setItem('token', `Bearer ${response.data.access_token}`);
-      router.push('/profile');
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        const axiosError = err as AxiosError<ApiResponse<ErrorResponse>>;
-        console.error('Ошибка при авторизации:', axiosError.response?.data?.message || axiosError.message);
-        setError(axiosError.response?.data?.message || 'Неверный email или пароль');
+      // Check only for access_token since it's directly in the response
+      if (response && response.access_token) {
+        localStorage.setItem('token', `${response.token_type} ${response.access_token}`);
+        router.push('/profile');
       } else {
-        console.error('Неизвестная ошибка при авторизации:', err);
-        setError('Произошла ошибка при авторизации');
+        console.error('Неверный формат ответа:', response);
+        setError('Ошибка формата ответа сервера');
       }
+    } catch (err) {
+      console.error('Ошибка при авторизации:', err);
+      setError('Неверный email или пароль');
     }
   };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Авторизация
+            Sign In
           </h2>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleLogin}>
@@ -56,14 +51,14 @@ export default function LoginPage() {
                 type="email"
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Email адрес"
+                placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div>
               <label htmlFor="password" className="sr-only">
-                Пароль
+                Password
               </label>
               <input
                 id="password"
@@ -71,7 +66,7 @@ export default function LoginPage() {
                 type="password"
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Пароль"
+                placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -87,7 +82,7 @@ export default function LoginPage() {
               type="submit"
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              Войти
+              Sign in
             </button>
           </div>
         </form>
