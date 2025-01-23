@@ -1,6 +1,6 @@
 import axios from 'axios';
-// import { ApiResponse } from '@/types/api';
 import { User } from '@/types/user';
+import { API_URL } from './config';
 
 interface AuthResponse {
   access_token: string;
@@ -8,7 +8,7 @@ interface AuthResponse {
 }
 
 const api = axios.create({
-  baseURL: '',
+  baseURL: API_URL, // Добавляем базовый URL из конфигурации
   headers: {
     'Content-Type': 'application/json',
   },
@@ -55,5 +55,22 @@ export const login = async (email: string, password: string): Promise<AuthRespon
     throw error;
   }
 };
+
+// Добавим интерцептор для отладки
+api.interceptors.request.use(request => {
+  console.log('Starting Request:', request.url);
+  return request;
+});
+
+api.interceptors.response.use(
+  response => {
+    console.log('Response:', response.status);
+    return response;
+  },
+  error => {
+    console.error('API Error:', error.message);
+    return Promise.reject(error);
+  }
+);
 
 export default api;

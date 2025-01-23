@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
+    "@nodelib/fs.stat": "^4.0.0",
     "@tanstack/react-query": "^5.64.0",
     "@types/axios": "^0.14.0",
     "axios": "^1.6.5",
