@@ -1,4 +1,3 @@
-// src/components/NavigationButtons.tsx
 'use client';
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
@@ -30,7 +29,7 @@ export default function NavigationButtons() {
             Профиль
           </Link>
           <button
-            onClick={() => signOut()}
+            onClick={() => signOut({ callbackUrl: '/' })}
             className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
           >
             Выйти
