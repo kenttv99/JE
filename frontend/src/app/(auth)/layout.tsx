@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function AuthLayout({
   children,
@@ -11,14 +11,19 @@ export default function AuthLayout({
 }) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
+    if (status === 'unauthenticated' && !isRedirecting) {
+      setIsRedirecting(true);
+      const timeout = setTimeout(() => {
+        router.push('/login');
+      }, 100); // небольшая задержка для избежания мерцания
+      return () => clearTimeout(timeout);
     }
-  }, [status, router]);
+  }, [status, router, isRedirecting]);
 
-  if (status === 'loading') {
+  if (status === 'loading' || isRedirecting) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-2xl font-semibold">Загрузка...</div>

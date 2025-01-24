@@ -11,22 +11,29 @@ const handler = NextAuth({
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        // Здесь будет логика аутентификации
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error('Необходимо указать email и пароль');
+        }
+
         try {
-          // Пример запроса к вашему API
           const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/login`, {
             method: 'POST',
             body: JSON.stringify(credentials),
             headers: { "Content-Type": "application/json" }
           })
+          
           const user = await res.json()
+
+          if (!res.ok) {
+            throw new Error(user.message || 'Ошибка авторизации');
+          }
 
           if (res.ok && user) {
             return user
           }
           return null
         } catch (error) {
-          return null
+          throw new Error(error instanceof Error ? error.message : 'Произошла ошибка при входе');
         }
       }
     })

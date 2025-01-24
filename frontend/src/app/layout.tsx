@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { GeistSans } from 'geist/font';
 import "./globals.css";
-import Link from 'next/link';
+import NavigationButtons from '@/components/NavigationButtons';
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
@@ -18,29 +18,26 @@ export default function RootLayout({
     <html lang="ru">
       <body className={`${GeistSans.className} antialiased`}>
         <Providers>
-          <nav className="bg-white shadow-sm">
+          <nav className="bg-white shadow-sm border-b">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex justify-between h-16">
-                <div className="flex">
-                  <Link 
+                <div className="flex items-center">
+                  <a 
                     href="/" 
-                    className="flex items-center px-2 py-2 text-2xl font-bold text-blue-500"
+                    className="flex items-center px-2 py-2 text-2xl font-bold text-blue-500 hover:text-blue-600 transition-colors"
                   >
                     JIVA PAY
-                  </Link>
+                  </a>
                 </div>
                 <div className="flex items-center">
-                  <Link
-                    href="/profile"
-                    className="ml-4 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-blue-500"
-                  >
-                    Профиль
-                  </Link>
+                  <NavigationButtons />
                 </div>
               </div>
             </div>
           </nav>
-          {children}
+          <main className="flex-1">
+            {children}
+          </main>
         </Providers>
       </body>
     </html>
