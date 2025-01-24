@@ -13,7 +13,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (status === 'authenticated') {
-      router.push('/profile');
+      router.push('/auth/user');
     }
   }, [status, router]);
 
@@ -42,7 +42,7 @@ export default function LoginPage() {
       if (result?.error) {
         setError('Неверный email или пароль');
       } else {
-        router.push('/profile');
+        router.push('/auth/user');
         router.refresh();
       }
     } catch (error) {
