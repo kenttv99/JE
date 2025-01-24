@@ -1,4 +1,3 @@
-// src/app/api/auth/[...nextauth]/route.ts
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { JWT } from "next-auth/jwt";
@@ -44,7 +43,8 @@ export const authOptions: NextAuthOptions = {
             throw new Error('API URL не настроен');
           }
 
-          const response = await fetch(`${apiUrl}/api/login`, {
+          // Исправленный путь для соответствия FastAPI бэкенду
+          const response = await fetch(`${apiUrl}/api/v1/auth/login`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -66,7 +66,6 @@ export const authOptions: NextAuthOptions = {
             throw new Error('Неверный формат ответа от сервера');
           }
 
-          // Объединяем данные пользователя с токеном
           const user: User = {
             ...data.user,
             token: data.token,
@@ -82,7 +81,7 @@ export const authOptions: NextAuthOptions = {
   ],
   pages: {
     signIn: '/login',
-    error: '/login', // Страница для отображения ошибок авторизации
+    error: '/login',
   },
   session: {
     strategy: "jwt",
@@ -91,7 +90,6 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }: { token: JWT, user?: User }): Promise<JWT> {
       if (user) {
-        // Добавляем пользовательские данные в токен при первом входе
         token.id = user.id;
         token.email = user.email;
         token.name = user.name;
@@ -101,7 +99,6 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }: { session: any, token: JWT }) {
-      // Добавляем пользовательские данные в сессию
       session.user = {
         id: token.id,
         email: token.email,
@@ -117,5 +114,4 @@ export const authOptions: NextAuthOptions = {
 };
 
 const handler = NextAuth(authOptions);
-
 export { handler as GET, handler as POST };

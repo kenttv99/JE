@@ -3,6 +3,7 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Query
 from datetime import timedelta, datetime
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select  # Добавляем импорт select
 from sqlalchemy.orm import selectinload
@@ -83,27 +84,64 @@ async def register_user(request: RegisterRequest, db: AsyncSession = Depends(get
 @router.post("/login")
 async def login_user(request: LoginRequest, db: AsyncSession = Depends(get_async_db)):
     """Авторизация пользователя."""
-    logger.info("Попытка входа пользователя с email: %s", request.email)
-    
-    # Получение пользователя по email из базы данных
-    result = await db.execute(select(User).filter(User.email == request.email))
-    user = result.scalars().first()
-    
-    if not user:
-        logger.warning("Неудачная попытка входа: пользователь с email %s не найден", request.email)
-        raise HTTPException(status_code=401, detail="Неверный email или пароль")
-    
-    # Проверка пароля
-    if not verify_password(request.password, user.password_hash):
-        logger.warning("Неудачная попытка входа: неверный пароль для %s", request.email)
-        raise HTTPException(status_code=401, detail="Неверный email или пароль")
+    try:
+        # Получение пользователя по email из базы данных
+        result = await db.execute(
+            select(User)
+            .options(selectinload(User.role))  # Добавляем загрузку роли
+            .filter(User.email == request.email)
+        )
+        user = result.scalars().first()
+        
+        if not user:
+            raise HTTPException(
+                status_code=401, 
+                detail="Неверный email или пароль"
+            )
+        
+        # Проверка пароля
+        if not verify_password(request.password, user.password_hash):
+            raise HTTPException(
+                status_code=401, 
+                detail="Неверный email или пароль"
+            )
 
-    # Создание токена доступа
-    access_token_expires = timedelta(minutes=30)
-    access_token = create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
+        # Создание токена доступа
+        access_token_expires = timedelta(minutes=30)
+        access_token = create_access_token(
+            data={"sub": user.email}, 
+            expires_delta=access_token_expires
+        )
+        
+        # Формируем ответ в формате, который ожидает NextAuth
+        return JSONResponse(
+            content={
+                "user": {
+                    "id": str(user.id),
+                    "email": user.email,
+                    "name": user.full_name,
+                    "role": user.role.name if user.role else "user"
+                },
+                "token": access_token,
+                "message": "Успешная авторизация"
+            },
+            status_code=200,
+            headers={
+                "Content-Type": "application/json"
+            }
+        )
     
-    logger.info("Пользователь %s успешно вошёл в систему", request.email)
-    return {"access_token": access_token, "token_type": "bearer"}
+    except HTTPException as http_exc:
+        return JSONResponse(
+            content={"message": http_exc.detail},
+            status_code=http_exc.status_code
+        )
+    except Exception as e:
+        logger.error(f"Ошибка авторизации: {str(e)}")
+        return JSONResponse(
+            content={"message": "Внутренняя ошибка сервера"},
+            status_code=500
+        )
 
 
 @router.get("/profile", response_model=UserDetailedResponse)
