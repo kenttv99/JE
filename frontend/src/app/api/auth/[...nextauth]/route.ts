@@ -1,19 +1,24 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { JWT } from "next-auth/jwt";
+import axiosInstance from "@/lib/api";
+import { CustomSession, CustomUser, CustomJWT, APIUser, BaseAuthUser } from "@/types";
 
-interface User {
-  id: string;
-  email: string;
-  name?: string;
-  role?: string;
-  token?: string;
+// Extend NextAuth types without recursive references
+declare module "next-auth" {
+  interface Session extends Omit<CustomSession, "user"> {
+    user: BaseAuthUser & {
+      image?: string | null;
+    };
+  }
+  interface User extends Omit<CustomUser, "name"> {
+    name?: string | undefined;
+  }
+  interface JWT extends CustomJWT {}
 }
 
 interface LoginResponse {
-  user: User;
+  user: APIUser;
   token: string;
-  message?: string;
 }
 
 export const authOptions: NextAuthOptions = {
@@ -21,97 +26,81 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
-        email: { 
-          label: "Email", 
-          type: "email",
-          placeholder: "example@example.com" 
-        },
-        password: { 
-          label: "Password", 
-          type: "password",
-          placeholder: "••••••••" 
-        }
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" }
       },
-      async authorize(credentials): Promise<User | null> {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error('Необходимо указать email и пароль');
-        }
-
+      async authorize(credentials) {
         try {
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-          if (!apiUrl) {
-            throw new Error('API URL не настроен');
-          }
-
-          // Исправленный путь для соответствия FastAPI бэкенду
-          const response = await fetch(`${apiUrl}/api/v1/auth/login`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
-            body: JSON.stringify({
-              email: credentials.email,
-              password: credentials.password,
-            }),
+          const response = await axiosInstance.post<LoginResponse>('/api/v1/auth/login', {
+            email: credentials?.email,
+            password: credentials?.password,
           });
 
-          const data: LoginResponse = await response.json();
+          const { user, token } = response.data;
 
-          if (!response.ok) {
-            throw new Error(data.message || 'Ошибка авторизации');
+          if (user && token) {
+            return {
+              id: String(user.id),
+              email: user.email,
+              name: user.full_name || undefined,
+              accessToken: token,
+              full_name: user.full_name,
+              phone_number: user.phone_number,
+              telegram_username: user.telegram_username,
+              verification_level: user.verification_level,
+              created_at: user.created_at,
+              updated_at: user.updated_at,
+            };
           }
 
-          if (!data.user || !data.token) {
-            throw new Error('Неверный формат ответа от сервера');
-          }
-
-          const user: User = {
-            ...data.user,
-            token: data.token,
-          };
-
-          return user;
+          return null;
         } catch (error) {
           console.error('Auth Error:', error);
-          throw new Error(error instanceof Error ? error.message : 'Произошла ошибка при входе');
+          return null;
         }
       }
     })
   ],
+  callbacks: {
+    async jwt({ token, user }): Promise<CustomJWT> {
+      if (user) {
+        return {
+          ...token,
+          accessToken: (user as CustomUser).accessToken,
+          id: user.id,
+          email: user.email,
+        };
+      }
+      return token as CustomJWT;
+    },
+    async session({ session, token }): Promise<CustomSession> {
+      if (!token.accessToken || !token.id || !token.email) {
+        throw new Error('Invalid token data');
+      }
+      
+      return {
+        ...session,
+        accessToken: token.accessToken as string,
+        user: {
+          ...session.user,
+          id: token.id as string,
+          email: token.email as string,
+          name: session.user?.name ?? null,
+          image: session.user?.image ?? null,
+        }
+      };
+    }
+  },
   pages: {
     signIn: '/login',
     error: '/login',
   },
   session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 дней
+    strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
-  callbacks: {
-    async jwt({ token, user }: { token: JWT, user?: User }): Promise<JWT> {
-      if (user) {
-        token.id = user.id;
-        token.email = user.email;
-        token.name = user.name;
-        token.role = user.role;
-        token.accessToken = user.token;
-      }
-      return token;
-    },
-    async session({ session, token }: { session: any, token: JWT }) {
-      session.user = {
-        id: token.id,
-        email: token.email,
-        name: token.name,
-        role: token.role,
-      };
-      session.accessToken = token.accessToken;
-      return session;
-    },
-  },
-  secret: process.env.NEXTAUTH_SECRET,
-  debug: process.env.NODE_ENV === 'development',
 };
 
 const handler = NextAuth(authOptions);
-export { handler as GET, handler as POST };
+export const GET = handler.GET;
+export const POST = handler.POST;

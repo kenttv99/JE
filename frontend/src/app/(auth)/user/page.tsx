@@ -1,45 +1,74 @@
-// C:\Users\kentt\OneDrive\Desktop\projects\JE\frontend\src\app\(auth)\user\page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
-import { User } from '@/types';
+import { User } from '@/types';  // Now properly imported
 import NavigationButtons from '@/components/NavigationButtons';
+import { useSession } from 'next-auth/react';
+import axiosInstance from '@/lib/api';
+
+// Rest of your component code remains the same...
 
 export default function UserProfilePage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const { data: session, status } = useSession();
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const token = localStorage.getItem('token');
-        
-        const response = await fetch('/api/v1/auth/profile', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        if (!session?.accessToken) {
+          throw new Error('Нет токена авторизации');
+        }
 
-        if (!response.ok) throw new Error('Ошибка загрузки данных');
-        
-        const userData: User = await response.json();
-        setUser(userData);
+        const response = await axiosInstance.get<User>('/api/v1/auth/profile');
+        setUser(response.data);
       } catch (error) {
-        console.error('Ошибка:', error);
+        console.error('Ошибка загрузки профиля:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUserData();
-  }, []);
+    if (session?.accessToken) {
+      fetchUserData();
+    } else {
+      setLoading(false);
+    }
+  }, [session]);
+
+  if (status === "unauthenticated") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center py-8 px-6 bg-white shadow-lg rounded-lg">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Доступ запрещен</h2>
+          <p className="text-gray-600 mb-4">Пожалуйста, войдите в систему для просмотра профиля</p>
+          <NavigationButtons />
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
-    return <div className="text-center py-8">Загрузка профиля...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Загрузка профиля...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!user) {
-    return <div className="text-center py-8 text-red-500">Ошибка загрузки данных</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center py-8 px-6 bg-white shadow-lg rounded-lg">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Ошибка</h2>
+          <p className="text-gray-600 mb-4">Не удалось загрузить данные профиля</p>
+          <NavigationButtons />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -60,7 +89,7 @@ export default function UserProfilePage() {
                 </div>
                 <div className="mb-4">
                   <dt className="text-sm font-medium text-gray-500">Полное имя</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{user.full_name}</dd>
+                  <dd className="mt-1 text-sm text-gray-900">{user.full_name || 'Не указано'}</dd>
                 </div>
                 <div className="mb-4">
                   <dt className="text-sm font-medium text-gray-500">Телефон</dt>

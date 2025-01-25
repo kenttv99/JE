@@ -1,32 +1,36 @@
-// src/lib/api/index.ts
-import axios from 'axios';
-import { API_URL } from '../config';
-import type { ApiResponse, User } from '@/types';
+import axios, { AxiosInstance } from 'axios';
+import { getSession } from 'next-auth/react';
+import { CustomSession } from '@/types';
 
-export const api = axios.create({
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+const axiosInstance: AxiosInstance = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Общий интерцептор для авторизации
-api.interceptors.request.use(request => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    request.headers.Authorization = token;
+// Interceptor to add auth token
+axiosInstance.interceptors.request.use(async (config) => {
+  const session = await getSession() as CustomSession | null;
+  
+  if (session?.accessToken) {
+    config.headers.Authorization = `Bearer ${session.accessToken}`;
   }
-  return request;
+  
+  return config;
 });
 
-// Интерцептор для обработки ошибок
-api.interceptors.response.use(
-  response => response,
-  error => {
-    if (axios.isAxiosError(error)) {
-      const message = error.response?.data?.message || 'Произошла ошибка';
-      throw new Error(message);
+// Error handling interceptor
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      window.location.href = '/login';
     }
-    throw error;
+    return Promise.reject(error);
   }
 );
+
+export default axiosInstance;
