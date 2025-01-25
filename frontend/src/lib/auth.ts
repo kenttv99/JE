@@ -1,74 +1,83 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import axiosInstance from "@/lib/api";
-import { APIUser } from "@/types";
+import axios from "@/lib/api";
 
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
-      name: 'Credentials',
+      name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          return null;
+        }
+
         try {
-          const response = await axiosInstance.post<{ user: APIUser; token: string }>('/api/v1/auth/login', {
-            email: credentials?.email,
-            password: credentials?.password,
+          console.log('Attempting login with:', credentials.email);
+          const response = await axios.post('/api/v1/auth/login', {
+            email: credentials.email,
+            password: credentials.password
           });
+          
+          console.log('Login response:', response.data);
+          const user = response.data;
 
-          const { user, token } = response.data;
-
-          if (user && token) {
+          if (user) {
             return {
-              id: String(user.id),
+              id: user.id,
               email: user.email,
-              name: user.full_name || undefined,
-              accessToken: token,
-              full_name: user.full_name,
-              phone_number: user.phone_number,
-              telegram_username: user.telegram_username,
-              verification_level: user.verification_level,
-              created_at: user.created_at,
-              updated_at: user.updated_at,
+              name: user.full_name,
+              role: user.role,
+              accessToken: user.access_token
             };
           }
           return null;
-        } catch (error) {
-          console.error('Auth Error:', error);
-          return null;
+        } catch (error: any) {
+          console.error('Detailed auth error:', {
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status
+          });
+          throw new Error(error.response?.data?.message || 'Authentication failed');
         }
       }
     })
   ],
+  pages: {
+    signIn: '/login',
+    error: '/login',
+  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.accessToken = user.accessToken;
         token.id = user.id;
         token.email = user.email;
+        token.name = user.name;
+        token.role = user.role;
+        token.accessToken = user.accessToken;
       }
       return token;
     },
     async session({ session, token }) {
-      return {
-        ...session,
-        accessToken: token.accessToken as string,
-        user: {
+      if (token) {
+        session.user = {
           ...session.user,
-          id: token.id as string,
-          email: token.email as string,
-        }
-      };
+          id: token.id,
+          email: token.email,
+          name: token.name,
+          role: token.role
+        };
+        session.accessToken = token.accessToken;
+      }
+      return session;
     }
-  },
-  pages: {
-    signIn: '/login',
-    error: '/login',
   },
   session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
+  debug: process.env.NODE_ENV === 'development',
 };

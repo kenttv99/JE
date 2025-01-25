@@ -37,17 +37,19 @@ export default function LoginPage() {
         email,
         password,
         redirect: false,
+        callbackUrl: '/auth/user'
       });
 
       if (result?.error) {
         setError('Неверный email или пароль');
-      } else {
+        console.error('SignIn error:', result.error);
+      } else if (result?.ok) {
         router.push('/auth/user');
         router.refresh();
       }
     } catch (error) {
-      setError('Произошла ошибка при входе');
       console.error('Login error:', error);
+      setError('Произошла ошибка при входе');
     } finally {
       setLoading(false);
     }
@@ -113,16 +115,14 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className="text-red-500 text-sm text-center" role="alert">
-              {error}
-            </div>
+            <div className="text-red-500 text-sm text-center">{error}</div>
           )}
 
           <div>
             <button
               type="submit"
               disabled={loading}
-              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200 ease-in-out ${
+              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
                 loading ? 'opacity-50 cursor-not-allowed' : ''
               }`}
             >
@@ -150,7 +150,7 @@ export default function LoginPage() {
                   </svg>
                 </span>
               )}
-              <span>{loading ? 'Выполняется вход...' : 'Войти'}</span>
+              {loading ? 'Вход...' : 'Войти'}
             </button>
           </div>
         </form>
