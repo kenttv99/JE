@@ -1,5 +1,3 @@
-// frontend/src/app/auth/user/page.tsx
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -10,60 +8,37 @@ import { APIUser } from '@/types';
 
 export default function UserPage() {
   const { data: session, status } = useSession();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [userData, setUserData] = useState<APIUser | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
-      if (session?.accessToken) {
-        try {
-          console.log('Fetching user data...'); // Debug log
-          const response = await axiosInstance.get<APIUser>('/api/v1/users/profile', {
-            headers: {
-              Authorization: `Bearer ${session.accessToken}`,
-            },
-          });
-          console.log('User data response:', response.data); // Debug log
-          setUserData(response.data);
-          setError(null);
-        } catch (error: any) {
-          console.error('Error fetching user data:', error.response || error);
-          setError(error.response?.data?.detail || 'Failed to fetch user data');
-        }
+      if (!session?.accessToken) return;
+      
+      setLoading(true);
+      try {
+        console.log('Fetching user data...');
+        const response = await axiosInstance.get<APIUser>('/api/v1/users/profile', {
+          headers: {
+            Authorization: `Bearer ${session.accessToken}`,
+          },
+        });
+        console.log('User data response:', response.data);
+        setUserData(response.data);
+        setError(null);
+      } catch (error: any) {
+        console.error('Error fetching user data:', error.response || error);
+        setError(error.response?.data?.detail || 'Failed to fetch user data');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     if (status === 'authenticated' && session?.accessToken) {
       fetchUserData();
-    } else if (status === 'unauthenticated') {
-      setLoading(false);
     }
   }, [status, session?.accessToken]);
-
-  console.log('Current status:', status); // Debug log
-  console.log('Current session:', session); // Debug log
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-between p-24">
-        <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm">
-          Loading...
-        </div>
-      </div>
-    );
-  }
-
-  if (status === 'unauthenticated') {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-between p-24">
-        <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm">
-          Please log in to view this page.
-        </div>
-      </div>
-    );
-  }
 
   if (error) {
     return (
@@ -83,37 +58,41 @@ export default function UserPage() {
     <div className="flex min-h-screen flex-col items-center justify-between p-24">
       <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm">
         <h1 className="text-2xl font-bold mb-4">User Profile</h1>
-        {userData && (
-          <div className="space-y-4">
-            <div>
-              <p className="font-semibold">Email:</p>
-              <p>{userData.email}</p>
+        {loading ? (
+          <div>Loading user data...</div>
+        ) : (
+          userData && (
+            <div className="space-y-4">
+              <div>
+                <p className="font-semibold">Email:</p>
+                <p>{userData.email}</p>
+              </div>
+              <div>
+                <p className="font-semibold">Full Name:</p>
+                <p>{userData.full_name || 'Not provided'}</p>
+              </div>
+              <div>
+                <p className="font-semibold">Phone Number:</p>
+                <p>{userData.phone_number || 'Not provided'}</p>
+              </div>
+              <div>
+                <p className="font-semibold">Telegram Username:</p>
+                <p>{userData.telegram_username || 'Not provided'}</p>
+              </div>
+              <div>
+                <p className="font-semibold">Verification Level:</p>
+                <p>{userData.verification_level}</p>
+              </div>
+              <div>
+                <p className="font-semibold">Member Since:</p>
+                <p>{new Date(userData.created_at).toLocaleDateString()}</p>
+              </div>
+              <div>
+                <p className="font-semibold">Last Updated:</p>
+                <p>{new Date(userData.updated_at).toLocaleDateString()}</p>
+              </div>
             </div>
-            <div>
-              <p className="font-semibold">Full Name:</p>
-              <p>{userData.full_name || 'Not provided'}</p>
-            </div>
-            <div>
-              <p className="font-semibold">Phone Number:</p>
-              <p>{userData.phone_number || 'Not provided'}</p>
-            </div>
-            <div>
-              <p className="font-semibold">Telegram Username:</p>
-              <p>{userData.telegram_username || 'Not provided'}</p>
-            </div>
-            <div>
-              <p className="font-semibold">Verification Level:</p>
-              <p>{userData.verification_level}</p>
-            </div>
-            <div>
-              <p className="font-semibold">Member Since:</p>
-              <p>{new Date(userData.created_at).toLocaleDateString()}</p>
-            </div>
-            <div>
-              <p className="font-semibold">Last Updated:</p>
-              <p>{new Date(userData.updated_at).toLocaleDateString()}</p>
-            </div>
-          </div>
+          )
         )}
         <div className="mt-8">
           <NavigationButtons />
