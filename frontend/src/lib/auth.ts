@@ -14,77 +14,40 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials): Promise<User | null> {
         if (!credentials?.email || !credentials?.password) {
-          console.log('Missing credentials');
           return null;
         }
 
         try {
-          console.log('Making login request to:', '/api/v1/auth/login');
-          console.log('With email:', credentials.email);
-          
           const response = await axios.post<LoginResponse>('/api/v1/auth/login', {
             email: credentials.email,
             password: credentials.password
           });
           
-          console.log('Login response status:', response.status);
-          console.log('Login response data:', {
-            ...response.data,
-            access_token: response.data.access_token ? '[PRESENT]' : '[MISSING]'
-          });
-          
-          const userData = response.data;
+          const userData = response.data.user;
+          const token = response.data.token;
 
-          if (!userData || !userData.access_token) {
-            console.error('Invalid response data:', userData);
+          if (!userData || !token) {
             throw new Error('Invalid response from server');
           }
 
-          const user: User = {
-            id: String(userData.id || '0'),
+          return {
+            id: String(userData.id),
             email: userData.email,
-            name: userData.full_name || undefined,
-            role: userData.role || undefined,
-            access_token: userData.access_token
+            name: userData.full_name || userData.name,
+            role: userData.role,
+            access_token: token
           };
-
-          console.log('Created user object:', {
-            ...user,
-            access_token: '[PRESENT]'
-          });
-
-          return user;
         } catch (error: any) {
-          console.error('Auth error:', {
-            message: error.message,
-            status: error.response?.status,
-            data: error.response?.data,
-            config: {
-              url: error.config?.url,
-              baseURL: error.config?.baseURL,
-              headers: error.config?.headers
-            }
-          });
-          
-          // Instead of returning null, throw an error to display the message
-          throw new Error(error.response?.data?.detail || 'Authentication failed');
+          console.error('Auth error:', error.response?.data || error.message);
+          throw new Error(error.response?.data?.message || 'Authentication failed');
         }
       }
     })
   ],
-  pages: {
-    signIn: '/login',
-    error: '/login',
-  },
   callbacks: {
     async jwt({ token, user }) {
-      console.log('JWT Callback - Input:', { 
-        token: { ...token, accessToken: token.accessToken ? '[PRESENT]' : '[MISSING]' },
-        user: user ? { ...user, access_token: '[PRESENT]' } : null 
-      });
-
       if (user) {
-        token = {
+        return {
           ...token,
           id: user.id,
           email: user.email,
@@ -93,40 +56,29 @@ export const authOptions: NextAuthOptions = {
           accessToken: user.access_token
         };
       }
-
-      console.log('JWT Callback - Output:', { 
-        ...token,
-        accessToken: token.accessToken ? '[PRESENT]' : '[MISSING]'
-      });
-      
       return token;
     },
     async session({ session, token }) {
-      console.log('Session Callback - Input:', {
-        session: { ...session, accessToken: session.accessToken ? '[PRESENT]' : '[MISSING]' },
-        token: { ...token, accessToken: token.accessToken ? '[PRESENT]' : '[MISSING]' }
-      });
-
-      session.accessToken = token.accessToken;
-      session.user = {
-        ...session.user,
-        id: token.id,
-        email: token.email,
-        name: token.name,
-        role: token.role
-      };
-
-      console.log('Session Callback - Output:', {
+      return {
         ...session,
-        accessToken: session.accessToken ? '[PRESENT]' : '[MISSING]'
-      });
-
-      return session;
+        accessToken: token.accessToken,
+        user: {
+          ...session.user,
+          id: token.id,
+          email: token.email,
+          name: token.name,
+          role: token.role
+        }
+      };
     }
+  },
+  pages: {
+    signIn: '/login',
+    error: '/login',
   },
   session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
-  debug: true
+  debug: process.env.NODE_ENV === 'development'
 };
