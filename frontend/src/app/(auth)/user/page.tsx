@@ -47,7 +47,7 @@ export default function UserPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-between p-24">
       <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm">
-        <h1 className="text-2xl font-bold mb-4">User Profile</h1>
+        <h1 className="text-2xl font-bold mb-4">ПРОФИЛЬ</h1>
         <div className="mb-4 text-sm text-gray-500">
           Session Status: {status}
           {session?.accessToken ? ' (Token present)' : ' (No token)'}
