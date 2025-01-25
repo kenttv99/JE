@@ -50,7 +50,7 @@ export default function NavigationButtons() {
       ) : (
         <>
           <Link
-            href="/auth/user"
+            href="/user"
             className="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium transition-colors duration-200"
           >
             Личный кабинет

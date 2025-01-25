@@ -11,8 +11,7 @@ export default withAuth({
 
 export const config = {
   matcher: [
-    "/auth/user",  // Add this line
-    "/user",
+    "/user",  // Измените это, так как страница находится в группе (auth)
     "/admin/:path*",
     "/merchant/:path*",
     "/trader/:path*",

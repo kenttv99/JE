@@ -1,3 +1,4 @@
+// frontend/src/app/(auth)/layout.tsx
 'use client';
 
 import { useSession } from 'next-auth/react';
@@ -18,7 +19,7 @@ export default function AuthLayout({
       setIsRedirecting(true);
       const timeout = setTimeout(() => {
         router.push('/login');
-      }, 100); // небольшая задержка для избежания мерцания
+      }, 100);
       return () => clearTimeout(timeout);
     }
   }, [status, router, isRedirecting]);
