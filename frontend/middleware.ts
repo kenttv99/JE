@@ -20,10 +20,3 @@ export const config = {
     "/trader/:path*",
   ],
 };
-
-export function middleware(request: NextRequest) {
-  if (request.nextUrl.pathname === '/user') {
-    return NextResponse.redirect(new URL('/auth/user', request.url));
-  }
-  return NextResponse.next();
-}
