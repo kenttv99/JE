@@ -1,3 +1,5 @@
+// frontend/src/app/auth/user/page.tsx
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -16,15 +18,17 @@ export default function UserPage() {
     const fetchUserData = async () => {
       if (session?.accessToken) {
         try {
+          console.log('Fetching user data...'); // Debug log
           const response = await axiosInstance.get<APIUser>('/api/v1/users/profile', {
             headers: {
               Authorization: `Bearer ${session.accessToken}`,
             },
           });
+          console.log('User data response:', response.data); // Debug log
           setUserData(response.data);
           setError(null);
         } catch (error: any) {
-          console.error('Error fetching user data:', error);
+          console.error('Error fetching user data:', error.response || error);
           setError(error.response?.data?.detail || 'Failed to fetch user data');
         }
       }
@@ -37,6 +41,9 @@ export default function UserPage() {
       setLoading(false);
     }
   }, [status, session?.accessToken]);
+
+  console.log('Current status:', status); // Debug log
+  console.log('Current session:', session); // Debug log
 
   if (loading) {
     return (

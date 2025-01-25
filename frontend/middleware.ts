@@ -11,6 +11,7 @@ export default withAuth({
 
 export const config = {
   matcher: [
+    "/auth/user",  // Add this line
     "/user",
     "/admin/:path*",
     "/merchant/:path*",
