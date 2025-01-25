@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { GeistSans } from 'geist/font';
 import "./globals.css";
 import NavigationButtons from '@/components/NavigationButtons';
@@ -10,11 +10,18 @@ export const metadata: Metadata = {
   description: "Личный кабинет пользователя JIVA PAY",
   keywords: ["JIVA PAY", "личный кабинет", "платежи", "финансы"],
   authors: [{ name: "JIVA PAY Team" }],
-  viewport: "width=device-width, initial-scale=1",
   robots: "index, follow",
   icons: {
     icon: '/favicon.ico',
   },
+};
+
+// Отдельный экспорт для viewport настроек
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 interface RootLayoutProps {
