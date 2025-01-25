@@ -22,7 +22,7 @@ export default function UserPage() {
       setLoading(true);
       try {
         console.log('Fetching user data with token:', session.accessToken);
-        const response = await axiosInstance.get<APIUser>('/api/v1/users/profile', {
+        const response = await axiosInstance.get<APIUser>('/api/v1/auth/profile', {
           headers: {
             Authorization: `Bearer ${session.accessToken}`,
           },

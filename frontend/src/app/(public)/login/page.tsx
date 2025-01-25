@@ -46,7 +46,7 @@ export default function LoginPage() {
         setError('Неверный email или пароль');
         console.error('SignIn error:', result.error);
       } else if (result?.ok) {
-        router.push('/auth/user');
+        router.push('/user');
         router.refresh();
       }
     } catch (error) {
