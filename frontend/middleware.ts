@@ -8,9 +8,9 @@ export default withAuth({
 
 export const config = {
   matcher: [
+    "/user",  // Changed from /profile to /user
     "/admin/:path*",
     "/merchant/:path*",
     "/trader/:path*",
-    "/user/:path*",
   ],
 };

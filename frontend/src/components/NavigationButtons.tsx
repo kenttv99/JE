@@ -50,10 +50,10 @@ export default function NavigationButtons() {
       ) : (
         <>
           <Link
-            href="/profile"
+            href="/user"  // Changed from /profile to /user
             className="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium transition-colors duration-200"
           >
-            Профиль
+            Личный кабинет  {/* Changed text from "Профиль" to "Личный кабинет" */}
           </Link>
           
           {session.user?.role === 'admin' && (
@@ -68,7 +68,7 @@ export default function NavigationButtons() {
           <button
             onClick={handleSignOut}
             disabled={isSigningOut}
-            className={`px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 flex items-center gap-2
+            className={`px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2
               ${isSigningOut ? 'opacity-50 cursor-not-allowed' : ''}
             `}
           >
