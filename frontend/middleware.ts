@@ -1,6 +1,4 @@
 import { withAuth } from "next-auth/middleware";
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
 
 export default withAuth({
   callbacks: {
@@ -13,7 +11,6 @@ export default withAuth({
 
 export const config = {
   matcher: [
-    "/auth/:path*",
     "/user",
     "/admin/:path*",
     "/merchant/:path*",

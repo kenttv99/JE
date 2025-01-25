@@ -2,7 +2,7 @@ import axios, { AxiosInstance } from 'axios';
 import { getSession } from 'next-auth/react';
 import { CustomSession } from '@/types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';  // Make sure this matches your backend URL
 
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: API_URL,
