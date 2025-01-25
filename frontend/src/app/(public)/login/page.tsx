@@ -13,7 +13,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (status === 'authenticated') {
-      router.push('/auth/user');
+      router.push('/user');
     }
   }, [status, router]);
 
