@@ -26,20 +26,13 @@ export const authOptions: NextAuthOptions = {
           const userData = response.data;
 
           if (userData) {
-            const user: User = {
+            return {
               id: String(userData.id),
               email: userData.email,
-              name: userData.full_name || undefined,
-              role: userData.role || undefined,
-              full_name: userData.full_name || undefined,
-              phone_number: userData.phone_number || undefined,
-              telegram_username: userData.telegram_username || undefined,
-              verification_level: userData.verification_level || undefined,
-              created_at: userData.created_at || undefined,
-              updated_at: userData.updated_at || undefined,
-              access_token: userData.access_token  // Using access_token instead of accessToken
+              name: userData.full_name,
+              role: userData.role,
+              access_token: userData.access_token // Make sure this matches your API response
             };
-            return user;
           }
           return null;
         } catch (error: any) {
@@ -56,26 +49,28 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.email = user.email;
-        token.name = user.name;
-        token.role = user.role;
-        token.accessToken = user.access_token;  // Use access_token from user
+        // Add all user properties to the token
+        return {
+          ...token,
+          ...user,
+          accessToken: user.access_token // Make sure to include the access token
+        };
       }
       return token;
     },
     async session({ session, token }) {
-      if (token) {
-        session.user = {
+      // Add the access token and other user data to the session
+      return {
+        ...session,
+        accessToken: token.accessToken, // Add access token directly to session
+        user: {
           ...session.user,
           id: token.id,
           email: token.email,
           name: token.name,
           role: token.role
-        };
-        session.accessToken = token.accessToken;
-      }
-      return session;
+        }
+      };
     }
   },
   session: {
