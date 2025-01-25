@@ -13,76 +13,43 @@ export default function UserPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log('UseEffect triggered');
-    console.log('Status:', status);
-    console.log('Session:', session);
-
     const fetchUserData = async () => {
       if (!session?.accessToken) {
-        console.log('No access token found in session');
+        console.log('No access token available');
         return;
       }
       
       setLoading(true);
       try {
-        // Log the request details
-        console.log('Making API request with token:', session.accessToken.slice(0, 10) + '...');
-        
+        console.log('Fetching user data with token:', session.accessToken);
         const response = await axiosInstance.get<APIUser>('/api/v1/users/profile', {
           headers: {
             Authorization: `Bearer ${session.accessToken}`,
           },
         });
         
-        // Log successful response
-        console.log('API Response:', response.data);
-        
-        if (response.data) {
-          setUserData(response.data);
-          setError(null);
-        } else {
-          console.log('Response data is empty');
-          setError('No data received from server');
-        }
+        console.log('User data received:', response.data);
+        setUserData(response.data);
+        setError(null);
       } catch (error: any) {
-        // Detailed error logging
-        console.error('Error details:', {
-          message: error.message,
-          response: error.response,
-          status: error.response?.status,
-          data: error.response?.data
-        });
+        console.error('Error fetching user data:', error);
         setError(error.response?.data?.detail || 'Failed to fetch user data');
       } finally {
         setLoading(false);
       }
     };
 
-    // Only fetch if we have an authenticated session
     if (status === 'authenticated' && session?.accessToken) {
-      console.log('Initiating data fetch...');
       fetchUserData();
     }
-  }, [status, session]);
-
-  // Debug render state
-  useEffect(() => {
-    console.log('Component state:', {
-      loading,
-      userData,
-      error,
-      status,
-      hasSession: !!session,
-      hasAccessToken: !!session?.accessToken
-    });
-  }, [loading, userData, error, status, session]);
+  }, [status, session?.accessToken]);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-between p-24">
       <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm">
         <h1 className="text-2xl font-bold mb-4">User Profile</h1>
         <div className="mb-4 text-sm text-gray-500">
-          Status: {status} {/* Debug info */}
+          Session Status: {status}
           {session?.accessToken ? ' (Token present)' : ' (No token)'}
         </div>
         
