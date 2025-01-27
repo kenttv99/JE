@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import NavigationButtons from '@/components/NavigationButtons';
 import axiosInstance from '@/lib/api';
 import { APIUser } from '@/types';
 
@@ -99,10 +98,6 @@ export default function UserPage() {
             No user data available
           </div>
         )}
-        
-        <div className="mt-8">
-          <NavigationButtons />
-        </div>
       </div>
     </div>
   );

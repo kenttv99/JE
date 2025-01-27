@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import NavigationButtons from '@/components/NavigationButtons';
 
 export default function AdminPage() {
   const { data: session, status } = useSession();
@@ -20,7 +19,6 @@ export default function AdminPage() {
         <div className="text-center py-8 px-6 bg-white shadow-lg rounded-lg">
           <h2 className="text-2xl font-bold text-red-600 mb-4">Доступ запрещен</h2>
           <p className="text-gray-600 mb-4">У вас нет прав для просмотра этой страницы</p>
-          <NavigationButtons />
         </div>
       </div>
     );
@@ -63,10 +61,6 @@ export default function AdminPage() {
                 <p className="text-gray-600">Функционал в разработке</p>
               </div>
             </div>
-          </div>
-
-          <div className="mt-6 p-4 border-t border-gray-200">
-            <NavigationButtons />
           </div>
         </div>
       </div>
