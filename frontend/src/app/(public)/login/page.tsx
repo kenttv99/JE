@@ -12,10 +12,23 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (status === 'authenticated') {
-      router.push('/user');
+    if (status === 'authenticated' && session?.user?.role) {
+      // Role-based redirect after authentication
+      switch (session.user.role) {
+        case 'trader':
+          router.push('/trader');
+          break;
+        case 'admin':
+          router.push('/admin');
+          break;
+        case 'merchant':
+          router.push('/merchant');
+          break;
+        default:
+          router.push('/user');
+      }
     }
-  }, [status, router]);
+  }, [status, router, session]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -33,20 +46,17 @@ export default function LoginPage() {
     }
 
     try {
-      console.log('Attempting sign in with email:', email);
       const result = await signIn('credentials', {
         email,
         password,
         redirect: false,
       });
 
-      console.log('SignIn result:', result);
-
       if (result?.error) {
         setError('Неверный email или пароль');
         console.error('SignIn error:', result.error);
       } else if (result?.ok) {
-        router.push('/user');
+        // The redirection will be handled by the useEffect hook
         router.refresh();
       }
     } catch (error) {
@@ -61,6 +71,15 @@ export default function LoginPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-2xl font-semibold">Загрузка...</div>
+      </div>
+    );
+  }
+
+  // If already authenticated, show loading while redirecting
+  if (status === 'authenticated') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-2xl font-semibold">Перенаправление...</div>
       </div>
     );
   }
@@ -84,8 +103,8 @@ export default function LoginPage() {
         </div>
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-            {error}
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <span className="block sm:inline">{error}</span>
           </div>
         )}
 
@@ -126,7 +145,9 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400"
+              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+                loading ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
               {loading ? 'Вход...' : 'Войти'}
             </button>
