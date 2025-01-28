@@ -12,6 +12,8 @@ export interface BankDetails {
     role: 'trader';
     verificationStatus: 'pending' | 'verified' | 'rejected';
     bankDetails: BankDetails;
+    created_at: string;  
+    updated_at: string;  
   }
   
   export interface TraderOrder {

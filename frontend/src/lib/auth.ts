@@ -28,6 +28,8 @@ interface CustomUser extends User {
   pay_in?: boolean;
   pay_out?: boolean;
   access_token?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface ApiError {
@@ -49,7 +51,6 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          // Updated endpoint to use the correct path with prefix
           const response = await api.post<LoginResponse>('/api/v1/traders/login', {
             email: credentials.email,
             password: credentials.password
@@ -61,12 +62,10 @@ export const authOptions: NextAuthOptions = {
             throw new Error('Invalid response from server');
           }
 
-          // Verify account access
           if (!trader.access) {
             throw new Error('Account is disabled');
           }
 
-          // Return standardized user object with trader-specific fields
           return {
             id: trader.id,
             email: trader.email,
@@ -74,7 +73,9 @@ export const authOptions: NextAuthOptions = {
             verification_level: trader.verification_level,
             pay_in: trader.pay_in,
             pay_out: trader.pay_out,
-            access_token: token
+            access_token: token,
+            created_at: trader.created_at,
+            updated_at: trader.updated_at
           };
 
         } catch (error) {
@@ -109,7 +110,9 @@ export const authOptions: NextAuthOptions = {
           verification_level: customUser.verification_level,
           pay_in: customUser.pay_in,
           pay_out: customUser.pay_out,
-          accessToken: customUser.access_token
+          accessToken: customUser.access_token,
+          created_at: customUser.created_at,
+          updated_at: customUser.updated_at
         };
       }
       return token;
@@ -126,7 +129,9 @@ export const authOptions: NextAuthOptions = {
           role: token.role,
           verification_level: token.verification_level,
           pay_in: token.pay_in,
-          pay_out: token.pay_out
+          pay_out: token.pay_out,
+          created_at: token.created_at,
+          updated_at: token.updated_at
         }
       };
     }
@@ -150,7 +155,7 @@ export const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === 'development',
 };
 
-// Helper functions remain the same
+// Helper functions
 export const isTrader = (session: any): boolean => {
   return session?.user?.role === 'trader';
 };
