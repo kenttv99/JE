@@ -6,7 +6,7 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi import HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from database.init_db import User, get_async_db
+from database.init_db import User, Trader, get_async_db  # Added Trader
 from api.schemas import TokenData
 from constants import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
@@ -53,3 +53,21 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
     if user is None:
         raise HTTPException(status_code=401, detail="Пользователь не найден")
     return user
+
+
+async def get_current_trader(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_async_db)):
+    """Gets the current trader by JWT token."""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_email: Optional[str] = payload.get("sub")
+        if user_email is None:
+            raise HTTPException(status_code=401, detail="Could not validate token")
+        token_data = TokenData(email=user_email)
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Could not validate token")
+
+    result = await db.execute(select(Trader).filter(Trader.email == token_data.email))
+    trader = result.scalars().first()
+    if trader is None:
+        raise HTTPException(status_code=401, detail="Trader not found")
+    return trader

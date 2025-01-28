@@ -8,7 +8,7 @@ from api.schemas import RoleCreate, RoleResponse
 
 router = APIRouter()
 
-@router.post("/roles", response_model=RoleResponse)
+@router.post("/create_role", response_model=RoleResponse)
 async def create_role(role: RoleCreate, db: AsyncSession = Depends(get_async_db)):
     """
     Создание новой роли (асинхронная версия).
@@ -31,7 +31,7 @@ async def create_role(role: RoleCreate, db: AsyncSession = Depends(get_async_db)
     await db.refresh(new_role)
     return new_role
 
-@router.get("/roles", response_model=List[RoleResponse])
+@router.get("/get_roles", response_model=List[RoleResponse])
 async def get_roles(skip: int = 0, limit: int = 10, db: AsyncSession = Depends(get_async_db)):
     """
     Получение списка ролей с пагинацией (асинхронная версия).
@@ -46,7 +46,7 @@ async def get_roles(skip: int = 0, limit: int = 10, db: AsyncSession = Depends(g
     roles = result.scalars().all()
     return roles
 
-@router.get("/roles/{role_id}", response_model=RoleResponse)
+@router.get("/get_role/{role_id}", response_model=RoleResponse)
 async def get_role(role_id: int, db: AsyncSession = Depends(get_async_db)):
     """
     Получение конкретной роли по ID (асинхронная версия).
@@ -64,7 +64,7 @@ async def get_role(role_id: int, db: AsyncSession = Depends(get_async_db)):
 
     return role
 
-@router.put("/roles/{role_id}", response_model=RoleResponse)
+@router.put("/update_role/{role_id}", response_model=RoleResponse)
 async def update_role(role_id: int, updated_role: RoleCreate, db: AsyncSession = Depends(get_async_db)):
     """
     Обновление конкретной роли по ID (асинхронная версия).
@@ -87,7 +87,7 @@ async def update_role(role_id: int, updated_role: RoleCreate, db: AsyncSession =
     await db.refresh(role)
     return role
 
-@router.delete("/roles/{role_id}")
+@router.delete("/delete_role/{role_id}")
 async def delete_role(role_id: int, db: AsyncSession = Depends(get_async_db)):
     """
     Удаление конкретной роли по ID (асинхронная версия).

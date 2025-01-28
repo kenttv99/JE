@@ -1,7 +1,7 @@
 from typing import List, Optional
 from decimal import Decimal
 from datetime import datetime
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, model_validator
 from api.enums import (
     OrderStatus,
     OrderTypeEnum,
@@ -11,7 +11,170 @@ from api.enums import (
 )
 
 # -----------------------
-# Schemas for Traders
+# Authentication Schemas
+# -----------------------
+
+class TokenData(BaseModel):
+    email: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+    class Config:
+        from_attributes = True
+
+class RegisterRequest(BaseModel):
+    email: EmailStr
+    password: str
+    full_name: str
+
+    class Config:
+        from_attributes = True
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(..., min_length=6, description="Текущий пароль")
+    new_password: str = Field(..., min_length=6, description="Новый пароль")
+
+    class Config:
+        from_attributes = True
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user_type: str = Field(..., description="Type of user (trader/merchant/admin)")
+
+    class Config:
+        from_attributes = True
+
+# -----------------------
+# User Related Schemas
+# -----------------------
+
+class UserResponse(BaseModel):
+    id: int
+    email: EmailStr
+    full_name: Optional[str] = None
+    created_at: datetime
+    referral_code: Optional[str] = None
+    referred_by: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class UserUpdateRequest(BaseModel):
+    full_name: Optional[str] = None
+    phone_number: Optional[str] = None
+    telegram_username: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class UserDetailedResponse(BaseModel):
+    id: int
+    email: EmailStr
+    full_name: Optional[str]
+    phone_number: Optional[str] = None
+    telegram_username: Optional[str] = None
+    avatar_url: Optional[str] = None
+    verification_level: VerificationLevelEnum
+    created_at: datetime
+    updated_at: datetime
+    orders: List['OrderResponse'] = []
+    referral_code: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+# -----------------------
+# Payment and Order Schemas
+# -----------------------
+
+class PaymentMethodSchema(BaseModel):
+    id: int
+    method_name: PaymentMethodEnum
+    description: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class OrderResponse(BaseModel):
+    id: int
+    order_type: OrderTypeEnum
+    currency: str
+    amount: Decimal
+    total_rub: Decimal
+    median_rate: Decimal
+    status: OrderStatus
+    aml_status: AMLStatusEnum
+    created_at: datetime
+    updated_at: datetime
+    payment_method: Optional[PaymentMethodSchema] = None
+
+    class Config:
+        from_attributes = True
+
+class ExchangeOrderRequest(BaseModel):
+    order_type: OrderTypeEnum
+    currency: str = Field(..., example="BTC")
+    amount: Optional[Decimal] = Field(None, example=Decimal('0.5'))
+    total_rub: Optional[Decimal] = Field(None, example=Decimal('1500000'))
+    crypto_address: Optional[str] = Field(None, example="1BoatSLRHtKNngkdXEeobR76b53LETtpyT")
+    crypto_network: Optional[str] = Field(None, example="Bitcoin")
+    payment_method: PaymentMethodEnum
+
+    @model_validator(mode='after')
+    def check_amount_or_total_rub(self):
+        if (self.amount is None and self.total_rub is None):
+            raise ValueError('Необходимо указать либо amount, либо total_rub.')
+        if (self.amount is not None and self.total_rub is not None):
+            raise ValueError('Необходимо указать либо amount, либо total_rub, но не оба одновременно.')
+        return self
+
+    class Config:
+        from_attributes = True
+
+class UpdateOrderStatusRequest(BaseModel):
+    status: OrderStatus
+
+    class Config:
+        from_attributes = True
+
+# -----------------------
+# Role Schemas
+# -----------------------
+
+class RoleCreate(BaseModel):
+    name: str = Field(..., description="Name of the role")
+    description: Optional[str] = Field(None, description="Description of the role")
+
+    class Config:
+        from_attributes = True
+
+class RoleResponse(BaseModel):
+    id: int = Field(..., description="Unique identifier of the role")
+    name: str = Field(..., description="Name of the role")
+    description: Optional[str] = Field(None, description="Description of the role")
+
+    class Config:
+        from_attributes = True
+
+# -----------------------
+# Referral Schemas
+# -----------------------
+
+class ReferralData(BaseModel):
+    referred_users: List[UserResponse]
+    bonus_earned: Decimal
+
+    class Config:
+        from_attributes = True
+
+# -----------------------
+# Trader Schemas
 # -----------------------
 
 class TraderBase(BaseModel):
@@ -55,213 +218,8 @@ class TraderResponse(TraderBase):
         from_attributes = True
 
 # -----------------------
-# Schemas for Merchants
+# Two Factor Authentication Schemas
 # -----------------------
-
-class MerchantBase(BaseModel):
-    email: EmailStr
-    avatar_url: Optional[str] = Field(None, description="URL of merchant's avatar image")
-    pay_in: bool = Field(False, description="Whether merchant can receive payments")
-    pay_out: bool = Field(False, description="Whether merchant can make payments")
-    access: bool = Field(True, description="Whether merchant has access to the system")
-
-    class Config:
-        from_attributes = True
-
-class MerchantCreate(MerchantBase):
-    password: str = Field(..., min_length=8, description="Merchant's password")
-
-class MerchantUpdate(BaseModel):
-    avatar_url: Optional[str] = None
-    pay_in: Optional[bool] = None
-    pay_out: Optional[bool] = None
-    access: Optional[bool] = None
-
-    class Config:
-        from_attributes = True
-
-class MerchantResponse(MerchantBase):
-    id: int
-    created_at: datetime
-    updated_at: datetime
-
-    class Config:
-        from_attributes = True
-
-# -----------------------
-# Schemas for Admin Users
-# -----------------------
-
-class AdminUserBase(BaseModel):
-    email: EmailStr
-    access: bool = Field(True, description="Whether admin has access to the system")
-
-    class Config:
-        from_attributes = True
-
-class AdminUserCreate(AdminUserBase):
-    password: str = Field(..., min_length=8, description="Admin's password")
-
-class AdminUserUpdate(BaseModel):
-    access: Optional[bool] = None
-
-    class Config:
-        from_attributes = True
-
-class AdminUserResponse(AdminUserBase):
-    id: int
-    created_at: datetime
-    updated_at: datetime
-
-    class Config:
-        from_attributes = True
-
-# -----------------------
-# Schemas for Admin Traders
-# -----------------------
-
-class AdminTraderBase(BaseModel):
-    email: EmailStr
-    access: bool = Field(True, description="Whether admin trader has access to the system")
-
-    class Config:
-        from_attributes = True
-
-class AdminTraderCreate(AdminTraderBase):
-    password: str = Field(..., min_length=8, description="Admin trader's password")
-
-class AdminTraderUpdate(BaseModel):
-    access: Optional[bool] = None
-
-    class Config:
-        from_attributes = True
-
-class AdminTraderResponse(AdminTraderBase):
-    id: int
-    created_at: datetime
-    updated_at: datetime
-
-    class Config:
-        from_attributes = True
-
-# -----------------------
-# Schemas for Admin Merchants
-# -----------------------
-
-class AdminMerchantBase(BaseModel):
-    email: EmailStr
-    access: bool = Field(True, description="Whether admin merchant has access to the system")
-
-    class Config:
-        from_attributes = True
-
-class AdminMerchantCreate(AdminMerchantBase):
-    password: str = Field(..., min_length=8, description="Admin merchant's password")
-
-class AdminMerchantUpdate(BaseModel):
-    access: Optional[bool] = None
-
-    class Config:
-        from_attributes = True
-
-class AdminMerchantResponse(AdminMerchantBase):
-    id: int
-    created_at: datetime
-    updated_at: datetime
-
-    class Config:
-        from_attributes = True
-
-# -----------------------
-# Common Authentication Schemas
-# -----------------------
-
-class TokenData(BaseModel):
-    email: Optional[str] = None
-
-    class Config:
-        from_attributes = True
-
-class PaymentMethodSchema(BaseModel):
-    id: int
-    method_name: PaymentMethodEnum
-    description: Optional[str] = None
-
-    class Config:
-        from_attributes = True
-
-class ExchangeRateResponse(BaseModel):
-    currency: str
-    buy_rate: Decimal
-    sell_rate: Decimal
-    median_rate: Decimal
-    source: str
-    updated_at: datetime
-
-    class Config:
-        from_attributes = True
-
-class LoginRequest(BaseModel):
-    email: EmailStr
-    password: str
-
-    class Config:
-        from_attributes = True
-
-class RegisterRequest(BaseModel):
-    email: EmailStr
-    password: str
-    full_name: str
-
-    class Config:
-        from_attributes = True
-
-class UserUpdateRequest(BaseModel):
-    full_name: Optional[str] = None
-    phone_number: Optional[str] = None
-    telegram_username: Optional[str] = None
-
-    class Config:
-        from_attributes = True
-
-class OrderResponse(BaseModel):
-    id: int
-    order_type: OrderTypeEnum
-    currency: str
-    amount: Decimal
-    total_rub: Decimal
-    median_rate: Decimal
-    status: OrderStatus
-    aml_status: AMLStatusEnum
-    created_at: datetime
-    updated_at: datetime
-    payment_method: Optional[PaymentMethodSchema] = None
-
-    class Config:
-        from_attributes = True
-
-class UserDetailedResponse(BaseModel):
-    id: int
-    email: EmailStr
-    full_name: Optional[str]
-    phone_number: Optional[str] = None
-    telegram_username: Optional[str] = None
-    avatar_url: Optional[str] = None
-    verification_level: VerificationLevelEnum
-    created_at: datetime
-    updated_at: datetime
-    orders: List[OrderResponse] = []
-    referral_code: Optional[str] = None
-
-    class Config:
-        from_attributes = True
-
-class ChangePasswordRequest(BaseModel):
-    current_password: str = Field(..., min_length=6, description="Текущий пароль")
-    new_password: str = Field(..., min_length=6, description="Новый пароль")
-
-    class Config:
-        from_attributes = True
 
 class TwoFactorAuthRequest(BaseModel):
     code: str = Field(..., min_length=6, max_length=6, description="2FA code")
@@ -276,29 +234,17 @@ class TwoFactorAuthSetup(BaseModel):
     class Config:
         from_attributes = True
 
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    user_type: str = Field(..., description="Type of user (trader/merchant/admin)")
-
-    class Config:
-        from_attributes = True
-
 # -----------------------
-# Role Schemas
+# Exchange Rate Schemas
 # -----------------------
 
-class RoleCreate(BaseModel):
-    name: str = Field(..., description="Name of the role")
-    description: Optional[str] = Field(None, description="Description of the role")
-
-    class Config:
-        from_attributes = True
-
-class RoleResponse(BaseModel):
-    id: int = Field(..., description="Unique identifier of the role")
-    name: str = Field(..., description="Name of the role")
-    description: Optional[str] = Field(None, description="Description of the role")
+class ExchangeRateResponse(BaseModel):
+    currency: str
+    buy_rate: Decimal
+    sell_rate: Decimal
+    median_rate: Decimal
+    source: str
+    updated_at: datetime
 
     class Config:
         from_attributes = True
