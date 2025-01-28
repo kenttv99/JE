@@ -1,55 +1,46 @@
-// frontend/src/types/trader.ts
-export interface TraderProfile {
-    id: number;
+export interface BankDetails {
+    bankName: string;
+    accountNumber: string;
+    bik: string;
+    correspondentAccount: string;
+  }
+  
+  export interface TraderProfile {
+    id: string;
+    name: string;
     email: string;
-    full_name: string;
-    verification_level: string;
-    created_at: string;
-    trader_rating: number;
-    total_trades: number;
+    role: 'trader';
+    verificationStatus: 'pending' | 'verified' | 'rejected';
+    bankDetails: BankDetails;
   }
   
   export interface TraderOrder {
-    id: number;
-    status: string;
+    id: string;
+    date: string;
+    status: 'pending' | 'completed' | 'cancelled';
     amount: number;
-    currency: string;
-    created_at: string;
-    updated_at: string;
+    type: 'buy' | 'sell';
   }
   
-  export interface TraderStatistics {
-    period: string;
-    total_trades: number;
-    total_volume: number;
-    success_rate: number;
-  }
-  
-  export interface TraderAppeal {
-    id: number;
+  export interface Appeal {
+    id: string;
     subject: string;
-    status: string;
-    created_at: string;
+    date: string;
+    status: 'open' | 'closed' | 'pending';
     messages: Array<{
-      id: number;
-      content: string;
-      created_at: string;
+      id: string;
+      text: string;
+      sender: string;
+      timestamp: string;
     }>;
   }
   
-  export interface TraderDetails {
-    verification_documents: Array<{
-      id: number;
-      type: string;
-      status: string;
-    }>;
-    payment_methods: Array<{
-      id: number;
-      method: string;
-      status: string;
-    }>;
-    security_settings: {
-      two_factor_enabled: boolean;
-      last_login: string;
+  export interface StatisticsData {
+    tradingVolume: number;
+    successRate: number;
+    activeOrders: number;
+    historicalData: {
+      labels: string[];
+      values: number[];
     };
   }

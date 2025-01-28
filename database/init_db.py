@@ -92,6 +92,79 @@ class User(Base):
     )
     role = relationship("Role", back_populates="users")
     orders = relationship("ExchangeOrder", back_populates="user")
+    
+    # Add these models to database/init_db.py
+
+class Trader(Base):
+    __tablename__ = "traders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(255), unique=True, nullable=False)
+    password_hash = Column(Text, nullable=False)
+    avatar_url = Column(String(255), nullable=True)
+    verification_level = Column(Integer, default=0)
+    referrer_id = Column(Integer, ForeignKey("traders.id"), nullable=True)
+    referrer_percent = Column(DECIMAL(5, 2), default=0)
+    pay_in = Column(Boolean, default=False)
+    pay_out = Column(Boolean, default=False)
+    created_at = Column(TIMESTAMP, default=datetime.utcnow)
+    updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+    access = Column(Boolean, default=True)
+    two_fa_code = Column(String(32), nullable=True)
+
+    # Relationships
+    referred_traders = relationship(
+        "Trader",
+        backref=backref("referrer", remote_side=[id]),
+        lazy="selectin"
+    )
+
+class Merchant(Base):
+    __tablename__ = "merchants"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(255), unique=True, nullable=False)
+    password_hash = Column(Text, nullable=False)
+    avatar_url = Column(String(255), nullable=True)
+    pay_in = Column(Boolean, default=False)
+    pay_out = Column(Boolean, default=False)
+    created_at = Column(TIMESTAMP, default=datetime.utcnow)
+    updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+    access = Column(Boolean, default=True)
+    two_fa_code = Column(String(32), nullable=True)
+
+class AdminUser(Base):
+    __tablename__ = "admins_users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(255), unique=True, nullable=False)
+    password_hash = Column(Text, nullable=False)
+    created_at = Column(TIMESTAMP, default=datetime.utcnow)
+    updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+    access = Column(Boolean, default=True)
+    two_fa_code = Column(String(32), nullable=True)
+
+class AdminTrader(Base):
+    __tablename__ = "admins_traders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(255), unique=True, nullable=False)
+    password_hash = Column(Text, nullable=False)
+    created_at = Column(TIMESTAMP, default=datetime.utcnow)
+    updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+    access = Column(Boolean, default=True)
+    two_fa_code = Column(String(32), nullable=True)
+
+class AdminMerchant(Base):
+    __tablename__ = "admins_merchants"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(255), unique=True, nullable=False)
+    password_hash = Column(Text, nullable=False)
+    created_at = Column(TIMESTAMP, default=datetime.utcnow)
+    updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+    access = Column(Boolean, default=True)
+    two_fa_code = Column(String(32), nullable=True)
 
 
 class ExchangeRate(Base):
