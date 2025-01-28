@@ -3,11 +3,11 @@
 from enum import Enum
 
 class OrderStatus(Enum):
-    pending = "Pending"
-    processing = "Processing"
-    completed = "Completed"
-    canceled = "Canceled"
-    arbitrage = "Arbitrage"
+    pending = "pending"
+    processing = "processing"
+    completed = "completed"
+    canceled = "canceled"
+    arbitrage = "arbitrage"
     waiting_confirmation = "Waiting Confirmation"
 
 class OrderTypeEnum(Enum):
@@ -15,9 +15,9 @@ class OrderTypeEnum(Enum):
     sell = "sell"
 
 class AMLStatusEnum(Enum):
-    pending = "Pending"
-    approved = "Approved"
-    rejected = "Rejected"
+    pending = "pending"
+    approved = "approved"
+    rejected = "rejected"
 
 class PaymentMethodEnum(Enum):
     SBP = "SBP"

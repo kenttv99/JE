@@ -40,11 +40,11 @@ logger = logging.getLogger(__name__)
 # Подключение маршрутов
 app.include_router(exchange_router, prefix="/api/v1", tags=["Exchange"])
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["User"])
+app.include_router(trader_routers, prefix="/api/v1/traders", tags=["Traders"])
 app.include_router(user_orders_router, prefix="/api/v1/orders", tags=["Orders"])
 app.include_router(referrals_router, prefix="/api/v1/referrals", tags=["Referrals"])
 app.include_router(roles_router, prefix="/api/v1/roles", tags=["Roles"])
 app.include_router(payments_routers, prefix="/api/v1/payments", tags=["Payments"])
-app.include_router(trader_routers, prefix="/api/v1/traders", tags=["Traders"])
 
 # Middleware для логирования
 @app.middleware("http")

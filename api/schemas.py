@@ -234,7 +234,6 @@ class TraderRegisterRequest(BaseModel):
 class TraderDetailedResponse(BaseModel):
     id: int
     email: EmailStr
-    full_name: str
     verification_level: int
     pay_in: bool
     pay_out: bool
