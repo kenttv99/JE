@@ -50,7 +50,7 @@ export const authOptions: NextAuthOptions = {
 
         try {
           // Updated endpoint to use the correct path with prefix
-          const response = await api.post<LoginResponse>('/api/v1/traders/login', {
+          const response = await api.post<LoginResponse>('/login', {
             email: credentials.email,
             password: credentials.password
           });
