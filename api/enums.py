@@ -8,7 +8,7 @@ class OrderStatus(Enum):
     completed = "completed"
     canceled = "canceled"
     arbitrage = "arbitrage"
-    waiting_confirmation = "Waiting Confirmation"
+    waiting_confirmation = "waiting_confirmation"
 
 class OrderTypeEnum(Enum):
     buy = "buy"
