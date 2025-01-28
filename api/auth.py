@@ -71,3 +71,21 @@ async def get_current_trader(token: str = Depends(oauth2_scheme), db: AsyncSessi
     if trader is None:
         raise HTTPException(status_code=401, detail="Trader not found")
     return trader
+
+async def get_current_active_trader(current_trader: Trader = Depends(get_current_trader)):
+    """Check if the trader is active and has access."""
+    if not current_trader.access:
+        raise HTTPException(status_code=403, detail="Trader account is disabled")
+    return current_trader
+
+def create_trader_token(trader: Trader) -> str:
+    """Create a JWT token specifically for traders."""
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    return create_access_token(
+        data={
+            "sub": trader.email,
+            "type": "trader",
+            "verification_level": trader.verification_level
+        },
+        expires_delta=access_token_expires
+    )

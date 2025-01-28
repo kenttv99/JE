@@ -216,6 +216,35 @@ class TraderResponse(TraderBase):
 
     class Config:
         from_attributes = True
+        
+class TraderLoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+    class Config:
+        from_attributes = True
+
+class TraderRegisterRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(..., min_length=8)
+    full_name: str
+
+    class Config:
+        from_attributes = True
+
+class TraderDetailedResponse(BaseModel):
+    id: int
+    email: EmailStr
+    full_name: str
+    verification_level: int
+    pay_in: bool
+    pay_out: bool
+    access: bool
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
 
 # -----------------------
 # Two Factor Authentication Schemas
