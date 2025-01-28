@@ -48,7 +48,6 @@ async def register_trader(request: TraderRegisterRequest, db: AsyncSession = Dep
     new_trader = Trader(
         email=request.email,
         password_hash=hashed_password,
-        full_name=request.full_name,
         verification_level=0,  # Start with basic level
         pay_in=False,  # Default values
         pay_out=False,
@@ -108,7 +107,6 @@ async def login_trader(request: TraderLoginRequest, db: AsyncSession = Depends(g
                 "trader": {
                     "id": str(trader.id),
                     "email": trader.email,
-                    "full_name": trader.full_name,
                     "verification_level": trader.verification_level,
                     "pay_in": trader.pay_in,
                     "pay_out": trader.pay_out
@@ -131,7 +129,6 @@ async def get_trader_profile(current_trader: Trader = Depends(get_current_trader
     return TraderDetailedResponse(
         id=current_trader.id,
         email=current_trader.email,
-        full_name=current_trader.full_name,
         verification_level=current_trader.verification_level,
         pay_in=current_trader.pay_in,
         pay_out=current_trader.pay_out,

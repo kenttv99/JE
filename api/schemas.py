@@ -198,7 +198,7 @@ class TraderBase(BaseModel):
 class TraderCreate(TraderBase):
     password: str = Field(..., min_length=8, description="Trader's password")
 
-class TraderUpdate(BaseModel):
+class TraderUpdateRequest(BaseModel):
     avatar_url: Optional[str] = None
     verification_level: Optional[int] = None
     referrer_percent: Optional[Decimal] = None
@@ -226,8 +226,7 @@ class TraderLoginRequest(BaseModel):
 
 class TraderRegisterRequest(BaseModel):
     email: EmailStr
-    password: str = Field(..., min_length=8)
-    full_name: str
+    password: str = Field(..., min_length=6)
 
     class Config:
         from_attributes = True
