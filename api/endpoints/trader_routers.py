@@ -1,4 +1,4 @@
-# api/endpoints/trader_auth_routers.py
+# api/endpoints/trader_routers.py
 from datetime import timedelta
 import logging
 from fastapi import APIRouter, Depends, HTTPException
@@ -102,6 +102,7 @@ async def login_trader(request: TraderLoginRequest, db: AsyncSession = Depends(g
             expires_delta=access_token_expires
         )
         
+        # Updated response to include all fields matching the frontend interface
         return JSONResponse(
             content={
                 "trader": {
@@ -109,7 +110,10 @@ async def login_trader(request: TraderLoginRequest, db: AsyncSession = Depends(g
                     "email": trader.email,
                     "verification_level": trader.verification_level,
                     "pay_in": trader.pay_in,
-                    "pay_out": trader.pay_out
+                    "pay_out": trader.pay_out,
+                    "access": trader.access,  # Added this field
+                    "created_at": str(trader.created_at) if trader.created_at else None,  # Added this field
+                    "updated_at": str(trader.updated_at) if trader.updated_at else None   # Added this field
                 },
                 "token": access_token,
                 "message": "Login successful"
