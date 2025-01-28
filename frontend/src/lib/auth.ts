@@ -1,8 +1,9 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import axios, { AxiosError } from "axios"; // Import AxiosError type
+import { AxiosError } from "axios";
 import { User } from "next-auth";
 import { JWT } from "next-auth/jwt";
+import api from '@/lib/api';
 
 // Define interfaces for API responses
 interface TraderData {
@@ -48,7 +49,8 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          const response = await axios.post<LoginResponse>('/api/v1/trader/login', {
+          // Updated endpoint to use the correct path with prefix
+          const response = await api.post<LoginResponse>('/api/v1/traders/login', {
             email: credentials.email,
             password: credentials.password
           });
@@ -76,15 +78,19 @@ export const authOptions: NextAuthOptions = {
           };
 
         } catch (error) {
-          // Proper error handling with type checking
           if (error instanceof Error) {
             const axiosError = error as AxiosError<ApiError>;
+            console.error("Auth error details:", {
+              status: axiosError.response?.status,
+              data: axiosError.response?.data,
+              message: axiosError.message
+            });
+            
             if (axiosError.response?.data) {
               throw new Error(axiosError.response.data.message || 'Authentication failed');
             }
             throw new Error(error.message || 'Authentication failed');
           }
-          // Fallback error
           throw new Error('An unexpected error occurred');
         }
       }
@@ -94,7 +100,6 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        // Update token with user data on sign in
         const customUser = user as CustomUser;
         return {
           ...token,
@@ -111,7 +116,6 @@ export const authOptions: NextAuthOptions = {
     },
 
     async session({ session, token }) {
-      // Update session with token data
       return {
         ...session,
         accessToken: token.accessToken,
@@ -146,7 +150,7 @@ export const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === 'development',
 };
 
-// Helper functions with proper typing
+// Helper functions remain the same
 export const isTrader = (session: any): boolean => {
   return session?.user?.role === 'trader';
 };
@@ -165,5 +169,4 @@ export const hasTraderPermission = (
   return session?.user?.[permission] === true;
 };
 
-// Export a default configuration
 export default authOptions;
