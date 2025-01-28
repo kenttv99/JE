@@ -10,7 +10,7 @@ from api.enums import OrderTypeEnum
 from database.init_db import ExchangeOrder, OrderStatus, User, get_async_db, PaymentMethod, PaymentMethodEnum, ExchangeRate  # Добавлен ExchangeRate
 from typing import List, Optional
 from api.auth import get_current_user
-from api.schemas import UpdateOrderStatusRequest, OrderResponse, ExchangeOrderRequest, PaymentMethodSchema
+from api.schemas import OrderResponse, PaymentMethodSchema
 from api.utils.user_utils import get_current_user_info
 from datetime import datetime
 import logging
