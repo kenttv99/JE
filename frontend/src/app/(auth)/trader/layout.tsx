@@ -129,10 +129,15 @@ export default function TraderLayout({
       </div>
 
       {/* Main content */}
-      <div className={`${sidebarOpen ? 'lg:pl-64' : ''} transition-padding duration-300 ease-in-out`}>
-        <main className="p-4 sm:p-6 lg:p-8">
-          {children}
-        </main>
+      <div 
+        className={`transition-all duration-300 ease-in-out
+          ${sidebarOpen ? 'lg:pl-64' : ''}`}
+      >
+        <div className="p-[50px]"> {/* Outer padding */}
+          <div className="p-[20px]"> {/* Inner padding */}
+            {children}
+          </div>
+        </div>
       </div>
 
       {/* Mobile overlay */}

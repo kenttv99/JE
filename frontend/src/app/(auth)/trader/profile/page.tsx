@@ -15,7 +15,6 @@ interface PasswordChangeRequest {
   new_password: string;
 }
 
-// Match the exact session user interface from next-auth.d.ts
 interface ProfileUser {
   id: string;
   email: string;
@@ -30,7 +29,6 @@ interface ProfileUser {
 export default function ProfilePage() {
   const { data: session, status } = useSession();
   const [selectedTimezone, setSelectedTimezone] = useState(() => {
-    // Try to get user's timezone or default to UTC
     try {
       return Intl.DateTimeFormat().resolvedOptions().timeZone;
     } catch {
@@ -43,7 +41,6 @@ export default function ProfilePage() {
     confirmPassword: '',
   });
 
-  // Format date considering timezone
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Не указано';
     try {
@@ -118,51 +115,65 @@ export default function ProfilePage() {
   const user = session.user as ProfileUser;
 
   return (
-    <div className="bg-white shadow rounded-lg overflow-hidden">
-      <div className="bg-blue-500 px-6 py-4">
-        <h1 className="text-2xl font-bold text-white">Профиль пользователя</h1>
-      </div>
+    <div className="min-mx-[200px]">
+      <div className="bg-white shadow rounded-lg overflow-hidden">
+        <div className="bg-blue-500 px-6 py-4">
+          <h1 className="text-2xl font-bold text-white">Профиль пользователя</h1>
+        </div>
 
-      <div className="p-6">
-        <div className="max-w-3xl mx-auto space-y-6">
-          {/* Basic Information */}
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <h2 className="text-xl font-semibold mb-4">Основная информация</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">ID пользователя</label>
-                <p className="mt-1 text-gray-900">{user.id}</p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Email</label>
-                <p className="mt-1 text-gray-900">{user.email}</p>
-              </div>
+        <div className="p-6">
+          <div className="grid grid-cols-2 gap-6">
+            {/* Left Column - User Information */}
+            <div className="bg-white p-6 rounded-lg border border-gray-200">
+              <h2 className="text-xl font-semibold mb-4">Информация о пользователе</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Email</label>
+                  <p className="mt-1 text-gray-900">{user.email}</p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Роль</label>
+                  <p className="mt-1 text-gray-900">{user.role || 'Не указана'}</p>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Роль</label>
-                <p className="mt-1 text-gray-900">{user.role || 'Не указана'}</p>
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Дата регистрации</label>
+                  <p className="mt-1 text-gray-900">{formatDate(user.created_at)}</p>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Уровень верификации</label>
-                <p className="mt-1 text-gray-900">{user.verification_level ?? 'Не верифицирован'}</p>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Последнее обновление</label>
+                  <p className="mt-1 text-gray-900">{formatDate(user.updated_at)}</p>
+                </div>
               </div>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Дата регистрации</label>
-                <p className="mt-1 text-gray-900">{formatDate(user.created_at)}</p>
-              </div>
+            {/* Right Column - Status Information */}
+            <div className="bg-white p-6 rounded-lg border border-gray-200">
+              <h2 className="text-xl font-semibold mb-4">Статусы</h2>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-gray-700">Pay In</label>
+                  <div className="flex items-center">
+                    <div className={`w-3 h-3 rounded-full mr-2 ${user.pay_in ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    <span className="text-gray-900">{user.pay_in ? 'Активно' : 'Неактивно'}</span>
+                  </div>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Последнее обновление</label>
-                <p className="mt-1 text-gray-900">{formatDate(user.updated_at)}</p>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-gray-700">Pay Out</label>
+                  <div className="flex items-center">
+                    <div className={`w-3 h-3 rounded-full mr-2 ${user.pay_out ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    <span className="text-gray-900">{user.pay_out ? 'Активно' : 'Неактивно'}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Timezone Selection */}
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className="mt-6 bg-white p-6 rounded-lg border border-gray-200">
             <h2 className="text-xl font-semibold mb-4">Настройки отображения времени</h2>
             <select
               value={selectedTimezone}
@@ -178,54 +189,8 @@ export default function ProfilePage() {
             </select>
           </div>
 
-          {/* Referral Information */}
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <h2 className="text-xl font-semibold mb-4">Реферальная программа</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Pay In</label>
-                <p className="mt-1 text-gray-900">
-                  {user.pay_in ? 'Активно' : 'Неактивно'}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Pay Out</label>
-                <p className="mt-1 text-gray-900">
-                  {user.pay_out ? 'Активно' : 'Неактивно'}
-                </p>
-              </div>
-
-              {(user.pay_in || user.pay_out) && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Реферальная ссылка
-                  </label>
-                  <div className="mt-1 flex rounded-md shadow-sm">
-                    <input
-                      type="text"
-                      readOnly
-                      value={`${window.location.origin}/ref/${user.id}`}
-                      className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(`${window.location.origin}/ref/${user.id}`);
-                        toast.success('Ссылка скопирована');
-                      }}
-                      className="ml-3 inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                    >
-                      Копировать
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
           {/* Password Change Section */}
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className="mt-6 bg-white p-6 rounded-lg border border-gray-200">
             <h2 className="text-xl font-semibold mb-4">Изменение пароля</h2>
             <form onSubmit={handlePasswordChange} className="space-y-4">
               <div>
