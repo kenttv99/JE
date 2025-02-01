@@ -116,7 +116,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-mx-[200px]">
-      <div className="bg-white shadow rounded-lg overflow-hidden">
+      <div className="bg-white shadow rounded-lg">
         <div className="bg-blue-500 px-6 py-4">
           <h1 className="text-2xl font-bold text-white">Профиль пользователя</h1>
         </div>

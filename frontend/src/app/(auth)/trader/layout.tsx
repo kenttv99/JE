@@ -20,19 +20,17 @@ export default function TraderLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  // Protect trader routes
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.role !== 'trader') {
       router.push('/login');
     }
   }, [status, session, router]);
 
-  // Show loading state
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -44,7 +42,6 @@ export default function TraderLayout({
     );
   }
 
-  // Prevent unauthorized access
   if (!session || session.user.role !== 'trader') {
     return null;
   }
@@ -61,34 +58,34 @@ export default function TraderLayout({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile sidebar toggle */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 rounded-md bg-white shadow-lg hover:bg-gray-50"
-          aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
-        >
-          {sidebarOpen ? (
-            <XMarkIcon className="h-6 w-6 text-gray-600" />
-          ) : (
-            <Bars3Icon className="h-6 w-6 text-gray-600" />
-          )}
-        </button>
-      </div>
+      <header className="fixed top-0 left-0 right-0 h-16 bg-white shadow-sm z-50">
+        <div className="container h-full mx-auto px-4">
+          <div className="h-full flex items-center">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 rounded-md bg-white border border-gray-200 hover:bg-gray-50 mr-4 focus:outline-none"
+              aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+            >
+              {sidebarOpen ? (
+                <XMarkIcon className="h-6 w-6 text-gray-600" />
+              ) : (
+                <Bars3Icon className="h-6 w-6 text-gray-600" />
+              )}
+            </button>
+            <h1 className="text-xl font-semibold text-gray-800">Кабинет ахуенного трейдера</h1>
+          </div>
+        </div>
+      </header>
 
-      {/* Sidebar */}
-      <div
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}
+      <aside
+        className={`fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-40 pt-16
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
         <div className="flex flex-col h-full">
-          {/* Logo/Header */}
           <div className="p-4 border-b border-gray-200">
-            <h1 className="text-xl font-bold text-gray-800">Кабинет трейдера</h1>
-            <p className="text-sm text-gray-500 mt-1">{session.user.email}</p>
+            <p className="text-sm text-gray-500">{session.user.email}</p>
           </div>
 
-          {/* Navigation */}
           <nav className="flex-1 overflow-y-auto p-4">
             <ul className="space-y-2">
               {menuItems.map((item) => {
@@ -112,7 +109,6 @@ export default function TraderLayout({
             </ul>
           </nav>
 
-          {/* User Info & Logout */}
           <div className="p-4 border-t border-gray-200">
             <div className="text-sm text-gray-500 mb-2">
               Статус верификации: {session.user.verification_level || 'Не верифицирован'}
@@ -126,21 +122,17 @@ export default function TraderLayout({
             </Link>
           </div>
         </div>
-      </div>
+      </aside>
 
-      {/* Main content */}
-      <div 
-        className={`transition-all duration-300 ease-in-out
-          ${sidebarOpen ? 'lg:pl-64' : ''}`}
+      <main 
+        className={`min-h-screen pt-16 transition-all duration-300 ease-in-out
+          ${sidebarOpen ? 'lg:ml-64' : 'ml-0'}`}
       >
-        <div className="p-[50px]"> {/* Outer padding */}
-          <div className="p-[20px]"> {/* Inner padding */}
-            {children}
-          </div>
+        <div className="rounded-lg mx-4 md:mx-6 overflow-hidden">
+          {children}
         </div>
-      </div>
+      </main>
 
-      {/* Mobile overlay */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-gray-600 bg-opacity-50 z-30 lg:hidden"
