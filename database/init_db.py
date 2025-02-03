@@ -120,6 +120,8 @@ class Trader(Base):
         backref=backref("referrer", remote_side=[id]),
         lazy="selectin"
     )
+    # Add the relationship
+    addresses = relationship("TraderAddress", back_populates="trader", cascade="all, delete-orphan")
 
 class TraderAddress(Base):
     __tablename__ = "trader_addresses"
@@ -130,6 +132,8 @@ class TraderAddress(Base):
     network = Column(String(50), nullable=False)
     coin = Column(String(50), nullable=False)
     status = Column(Enum(AddressStatusEnum), nullable=False, default=AddressStatusEnum.check)
+    created_at = Column(TIMESTAMP, default=datetime.utcnow)
+    updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationship
     trader = relationship("Trader", back_populates="addresses")
