@@ -25,6 +25,7 @@ from sqlalchemy import (
 )
 from datetime import datetime
 from api.enums import (
+    AddressStatusEnum,
     OrderStatus,
     OrderTypeEnum,
     AMLStatusEnum,
@@ -70,6 +71,7 @@ class User(Base):
     phone_number = Column(String(20), nullable=True)
     telegram_username = Column(String(100), nullable=True)
     avatar_url = Column(String(255), nullable=True)
+    two_factor_auth_token = Column(String(32), nullable=True)
     verification_level = Column(
         Enum(VerificationLevelEnum),
         default=VerificationLevelEnum.UNVERIFIED,
@@ -110,7 +112,7 @@ class Trader(Base):
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
     access = Column(Boolean, default=True)
-    two_fa_code = Column(String(32), nullable=True)
+    two_factor_auth_token = Column(String(32), nullable=True)
 
     # Relationships
     referred_traders = relationship(
@@ -118,6 +120,19 @@ class Trader(Base):
         backref=backref("referrer", remote_side=[id]),
         lazy="selectin"
     )
+
+class TraderAddress(Base):
+    __tablename__ = "trader_addresses"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    trader_id = Column(Integer, ForeignKey("traders.id"), nullable=False)
+    wallet_number = Column(String(255), nullable=False)
+    network = Column(String(50), nullable=False)
+    coin = Column(String(50), nullable=False)
+    status = Column(Enum(AddressStatusEnum), nullable=False, default=AddressStatusEnum.check)
+
+    # Relationship
+    trader = relationship("Trader", back_populates="addresses")
 
 class Merchant(Base):
     __tablename__ = "merchants"

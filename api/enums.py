@@ -10,6 +10,10 @@ class OrderStatus(Enum):
     arbitrage = "arbitrage"
     waiting_confirmation = "waiting_confirmation"
 
+class AddressStatusEnum(Enum):
+    approve = "approve"
+    check = "check"
+
 class OrderTypeEnum(Enum):
     buy = "buy"
     sell = "sell"
