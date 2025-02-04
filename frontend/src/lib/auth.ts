@@ -1,9 +1,35 @@
-// MODIFY: frontend/src/lib/auth.ts
+// frontend/src/lib/auth.ts
 import { NextAuthOptions } from "next-auth";
+import type { Session, DefaultSession } from "next-auth";
+import type { JWT, DefaultJWT } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { AxiosError } from "axios";
 import api from '@/lib/api';
-import { CustomUser, LoginResponse, ApiError, TraderData } from '@/types/auth';
+import { CustomUser, LoginResponse, ApiError, ExtendedJWT, CustomSession } from '@/types/auth';
+
+// Extend the built-in types
+declare module "next-auth" {
+  interface Session {
+    accessToken?: string;
+    error?: string;
+    user: {
+      id: string;
+      email: string;
+      role: string;
+      verification_level: number;
+      pay_in: boolean;
+      pay_out: boolean;
+      created_at?: string;
+      updated_at?: string;
+    } & DefaultSession["user"]
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT extends Omit<ExtendedJWT, 'sub'> {
+    tokenExpires?: number;
+  }
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -37,6 +63,7 @@ export const authOptions: NextAuthOptions = {
           return {
             id: trader.id,
             email: trader.email,
+            name: trader.email, // Required by NextAuth
             role: 'trader',
             verification_level: trader.verification_level,
             pay_in: trader.pay_in,
@@ -80,13 +107,25 @@ export const authOptions: NextAuthOptions = {
           pay_out: customUser.pay_out,
           accessToken: customUser.access_token,
           created_at: customUser.created_at,
-          updated_at: customUser.updated_at
+          updated_at: customUser.updated_at,
+          tokenExpires: Math.floor(Date.now() / 1000) + 24 * 60 * 60
         };
       }
+
+      // Check token expiration
+      const tokenExpires = token.tokenExpires as number | undefined;
+      if (tokenExpires && Math.floor(Date.now() / 1000) > tokenExpires) {
+        return { ...token, error: "RefreshAccessTokenError" };
+      }
+
       return token;
     },
 
     async session({ session, token }) {
+      if (token.error === "RefreshAccessTokenError") {
+        return { ...session, error: "RefreshAccessTokenError" };
+      }
+
       return {
         ...session,
         accessToken: token.accessToken,

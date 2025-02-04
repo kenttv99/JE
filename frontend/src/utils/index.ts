@@ -3,8 +3,16 @@ export const formatDate = (date: Date | string, utcOffset: number = 0): string =
     const d = new Date(date);
     const offsetMs = utcOffset * 60 * 60 * 1000;
     const localTime = new Date(d.getTime() + offsetMs);
-    return localTime.toISOString().slice(0, 19).replace('T', ' ');
-  };
+    return localTime.toLocaleString('ru-RU', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    });
+};
   
   export const validatePassword = (password: string): boolean => {
     return password.length >= 8;
