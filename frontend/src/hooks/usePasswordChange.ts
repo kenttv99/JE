@@ -1,7 +1,6 @@
 // frontend/src/hooks/usePasswordChange.ts
-import { useState } from 'react';
+import { useState, FormEvent } from 'react';
 import api from '@/lib/api';
-import { validatePassword } from '@/utils';
 
 interface Passwords {
   currentPassword: string;
@@ -19,9 +18,9 @@ export const usePasswordChange = () => {
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-
-  const handlePasswordChange = async (e: React.FormEvent) => {
+  const handlePasswordChange = async (e: FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     
     setPasswordError(null);
     setPasswordSuccess(null);
@@ -31,18 +30,19 @@ export const usePasswordChange = () => {
       return;
     }
 
-    if (!validatePassword(passwords.newPassword)) {
-        setPasswordError('Новый пароль должен содержать минимум 8 символов');
-        return;
-      }
+    if (passwords.newPassword.length < 8) {
+      setPasswordError('Новый пароль должен содержать минимум 8 символов');
+      return;
+    }
 
     setIsSubmitting(true);
+
     try {
-      await api.post('/api/v1/traders/change_password', {
+      await api.put('/api/v1/traders/change_password', {
         current_password: passwords.currentPassword,
         new_password: passwords.newPassword
       });
-      
+
       setPasswordSuccess('Пароль успешно изменен');
       setPasswords({
         currentPassword: '',
@@ -50,7 +50,23 @@ export const usePasswordChange = () => {
         confirmPassword: ''
       });
     } catch (error: any) {
-      setPasswordError(error.response?.data?.detail || 'Ошибка при смене пароля');
+      // Handle specific error cases
+      if (error.response) {
+        const status = error.response.status;
+        const data = error.response.data;
+
+        if (status === 403 || status === 401) {
+          setPasswordError('Неверный текущий пароль');
+        } else if (data?.detail) {
+          setPasswordError(typeof data.detail === 'string' ? data.detail : 'Ошибка при смене пароля');
+        } else if (Array.isArray(data) && data.length > 0) {
+          setPasswordError(data[0].msg || 'Ошибка при смене пароля');
+        } else {
+          setPasswordError('Ошибка при смене пароля');
+        }
+      } else {
+        setPasswordError('Ошибка при смене пароля');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -62,6 +78,9 @@ export const usePasswordChange = () => {
       ...prev,
       [name]: value
     }));
+    // Clear error and success messages when user starts typing
+    setPasswordError(null);
+    setPasswordSuccess(null);
   };
 
   return {

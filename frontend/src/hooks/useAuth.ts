@@ -8,8 +8,15 @@ export function useAuth(requiredRole?: string) {
   const router = useRouter();
 
   useEffect(() => {
-    if (status === 'unauthenticated' || (requiredRole && session?.user?.role !== requiredRole)) {
-      router.push('/login');
+    if (status === 'unauthenticated') {
+      router.replace('/login');
+    } else if (requiredRole && session?.user?.role !== requiredRole) {
+      // If user is authenticated but has wrong role
+      if (session?.user?.role === 'trader') {
+        router.replace('/trader/profile');
+      } else {
+        router.replace('/');
+      }
     }
   }, [status, session, router, requiredRole]);
 
