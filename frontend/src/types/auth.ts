@@ -20,6 +20,17 @@ export interface TraderData {
   };
 }
 
+export const DEFAULT_TRADER_DATA: TraderData = {
+  id: '',
+  email: '',
+  verification_level: 0,
+  pay_in: false,
+  pay_out: false,
+  access: false,
+  created_at: undefined,
+  updated_at: undefined
+};
+
 // Base user interface that extends Next-Auth User
 export interface CustomUser extends User {
   id: string;
