@@ -1,6 +1,7 @@
 // frontend/src/hooks/usePasswordChange.ts
 import { useState } from 'react';
 import api from '@/lib/api';
+import { validatePassword } from '@/utils';
 
 interface Passwords {
   currentPassword: string;
@@ -18,6 +19,7 @@ export const usePasswordChange = () => {
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -29,10 +31,10 @@ export const usePasswordChange = () => {
       return;
     }
 
-    if (passwords.newPassword.length < 8) {
-      setPasswordError('Новый пароль должен содержать минимум 8 символов');
-      return;
-    }
+    if (!validatePassword(passwords.newPassword)) {
+        setPasswordError('Новый пароль должен содержать минимум 8 символов');
+        return;
+      }
 
     setIsSubmitting(true);
     try {

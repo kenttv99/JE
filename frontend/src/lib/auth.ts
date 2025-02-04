@@ -1,41 +1,9 @@
+// MODIFY: frontend/src/lib/auth.ts
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { AxiosError } from "axios";
-import { User } from "next-auth";
-import { JWT } from "next-auth/jwt";
 import api from '@/lib/api';
-
-// Define interfaces for API responses
-interface TraderData {
-  id: string;
-  email: string;
-  verification_level: number;
-  pay_in: boolean;
-  pay_out: boolean;
-  access: boolean;
-  created_at?: string;
-  updated_at?: string;
-}
-
-interface LoginResponse {
-  trader: TraderData;
-  token: string;
-  message?: string;
-}
-
-interface CustomUser extends User {
-  verification_level?: number;
-  pay_in?: boolean;
-  pay_out?: boolean;
-  access_token?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-interface ApiError {
-  message: string;
-  status?: number;
-}
+import { CustomUser, LoginResponse, ApiError, TraderData } from '@/types/auth';
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -155,23 +123,5 @@ export const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === 'development',
 };
 
-// Helper functions
-export const isTrader = (session: any): boolean => {
-  return session?.user?.role === 'trader';
-};
-
-export const hasRequiredVerification = (
-  session: any, 
-  requiredLevel: number
-): boolean => {
-  return (session?.user?.verification_level ?? 0) >= requiredLevel;
-};
-
-export const hasTraderPermission = (
-  session: any, 
-  permission: 'pay_in' | 'pay_out'
-): boolean => {
-  return session?.user?.[permission] === true;
-};
-
+export { isTrader, hasRequiredVerification, hasTraderPermission } from '@/utils/auth';
 export default authOptions;
