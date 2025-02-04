@@ -5,21 +5,26 @@ import api from '@/lib/api';
 import { TraderData } from '@/types/auth';
 
 export function useProfile() {
-  const { data: session, status } = useSession();
+  const { data: session, status } = useSession({ required: true });
   const [profile, setProfile] = useState<TraderData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false); // Start as false
   const [error, setError] = useState<string | null>(null);
-  const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
     
     const fetchProfile = async () => {
-      // Don't fetch if we're not authenticated or have already attempted
-      if (status !== 'authenticated' || hasAttemptedLoad) {
-        setIsLoading(false);
+      // Only fetch if we have a valid session
+      if (!session || status !== 'authenticated') {
         return;
       }
+
+      // Prevent multiple fetches
+      if (isLoading || profile) {
+        return;
+      }
+
+      setIsLoading(true);
 
       try {
         const response = await api.get<TraderData>('/api/v1/traders/profile');
@@ -27,22 +32,24 @@ export function useProfile() {
           setProfile(response.data);
           setError(null);
         }
-      } catch (err) {
+      } catch (err: any) {
         if (isMounted) {
-          setError('Unable to load profile data');
+          // Don't set error for 401 - this prevents refresh cycle
+          if (err.response?.status !== 401) {
+            setError('Unable to load profile data');
+          }
           console.error('Profile fetch error:', err);
         }
       } finally {
         if (isMounted) {
           setIsLoading(false);
-          setHasAttemptedLoad(true);
         }
       }
     };
 
     fetchProfile();
     return () => { isMounted = false; };
-  }, [status, hasAttemptedLoad]); // Only run when auth status changes
+  }, [session, status]); // Only depend on session and status
 
   return { profile, isLoading, error };
 }
