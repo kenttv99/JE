@@ -10,14 +10,9 @@ export default withAuth(
 
     // If user is authenticated
     if (token) {
-      const userRole = token.role; // Now TypeScript knows that role exists
+      const userRole = token.role;
 
-      // Redirect from root trader page to profile
-      if (pathname === '/trader') {
-        return NextResponse.redirect(new URL('/trader/profile', req.url));
-      }
-
-      // If trying to access login page while authenticated
+      // Only redirect from login if we're authenticated
       if (pathname === '/login') {
         switch (userRole) {
           case 'trader':
@@ -47,7 +42,7 @@ export default withAuth(
   },
   {
     callbacks: {
-      authorized: ({ token }) => !!token,
+      authorized: ({ token }) => true, // Let the middleware handle the auth logic
     },
     pages: {
       signIn: '/login',
