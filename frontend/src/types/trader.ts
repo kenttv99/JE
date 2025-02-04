@@ -1,20 +1,29 @@
+export interface TimeZone {
+  id: number;
+  name: string;
+  display_name: string;
+  utc_offset: number;
+  regions: string;
+}
+
 export interface BankDetails {
-    bankName: string;
-    accountNumber: string;
-    bik: string;
-    correspondentAccount: string;
-  }
-  
-  export interface TraderProfile {
-    id: string;
-    name: string;
-    email: string;
-    role: 'trader';
-    verificationStatus: 'pending' | 'verified' | 'rejected';
-    bankDetails: BankDetails;
-    created_at: string;  
-    updated_at: string;  
-  }
+  bankName: string;
+  accountNumber: string;
+  bik: string;
+  correspondentAccount: string;
+}
+
+export interface TraderProfile {
+  id: string;
+  name: string;
+  email: string;
+  role: 'trader';
+  verificationStatus: 'pending' | 'verified' | 'rejected';
+  bankDetails: BankDetails;
+  created_at: string;
+  updated_at: string;
+  time_zone: TimeZone;  // Add time zone to TraderProfile
+}
   
   export interface TraderOrder {
     id: string;

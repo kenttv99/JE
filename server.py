@@ -9,6 +9,7 @@ from api.endpoints.roles_routers import router as roles_router
 from api.endpoints.payments_routers import router as payments_routers
 from api.endpoints.trader_routers import router as trader_routers
 from api.endpoints.trader_addresses_routers import router as trader_addresses_routers
+from api.endpoints.timezone_routers import router as timezone_routers
 from fastapi.middleware.cors import CORSMiddleware
 
 # Инициализация приложения
@@ -47,6 +48,7 @@ app.include_router(referrals_router, prefix="/api/v1/referrals", tags=["Referral
 app.include_router(roles_router, prefix="/api/v1/roles", tags=["Roles"])
 app.include_router(payments_routers, prefix="/api/v1/payments", tags=["Payments"])
 app.include_router(trader_addresses_routers, prefix="/api/v1/trader_addresses", tags=["Trader's adresses"])
+app.include_router(timezone_routers, prefix="/api/v1/trader_timezones", tags=["Trader's timezones"])
 
 # Middleware для логирования
 @app.middleware("http")
