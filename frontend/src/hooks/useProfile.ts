@@ -1,60 +1,48 @@
 // frontend/src/hooks/useProfile.ts
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import api from '@/lib/api';
 import { TraderData } from '@/types/auth';
-import { useSession } from 'next-auth/react';
 
 export function useProfile() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [profile, setProfile] = useState<TraderData | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
     
     const fetchProfile = async () => {
-      if (!session?.user || isLoading) return; // Don't fetch if no session or already loading
-      
-      setIsLoading(true);
+      // Don't fetch if we're not authenticated or have already attempted
+      if (status !== 'authenticated' || hasAttemptedLoad) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
         const response = await api.get<TraderData>('/api/v1/traders/profile');
         if (isMounted) {
           setProfile(response.data);
+          setError(null);
         }
       } catch (err) {
         if (isMounted) {
-          console.error('Error fetching profile:', err);
-          setError('Failed to load profile data');
-          // Use session data as fallback
-          setProfile({
-            id: session.user.id,
-            email: session.user.email as string,
-            verification_level: session.user.verification_level || 0,
-            pay_in: session.user.pay_in || false,
-            pay_out: session.user.pay_out || false,
-            access: true,
-            created_at: session.user.created_at,
-            updated_at: session.user.updated_at
-          });
+          setError('Unable to load profile data');
+          console.error('Profile fetch error:', err);
         }
       } finally {
         if (isMounted) {
           setIsLoading(false);
+          setHasAttemptedLoad(true);
         }
       }
     };
 
     fetchProfile();
-    return () => {
-      isMounted = false;
-    };
-  }, [session]); // Only run when session changes
+    return () => { isMounted = false; };
+  }, [status, hasAttemptedLoad]); // Only run when auth status changes
 
-  return {
-    profile,
-    isLoading,
-    error,
-    setProfile
-  };
+  return { profile, isLoading, error };
 }

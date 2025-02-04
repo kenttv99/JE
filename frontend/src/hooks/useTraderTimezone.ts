@@ -9,49 +9,56 @@ interface Timezone {
   utc_offset: number;
 }
 
+const DEFAULT_TIMEZONE: Timezone = {
+  id: 0,
+  name: 'UTC',
+  display_name: 'UTC+0',
+  utc_offset: 0
+};
+
 export function useTraderTimezone() {
-  const [timeZones, setTimeZones] = useState<Timezone[]>([{
-    id: 0,
-    name: 'UTC',
-    display_name: 'UTC+0',
-    utc_offset: 0
-  }]); // Default timezone as fallback
-  const [selectedTimezone, setSelectedTimezone] = useState<number>(0);
+  const [timeZones, setTimeZones] = useState<Timezone[]>([DEFAULT_TIMEZONE]);
+  const [selectedTimezone, setSelectedTimezone] = useState<number>(DEFAULT_TIMEZONE.id);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
+
     const fetchTimezones = async () => {
-      if (isLoading) return; // Prevent multiple fetches
-      
-      setIsLoading(true);
+      if (hasAttemptedLoad) {
+        return;
+      }
+
       try {
         const response = await api.get<Timezone[]>('/api/v1/timezones');
         if (isMounted) {
-          setTimeZones(response.data);
-          if (!selectedTimezone && response.data.length > 0) {
+          if (response.data.length > 0) {
+            setTimeZones(response.data);
             setSelectedTimezone(response.data[0].id);
           }
+          setError(null);
         }
       } catch (err) {
         if (isMounted) {
-          setError('Failed to load timezones');
-          console.error('Error fetching timezones:', err);
-          // Don't reset timeZones - keep the default UTC
+          console.error('Timezone fetch error:', err);
+          // Don't set error message for 404 - just use default timezone
+          if ((err as any)?.response?.status !== 404) {
+            setError('Unable to load timezones');
+          }
         }
       } finally {
         if (isMounted) {
           setIsLoading(false);
+          setHasAttemptedLoad(true);
         }
       }
     };
 
     fetchTimezones();
-    return () => {
-      isMounted = false;
-    };
-  }, []); // Only run once on mount
+    return () => { isMounted = false; };
+  }, [hasAttemptedLoad]); // Only run once
 
   const handleTimezoneChange = (value: string | number) => {
     const timezoneId = typeof value === 'string' ? parseInt(value, 10) : value;

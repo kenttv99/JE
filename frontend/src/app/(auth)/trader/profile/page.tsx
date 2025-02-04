@@ -41,7 +41,7 @@ const PermissionBadge = ({
 );
 
 export default function TraderProfilePage() {
-  const { session, status, isLoading: authLoading } = useAuth('trader');
+  const { session, status } = useAuth('trader');
   const { profile, isLoading: profileLoading, error: profileError } = useProfile();
   const { 
     timeZones, 
@@ -68,8 +68,8 @@ export default function TraderProfilePage() {
   const selectedTz = timeZones.find(tz => tz.id === currentTimezoneId);
   const currentTime = useDateTime(selectedTz?.utc_offset ?? 0);
 
-  // Show loading spinner only during initial auth load
-  if (authLoading) {
+  // Show loading spinner only during initial authentication
+  if (status === 'loading' || (profileLoading && !profileError)) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <LoadingSpinner />
@@ -77,10 +77,10 @@ export default function TraderProfilePage() {
     );
   }
 
-  // Use profile data if available, otherwise use session data with default values
+  // Use profile data with fallback to session data and defaults
   const traderData: TraderData = {
     ...DEFAULT_TRADER_DATA,
-    ...(session?.user as CustomUser || {}),
+    ...(session?.user || {}),
     ...(profile || {})
   };
 
@@ -96,7 +96,7 @@ export default function TraderProfilePage() {
           </div>
         </div>
 
-        {/* Error Messages */}
+        {/* Error Messages - Only show if there are actual errors */}
         {(profileError || timezoneError) && (
           <div className="bg-yellow-50 p-4 border-l-4 border-yellow-400">
             <div className="flex">
@@ -119,6 +119,7 @@ export default function TraderProfilePage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Left Column - User Information */}
             <div className="space-y-6">
+              {/* Basic Information Card */}
               <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
                 <h2 className="text-xl font-semibold mb-4 text-gray-800">Информация о пользователе</h2>
                 <div className="space-y-4">
@@ -138,7 +139,7 @@ export default function TraderProfilePage() {
                 </div>
               </div>
 
-              {/* Bank Details Card */}
+              {/* Bank Details Card - Only show if bank details exist */}
               {traderData.bankDetails && (
                 <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
                   <h2 className="text-xl font-semibold mb-4 text-gray-800">Банковские реквизиты</h2>
