@@ -1,42 +1,47 @@
 // frontend/src/hooks/useTraderTimezone.ts
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '@/lib/api';
-import { TimeZone } from '@/types/trader';
 
-export const useTraderTimezone = () => {
-  const [timeZones, setTimeZones] = useState<TimeZone[]>([]);
+interface Timezone {
+  id: number;
+  name: string;
+  display_name: string;
+  utc_offset: number;
+}
+
+export function useTraderTimezone() {
+  const [timeZones, setTimeZones] = useState<Timezone[]>([]);
   const [selectedTimezone, setSelectedTimezone] = useState<number>(0);
-  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchTimeZones = async () => {
-    if (loading) return;
-    setLoading(true);
-    
-    try {
-      const { data } = await api.get('/api/v1/trader_timezones/timezones');
-      setTimeZones(data);
-      if (data.length > 0) {
-        setSelectedTimezone(data[0].id);
+  useEffect(() => {
+    const fetchTimezones = async () => {
+      try {
+        const response = await api.get<Timezone[]>('/api/v1/timezones');
+        setTimeZones(response.data);
+        // Set default timezone if none selected
+        if (!selectedTimezone && response.data.length > 0) {
+          setSelectedTimezone(response.data[0].id);
+        }
+      } catch (err) {
+        setError('Failed to load timezones');
+        console.error('Error fetching timezones:', err);
       }
-    } catch (error) {
-      console.error('Error fetching time zones:', error);
-      setError('Failed to load time zones');
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  const handleTimezoneChange = async (tzId: number) => {
-    setSelectedTimezone(tzId);
+    fetchTimezones();
+  }, []);
+
+  const handleTimezoneChange = (value: string | number) => {
+    const timezoneId = typeof value === 'string' ? parseInt(value, 10) : value;
+    setSelectedTimezone(timezoneId);
+    // Additional logic for saving timezone preference if needed
   };
 
   return {
     timeZones,
     selectedTimezone,
-    loading,
     error,
-    fetchTimeZones,
     handleTimezoneChange
   };
-};
+}

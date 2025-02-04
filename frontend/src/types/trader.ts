@@ -15,14 +15,20 @@ export interface BankDetails {
 
 export interface TraderProfile {
   id: string;
-  name: string;
   email: string;
   role: 'trader';
-  verificationStatus: 'pending' | 'verified' | 'rejected';
-  bankDetails: BankDetails;
+  verification_level: number;
+  pay_in: boolean;
+  pay_out: boolean;
+  bankDetails?: BankDetails;
   created_at: string;
   updated_at: string;
-  time_zone: TimeZone;  // Add time zone to TraderProfile
+  time_zone?: {
+    id: number;
+    name: string;
+    display_name: string;
+    utc_offset: number;
+  };
 }
   
   export interface TraderOrder {

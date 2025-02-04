@@ -1,17 +1,22 @@
 // frontend/src/hooks/useDateTime.ts
 import { useState, useEffect } from 'react';
 
-export function useDateTime(timezone: number = 0) {
-  const [currentTime, setCurrentTime] = useState<string>('');
+export function useDateTime(utcOffset: number = 0) {
+  const [time, setTime] = useState<string>('');
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      const date = new Date();
-      const utcTime = new Date(date.getTime() + timezone * 60 * 60 * 1000);
-      setCurrentTime(utcTime.toISOString().slice(0, 19).replace('T', ' '));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [timezone]);
+    const updateTime = () => {
+      const now = new Date();
+      const offsetMs = utcOffset * 60 * 60 * 1000;
+      const localTime = new Date(now.getTime() + offsetMs);
+      setTime(localTime.toLocaleString('ru-RU'));
+    };
 
-  return currentTime;
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+
+    return () => clearInterval(interval);
+  }, [utcOffset]);
+
+  return time;
 }
