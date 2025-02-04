@@ -9,14 +9,21 @@ export function useDateTime(utcOffset: number = 0) {
       const now = new Date();
       const offsetMs = utcOffset * 60 * 60 * 1000;
       const localTime = new Date(now.getTime() + offsetMs);
-      setTime(localTime.toLocaleString('ru-RU'));
+      // Only update if the time string has actually changed
+      const newTimeString = localTime.toLocaleString('ru-RU');
+      if (newTimeString !== time) {
+        setTime(newTimeString);
+      }
     };
 
+    // Initial update
     updateTime();
-    const interval = setInterval(updateTime, 1000);
+    
+    // Update every 30 seconds instead of every second
+    const interval = setInterval(updateTime, 30000);
 
     return () => clearInterval(interval);
-  }, [utcOffset]);
+  }, [utcOffset, time]); // Include time in dependencies
 
   return time;
 }
