@@ -1,6 +1,4 @@
-// frontend/src/app/layout.tsx
-import { SessionProvider as NextAuthSessionProvider } from 'next-auth/react';
-import { SessionProvider } from '@/contexts/SessionContext';
+import { Providers } from './providers';
 
 export default function RootLayout({
   children,
@@ -10,14 +8,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <NextAuthSessionProvider
-          refetchInterval={0}
-          refetchOnWindowFocus={false}
-        >
-          <SessionProvider>
-            {children}
-          </SessionProvider>
-        </NextAuthSessionProvider>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );
