@@ -13,6 +13,7 @@ class OrderStatus(Enum):
 class AddressStatusEnum(Enum):
     approve = "approve"
     check = "check"
+    delete = "delete"
 
 class OrderTypeEnum(Enum):
     buy = "buy"

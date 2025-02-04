@@ -7,7 +7,8 @@ from api.enums import (
     OrderTypeEnum,
     AMLStatusEnum,
     PaymentMethodEnum,
-    VerificationLevelEnum
+    VerificationLevelEnum,
+    AddressStatusEnum
 )
 
 # -----------------------
@@ -233,13 +234,47 @@ class TraderRegisterRequest(BaseModel):
 
 class TraderDetailedResponse(BaseModel):
     id: int
-    email: EmailStr
+    email: str
     verification_level: int
+    time_zone_id: int
+    time_zone_name: Optional[str]
+    time_zone_offset: Optional[int]
     pay_in: bool
     pay_out: bool
     access: bool
     created_at: datetime
     updated_at: datetime
+
+    class Config:
+        from_attributes = True
+        
+# -----------------------
+# Trader Address Schemas
+# -----------------------
+
+class TraderAddressBase(BaseModel):
+    wallet_number: str = Field(..., description="Wallet address")
+    network: str = Field(..., description="Blockchain network (e.g., Bitcoin, Ethereum)")
+    coin: str = Field(..., description="Cryptocurrency coin/token")
+
+    class Config:
+        from_attributes = True
+
+class TraderAddressCreate(TraderAddressBase):
+    pass
+
+class TraderAddressResponse(TraderAddressBase):
+    id: int
+    trader_id: int
+    status: AddressStatusEnum
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class TraderAddressStatusUpdate(BaseModel):
+    status: AddressStatusEnum
 
     class Config:
         from_attributes = True

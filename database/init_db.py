@@ -113,6 +113,7 @@ class Trader(Base):
     updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
     access = Column(Boolean, default=True)
     two_factor_auth_token = Column(String(32), nullable=True)
+    time_zone_id = Column(Integer, ForeignKey('time_zones.id'), nullable=False)
 
     # Relationships
     referred_traders = relationship(
@@ -120,8 +121,8 @@ class Trader(Base):
         backref=backref("referrer", remote_side=[id]),
         lazy="selectin"
     )
-    # Add the relationship
     addresses = relationship("TraderAddress", back_populates="trader", cascade="all, delete-orphan")
+    time_zone = relationship("TimeZone", backref="traders")
 
 class TraderAddress(Base):
     __tablename__ = "trader_addresses"
@@ -269,6 +270,19 @@ async def init_db():
         print(f"Произошла ошибка при инициализации базы данных: {e}")
     finally:
         await engine.dispose()
+        
+class TimeZone(Base):
+    __tablename__ = "time_zones"
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String(50), nullable=False)  # e.g., "Europe/Moscow"
+    display_name = Column(String(100), nullable=False)  # e.g., "(UTC+03:00) Moscow"
+    utc_offset = Column(Integer, nullable=False)  # Offset in minutes
+    is_active = Column(Boolean, default=True)
+    regions = Column(String(), nullable=True)
+
+    def __repr__(self):
+        return f"<TimeZone(name='{self.name}', display_name='{self.display_name}')>"
 
 
 @asynccontextmanager

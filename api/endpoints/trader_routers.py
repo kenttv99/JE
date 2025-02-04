@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import joinedload
 
 from api.auth import (
     create_access_token,
@@ -12,7 +13,7 @@ from api.auth import (
     hash_password,
     get_current_trader
 )
-from database.init_db import Trader, get_async_db
+from database.init_db import TimeZone, Trader, get_async_db
 from api.schemas import (
     TraderLoginRequest,
     TraderRegisterRequest,
@@ -31,38 +32,53 @@ router = APIRouter()
 
 @router.post("/register")
 async def register_trader(request: TraderRegisterRequest, db: AsyncSession = Depends(get_async_db)):
-    """Register a new trader."""
+    """Register a new trader with default Moscow time zone."""
     logger.info("Registering trader with email: %s", request.email)
     
-    # Check if trader already exists
-    result = await db.execute(select(Trader).filter(Trader.email == request.email))
-    existing_trader = result.scalars().first()
-    if existing_trader:
-        logger.warning("Registration failed: email %s already registered", request.email)
-        raise HTTPException(status_code=400, detail="Email already registered")
-
-    # Hash password
-    hashed_password = hash_password(request.password)
-    
-    # Create new trader
-    new_trader = Trader(
-        email=request.email,
-        password_hash=hashed_password,
-        verification_level=0,  # Start with basic level
-        pay_in=False,  # Default values
-        pay_out=False,
-        access=True
-    )
-    db.add(new_trader)
-    
     try:
+        # Check if trader exists
+        result = await db.execute(select(Trader).filter(Trader.email == request.email))
+        existing_trader = result.scalars().first()
+        if existing_trader:
+            logger.warning("Registration failed: email %s already registered", request.email)
+            raise HTTPException(status_code=400, detail="Email already registered")
+
+        # Get Moscow time zone
+        moscow_tz_result = await db.execute(
+            select(TimeZone).where(TimeZone.name == "Europe/Moscow")
+        )
+        moscow_tz = moscow_tz_result.scalar_one_or_none()
+        
+        if not moscow_tz:
+            logger.error("Moscow time zone not found")
+            raise HTTPException(status_code=500, detail="System configuration error")
+
+        # Hash password
+        hashed_password = hash_password(request.password)
+        
+        # Create new trader with Moscow time zone
+        new_trader = Trader(
+            email=request.email,
+            password_hash=hashed_password,
+            verification_level=0,
+            time_zone_id=moscow_tz.id,  # Set Moscow time zone
+            pay_in=False,
+            pay_out=False,
+            access=True
+        )
+        
+        db.add(new_trader)
         await db.commit()
         await db.refresh(new_trader)
+        
         logger.info("Trader %s successfully registered", request.email)
         return {"message": "Trader successfully registered"}
+        
+    except HTTPException:
+        raise
     except Exception as e:
         await db.rollback()
-        logger.error("Error registering trader %s: %s", request.email, e)
+        logger.error("Error registering trader %s: %s", request.email, str(e))
         raise HTTPException(status_code=500, detail="Error registering trader")
 
 @router.post("/login")
@@ -128,39 +144,40 @@ async def login_trader(request: TraderLoginRequest, db: AsyncSession = Depends(g
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.get("/profile", response_model=TraderDetailedResponse)
-async def get_trader_profile(current_trader: Trader = Depends(get_current_trader)):
-    """Get current trader's detailed profile."""
-    return TraderDetailedResponse(
-        id=current_trader.id,
-        email=current_trader.email,
-        verification_level=current_trader.verification_level,
-        pay_in=current_trader.pay_in,
-        pay_out=current_trader.pay_out,
-        access=current_trader.access,
-        created_at=current_trader.created_at,
-        updated_at=current_trader.updated_at
-    )
-
-@router.put("/profile")
-async def update_trader_profile(
-    update_data: TraderUpdateRequest,
+async def get_trader_profile(
     current_trader: Trader = Depends(get_current_trader),
     db: AsyncSession = Depends(get_async_db)
 ):
-    """Update trader's profile."""
+    """Get current trader's detailed profile."""
     try:
-        for field, value in update_data.dict(exclude_unset=True).items():
-            setattr(current_trader, field, value)
+        # Get trader with time zone information
+        result = await db.execute(
+            select(Trader)
+            .options(joinedload(Trader.time_zone))
+            .filter(Trader.id == current_trader.id)
+        )
+        trader = result.scalar_one_or_none()
         
-        await db.commit()
-        await db.refresh(current_trader)
-        
-        return {"message": "Profile updated successfully"}
-    except Exception as e:
-        await db.rollback()
-        logger.error(f"Profile update error: {str(e)}")
-        raise HTTPException(status_code=500, detail="Error updating profile")
+        if not trader:
+            raise HTTPException(status_code=404, detail="Trader not found")
 
+        return TraderDetailedResponse(
+            id=trader.id,
+            email=trader.email,
+            verification_level=trader.verification_level,
+            time_zone_id=trader.time_zone_id,
+            time_zone_name=trader.time_zone.name if trader.time_zone else None,
+            time_zone_offset=trader.time_zone.utc_offset if trader.time_zone else None,
+            pay_in=trader.pay_in,
+            pay_out=trader.pay_out,
+            access=trader.access,
+            created_at=trader.created_at,
+            updated_at=trader.updated_at
+        )
+    except Exception as e:
+        logger.error(f"Error fetching trader profile: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error fetching trader profile")
+    
 @router.put("/change_password")
 async def change_trader_password(
     request: ChangePasswordRequest,
