@@ -1,115 +1,98 @@
+// frontend/src/app/(auth)/trader/profile/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { toast } from 'react-hot-toast';
-
-interface PasswordChangeForm {
-  currentPassword: string;
-  newPassword: string;
-  confirmPassword: string;
-}
-
-interface PasswordChangeRequest {
-  current_password: string;
-  new_password: string;
-}
+import { useRouter } from 'next/navigation';
+import { TimeZone, TraderProfile } from '@/types/trader';
+import { useTraderTimezone } from '@/hooks/useTraderTimezone';
 
 interface ProfileUser {
   id: string;
   email: string;
-  role?: string;
-  verification_level?: number;
-  created_at?: string;
-  updated_at?: string;
-  pay_in?: boolean;
-  pay_out?: boolean;
+  role: string;
+  pay_in: boolean;
+  pay_out: boolean;
+  access: boolean;
+  created_at: string;
+  updated_at: string;
+  verification_level?: string;
 }
 
-export default function ProfilePage() {
+const formatDate = (dateString: string, timeZone: TimeZone | undefined): string => {
+  try {
+    const date = new Date(dateString);
+    const offset = timeZone?.utc_offset || 0;
+    
+    // Adjust date based on timezone offset
+    const localDate = new Date(date.getTime() + offset * 60 * 60 * 1000);
+    
+    return localDate.toLocaleString('ru-RU', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'UTC'
+    });
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'Invalid date';
+  }
+};
+
+export default function TraderProfilePage() {
   const { data: session, status } = useSession();
-  const [selectedTimezone, setSelectedTimezone] = useState(() => {
-    try {
-      return Intl.DateTimeFormat().resolvedOptions().timeZone;
-    } catch {
-      return 'UTC';
+  const router = useRouter();
+  const [currentTime, setCurrentTime] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  
+  const {
+    timeZones,
+    selectedTimezone,
+    loading: timezoneLoading,
+    updateLoading,
+    error: timezoneError,
+    successMessage,
+    fetchTimeZones,
+    handleTimezoneChange
+  } = useTraderTimezone();
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
     }
-  });
-  const [passwordForm, setPasswordForm] = useState<PasswordChangeForm>({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-  });
+  }, [status, router]);
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Не указано';
-    try {
-      return new Intl.DateTimeFormat('ru-RU', {
-        timeZone: selectedTimezone,
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        timeZoneName: 'short',
-      }).format(new Date(dateString));
-    } catch {
-      return 'Некорректная дата';
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date();
+      const selectedTz = timeZones.find(tz => tz.id === selectedTimezone);
+      setCurrentTime(formatDate(now.toISOString(), selectedTz));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [selectedTimezone, timeZones]);
+
+  useEffect(() => {
+    if (session?.user) {
+      fetchTimeZones();
     }
-  };
+  }, [session]);
 
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast.error('Пароли не совпадают');
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/v1/traders/change_password', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.accessToken}`,
-        },
-        body: JSON.stringify({
-          current_password: passwordForm.currentPassword,
-          new_password: passwordForm.newPassword,
-        } as PasswordChangeRequest),
-      });
-
-      if (response.ok) {
-        toast.success('Пароль успешно изменен');
-        setPasswordForm({
-          currentPassword: '',
-          newPassword: '',
-          confirmPassword: '',
-        });
-      } else {
-        const data = await response.json();
-        toast.error(data.message || 'Ошибка при смене пароля');
-      }
-    } catch (error) {
-      console.error('Password change error:', error);
-      toast.error('Ошибка при смене пароля');
-    }
-  };
-
-  if (status === "loading") {
+  if (status === 'loading' || loading || timezoneLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Загрузка...</p>
+        </div>
       </div>
     );
   }
 
   if (!session?.user) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-red-500">Доступ запрещен</p>
-      </div>
-    );
+    return null;
   }
 
   const user = session.user as ProfileUser;
@@ -118,12 +101,15 @@ export default function ProfilePage() {
     <div className="min-mx-[200px]">
       <div className="bg-white shadow rounded-lg">
         <div className="bg-blue-500 px-6 py-4">
-          <h1 className="text-2xl font-bold text-white">Профиль пользователя</h1>
+          <h1 className="text-2xl font-bold text-white">Профиль трейдера</h1>
+          <div className="text-white text-sm mt-2">
+            Текущее время: {currentTime}
+          </div>
         </div>
 
         <div className="p-6">
-          <div className="grid grid-cols-2 gap-6">
-            {/* Left Column - User Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* User Information */}
             <div className="bg-white p-6 rounded-lg border border-gray-200">
               <h2 className="text-xl font-semibold mb-4">Информация о пользователе</h2>
               <div className="space-y-4">
@@ -138,18 +124,27 @@ export default function ProfilePage() {
                 </div>
 
                 <div>
+                  <label className="block text-sm font-medium text-gray-700">Статус верификации</label>
+                  <p className="mt-1 text-gray-900">{user.verification_level || 'Не верифицирован'}</p>
+                </div>
+
+                <div>
                   <label className="block text-sm font-medium text-gray-700">Дата регистрации</label>
-                  <p className="mt-1 text-gray-900">{formatDate(user.created_at)}</p>
+                  <p className="mt-1 text-gray-900">
+                    {formatDate(user.created_at, timeZones.find(tz => tz.id === selectedTimezone))}
+                  </p>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Последнее обновление</label>
-                  <p className="mt-1 text-gray-900">{formatDate(user.updated_at)}</p>
+                  <p className="mt-1 text-gray-900">
+                    {formatDate(user.updated_at, timeZones.find(tz => tz.id === selectedTimezone))}
+                  </p>
                 </div>
               </div>
             </div>
 
-            {/* Right Column - Status Information */}
+            {/* Status Information */}
             <div className="bg-white p-6 rounded-lg border border-gray-200">
               <h2 className="text-xl font-semibold mb-4">Статусы</h2>
               <div className="space-y-4">
@@ -168,89 +163,59 @@ export default function ProfilePage() {
                     <span className="text-gray-900">{user.pay_out ? 'Активно' : 'Неактивно'}</span>
                   </div>
                 </div>
+
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-gray-700">Доступ</label>
+                  <div className="flex items-center">
+                    <div className={`w-3 h-3 rounded-full mr-2 ${user.access ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    <span className="text-gray-900">{user.access ? 'Активно' : 'Неактивно'}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Timezone Selection */}
+          {/* Time Zone Settings */}
           <div className="mt-6 bg-white p-6 rounded-lg border border-gray-200">
-            <h2 className="text-xl font-semibold mb-4">Настройки отображения времени</h2>
-            <select
-              value={selectedTimezone}
-              onChange={(e) => setSelectedTimezone(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            >
-              <option value="UTC">UTC</option>
-              <option value="Europe/Moscow">Москва (UTC+3)</option>
-              <option value="Europe/Kaliningrad">Калининград (UTC+2)</option>
-              <option value="Asia/Yekaterinburg">Екатеринбург (UTC+5)</option>
-              <option value="Asia/Novosibirsk">Новосибирск (UTC+7)</option>
-              <option value="Asia/Vladivostok">Владивосток (UTC+10)</option>
-            </select>
-          </div>
-
-          {/* Password Change Section */}
-          <div className="mt-6 bg-white p-6 rounded-lg border border-gray-200">
-            <h2 className="text-xl font-semibold mb-4">Изменение пароля</h2>
-            <form onSubmit={handlePasswordChange} className="space-y-4">
+            <h2 className="text-xl font-semibold mb-4">Настройки часового пояса</h2>
+            {timezoneError && (
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-red-600">{timezoneError}</p>
+              </div>
+            )}
+            {successMessage && (
+              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-md">
+                <p className="text-green-600">{successMessage}</p>
+              </div>
+            )}
+            <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Текущий пароль
+                  Выберите часовой пояс
                 </label>
-                <input
-                  type="password"
-                  value={passwordForm.currentPassword}
-                  onChange={(e) => setPasswordForm({
-                    ...passwordForm,
-                    currentPassword: e.target.value
-                  })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  required
-                  minLength={6}
-                />
+                <select
+                  value={selectedTimezone}
+                  onChange={(e) => handleTimezoneChange(Number(e.target.value))}
+                  disabled={updateLoading}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                >
+                  {timeZones.map((tz) => (
+                    <option key={tz.id} value={tz.id}>
+                      {tz.display_name} ({tz.regions}) UTC{tz.utc_offset >= 0 ? '+' : ''}{tz.utc_offset}
+                    </option>
+                  ))}
+                </select>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Новый пароль
-                </label>
-                <input
-                  type="password"
-                  value={passwordForm.newPassword}
-                  onChange={(e) => setPasswordForm({
-                    ...passwordForm,
-                    newPassword: e.target.value
-                  })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  required
-                  minLength={6}
-                />
+              <div className="text-sm text-gray-500">
+                <p>Текущий часовой пояс: {timeZones.find(tz => tz.id === selectedTimezone)?.display_name}</p>
+                {updateLoading && (
+                  <div className="mt-2 flex items-center">
+                    <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent mr-2"></div>
+                    <span>Обновление...</span>
+                  </div>
+                )}
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Подтвердите новый пароль
-                </label>
-                <input
-                  type="password"
-                  value={passwordForm.confirmPassword}
-                  onChange={(e) => setPasswordForm({
-                    ...passwordForm,
-                    confirmPassword: e.target.value
-                  })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  required
-                  minLength={6}
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600"
-              >
-                Изменить пароль
-              </button>
-            </form>
+            </div>
           </div>
         </div>
       </div>
