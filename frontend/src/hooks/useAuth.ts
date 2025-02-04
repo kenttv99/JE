@@ -1,24 +1,23 @@
 // frontend/src/hooks/useAuth.ts
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { useSessionManager } from './useSessionManager';
 
 export function useAuth(requiredRole?: string) {
-  const { data: session, status } = useSession();
+  const { session, status, isLoading } = useSessionManager();
   const router = useRouter();
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (!isLoading && status === 'unauthenticated') {
       router.replace('/login');
-    } else if (requiredRole && session?.user?.role !== requiredRole) {
-      // If user is authenticated but has wrong role
-      if (session?.user?.role === 'trader') {
+    } else if (status === 'authenticated' && requiredRole && session?.user?.role !== requiredRole) {
+      if (session?.user?.role === 'trader' && !window.location.pathname.startsWith('/trader')) {
         router.replace('/trader/profile');
-      } else {
+      } else if (session?.user?.role !== 'trader') {
         router.replace('/');
       }
     }
-  }, [status, session, router, requiredRole]);
+  }, [status, session, router, requiredRole, isLoading]);
 
-  return { session, status, isLoading: status === 'loading' };
+  return { session, status, isLoading };
 }
