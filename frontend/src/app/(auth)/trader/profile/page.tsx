@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { TimeZone, TraderProfile } from '@/types/trader';
 import { useTraderTimezone } from '@/hooks/useTraderTimezone';
+import { usePasswordChange } from '@/hooks/usePasswordChange';
 
 interface ProfileUser {
   id: string;
@@ -19,26 +20,9 @@ interface ProfileUser {
   verification_level?: string;
 }
 
-const formatDate = (dateString: string, timeZone: TimeZone | undefined): string => {
-  try {
-    const date = new Date(dateString);
-    const offset = timeZone?.utc_offset || 0;
-    
-    // Adjust date based on timezone offset
-    const localDate = new Date(date.getTime() + offset * 60 * 60 * 1000);
-    
-    return localDate.toLocaleString('ru-RU', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'UTC'
-    });
-  } catch (error) {
-    console.error('Error formatting date:', error);
-    return 'Invalid date';
-  }
+const formatDate = (date: Date, offset: number): string => {
+  const d = new Date(date.getTime() + offset * 60 * 60 * 1000);
+  return d.toISOString().slice(0, 19).replace('T', ' '); // YYYY-MM-DD HH:MM:SS format
 };
 
 export default function TraderProfilePage() {
@@ -46,17 +30,24 @@ export default function TraderProfilePage() {
   const router = useRouter();
   const [currentTime, setCurrentTime] = useState<string>('');
   const [loading, setLoading] = useState(true);
-  
+
   const {
     timeZones,
     selectedTimezone,
     loading: timezoneLoading,
-    updateLoading,
-    error: timezoneError,
-    successMessage,
+    error,
     fetchTimeZones,
     handleTimezoneChange
   } = useTraderTimezone();
+
+  const {
+    passwords,
+    passwordError,
+    passwordSuccess,
+    isSubmitting,
+    handlePasswordChange,
+    handlePasswordInput
+  } = usePasswordChange();
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -65,20 +56,21 @@ export default function TraderProfilePage() {
   }, [status, router]);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      const now = new Date();
+    if (timeZones.length > 0) {
       const selectedTz = timeZones.find(tz => tz.id === selectedTimezone);
-      setCurrentTime(formatDate(now.toISOString(), selectedTz));
-    }, 1000);
-
-    return () => clearInterval(timer);
+      const timer = setInterval(() => {
+        setCurrentTime(formatDate(new Date(), selectedTz?.utc_offset || 0));
+      }, 1000);
+      return () => clearInterval(timer);
+    }
   }, [selectedTimezone, timeZones]);
 
   useEffect(() => {
-    if (session?.user) {
+    if (session?.user && timeZones.length === 0) {
       fetchTimeZones();
+      setLoading(false);
     }
-  }, [session]);
+  }, [session, timeZones.length, fetchTimeZones]);
 
   if (status === 'loading' || loading || timezoneLoading) {
     return (
@@ -107,115 +99,158 @@ export default function TraderProfilePage() {
           </div>
         </div>
 
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* User Information */}
-            <div className="bg-white p-6 rounded-lg border border-gray-200">
-              <h2 className="text-xl font-semibold mb-4">Информация о пользователе</h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Email</label>
-                  <p className="mt-1 text-gray-900">{user.email}</p>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Роль</label>
-                  <p className="mt-1 text-gray-900">{user.role || 'Не указана'}</p>
-                </div>
+        <div className="p-6 space-y-6">
+          {/* Two Column Layout with equal height */}
+          <div className="grid grid-cols-2 gap-6 auto-rows-fr">
+            {/* Left Column - now with full height */}
+            <div className="h-full">
+              <div className="bg-white p-6 rounded-lg border border-gray-200 h-full">
+                <h2 className="text-xl font-semibold mb-4">Информация о пользователе</h2>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Email</label>
+                    <p className="mt-1 text-gray-900">{user.email}</p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Роль</label>
+                    <p className="mt-1 text-gray-900">{user.role || 'Не указана'}</p>
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Статус верификации</label>
-                  <p className="mt-1 text-gray-900">{user.verification_level || 'Не верифицирован'}</p>
-                </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Статус верификации</label>
+                    <p className="mt-1 text-gray-900">{user.verification_level || 'Не верифицирован'}</p>
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Дата регистрации</label>
-                  <p className="mt-1 text-gray-900">
-                    {formatDate(user.created_at, timeZones.find(tz => tz.id === selectedTimezone))}
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Последнее обновление</label>
-                  <p className="mt-1 text-gray-900">
-                    {formatDate(user.updated_at, timeZones.find(tz => tz.id === selectedTimezone))}
-                  </p>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Дата регистрации</label>
+                    <p className="mt-1 text-gray-900">
+                      {formatDate(new Date(user.created_at), timeZones.find(tz => tz.id === selectedTimezone)?.utc_offset || 0)}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Status Information */}
-            <div className="bg-white p-6 rounded-lg border border-gray-200">
-              <h2 className="text-xl font-semibold mb-4">Статусы</h2>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-gray-700">Pay In</label>
-                  <div className="flex items-center">
-                    <div className={`w-3 h-3 rounded-full mr-2 ${user.pay_in ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                    <span className="text-gray-900">{user.pay_in ? 'Активно' : 'Неактивно'}</span>
+            {/* Right Column - with flex column layout for equal spacing */}
+            <div className="h-full flex flex-col space-y-6">
+              {/* Trading Directions */}
+              <div className="bg-white p-6 rounded-lg border border-gray-200 flex-1">
+                <h2 className="text-xl font-semibold mb-4">Направления для торговли</h2>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Pay In</label>
+                    <p className="mt-1 text-gray-900">{user.pay_in ? 'Активен' : 'Неактивен'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Pay Out</label>
+                    <p className="mt-1 text-gray-900">{user.pay_out ? 'Активен' : 'Неактивен'}</p>
                   </div>
                 </div>
+              </div>
 
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-gray-700">Pay Out</label>
-                  <div className="flex items-center">
-                    <div className={`w-3 h-3 rounded-full mr-2 ${user.pay_out ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                    <span className="text-gray-900">{user.pay_out ? 'Активно' : 'Неактивно'}</span>
+              {/* Timezone Settings */}
+              <div className="bg-white p-6 rounded-lg border border-gray-200 flex-1">
+                <h2 className="text-xl font-semibold mb-4">Настройки часового пояса</h2>
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="timezone" className="block text-sm font-medium text-gray-700">
+                      Выберите часовой пояс
+                    </label>
+                    <select
+                      id="timezone"
+                      value={selectedTimezone}
+                      onChange={(e) => handleTimezoneChange(Number(e.target.value))}
+                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                    >
+                      {timeZones.map((tz) => (
+                        <option key={tz.id} value={tz.id}>
+                          {tz.display_name} (UTC{tz.utc_offset >= 0 ? '+' : ''}{tz.utc_offset})
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-gray-700">Доступ</label>
-                  <div className="flex items-center">
-                    <div className={`w-3 h-3 rounded-full mr-2 ${user.access ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                    <span className="text-gray-900">{user.access ? 'Активно' : 'Неактивно'}</span>
-                  </div>
+                  {error && (
+                    <div className="text-red-500 text-sm mt-2">
+                      {error}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Time Zone Settings */}
-          <div className="mt-6 bg-white p-6 rounded-lg border border-gray-200">
-            <h2 className="text-xl font-semibold mb-4">Настройки часового пояса</h2>
-            {timezoneError && (
-              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-red-600">{timezoneError}</p>
-              </div>
-            )}
-            {successMessage && (
-              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-md">
-                <p className="text-green-600">{successMessage}</p>
-              </div>
-            )}
-            <div className="space-y-4">
+          {/* Full Width Password Change Section */}
+          <div className="bg-white p-6 rounded-lg border border-gray-200">
+            <h2 className="text-xl font-semibold mb-4">Смена пароля</h2>
+            <form onSubmit={handlePasswordChange} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Выберите часовой пояс
+                <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700">
+                  Текущий пароль
                 </label>
-                <select
-                  value={selectedTimezone}
-                  onChange={(e) => handleTimezoneChange(Number(e.target.value))}
-                  disabled={updateLoading}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                <input
+                  type="password"
+                  id="currentPassword"
+                  name="currentPassword"
+                  value={passwords.currentPassword}
+                  onChange={handlePasswordInput}
+                  required
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                />
+              </div>
+              <div>
+                <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
+                  Новый пароль
+                </label>
+                <input
+                  type="password"
+                  id="newPassword"
+                  name="newPassword"
+                  value={passwords.newPassword}
+                  onChange={handlePasswordInput}
+                  required
+                  minLength={8}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                />
+              </div>
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                  Подтвердите новый пароль
+                </label>
+                <input
+                  type="password"
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={passwords.confirmPassword}
+                  onChange={handlePasswordInput}
+                  required
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                />
+              </div>
+              
+              {passwordError && (
+                <div className="text-red-500 text-sm">
+                  {passwordError}
+                </div>
+              )}
+              {passwordSuccess && (
+                <div className="text-green-500 text-sm">
+                  {passwordSuccess}
+                </div>
+              )}
+
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white 
+                    ${isSubmitting ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}
+                    focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
                 >
-                  {timeZones.map((tz) => (
-                    <option key={tz.id} value={tz.id}>
-                      {tz.display_name} ({tz.regions}) UTC{tz.utc_offset >= 0 ? '+' : ''}{tz.utc_offset}
-                    </option>
-                  ))}
-                </select>
+                  {isSubmitting ? 'Изменение...' : 'Изменить пароль'}
+                </button>
               </div>
-              <div className="text-sm text-gray-500">
-                <p>Текущий часовой пояс: {timeZones.find(tz => tz.id === selectedTimezone)?.display_name}</p>
-                {updateLoading && (
-                  <div className="mt-2 flex items-center">
-                    <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent mr-2"></div>
-                    <span>Обновление...</span>
-                  </div>
-                )}
-              </div>
-            </div>
+            </form>
           </div>
         </div>
       </div>
