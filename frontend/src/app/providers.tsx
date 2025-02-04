@@ -15,8 +15,8 @@ export function Providers({ children, session }: ProvidersProps) {
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 60 * 1000, // 1 минута
-        gcTime: 5 * 60 * 1000, // 5 минут (заменили cacheTime на gcTime)
+        staleTime: 5 * 60 * 1000, // 5 minutes - increased from 1 minute
+        gcTime: 30 * 60 * 1000, // 30 minutes - increased from 5 minutes
         retry: 1,
         refetchOnWindowFocus: false,
       },
@@ -25,7 +25,12 @@ export function Providers({ children, session }: ProvidersProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <SessionProvider session={session}>
+      <SessionProvider 
+        session={session}
+        refetchInterval={0} // Disable automatic session refetching
+        refetchOnWindowFocus={false} // Prevent refetch on window focus
+        refetchWhenOffline={false} // Prevent refetch when coming back online
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

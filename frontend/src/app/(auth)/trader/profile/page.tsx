@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useSessionManager } from '@/hooks/useSessionManager';
 import { useDateTime } from '@/hooks/useDateTime';
 import { useTraderTimezone } from '@/hooks/useTraderTimezone';
@@ -8,6 +8,7 @@ import { usePasswordChange } from '@/hooks/usePasswordChange';
 import { useProfile } from '@/hooks/useProfile';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { TraderData, DEFAULT_TRADER_DATA } from '@/types/auth';
+import { useSessionContext } from '@/contexts/SessionContext';
 
 // Helper Components - Memoized for better performance
 const InfoField = ({ label, value }: { label: string; value: string | number | undefined }) => (
@@ -58,7 +59,7 @@ const ErrorAlert = ({ message }: { message: string }) => (
 
 export default function TraderProfilePage() {
   // Use centralized session management
-  const { session, isLoading: sessionLoading } = useSessionManager();
+  const { session, isLoading: sessionLoading } = useSessionContext();
   const { profile, isLoading: profileLoading, error: profileError } = useProfile();
   const { 
     timeZones, 

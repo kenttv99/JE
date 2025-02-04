@@ -1,44 +1,17 @@
-import NextAuth from 'next-auth';
-import { JWT } from 'next-auth/jwt';
+// frontend/src/types/next-auth.d.ts
+import 'next-auth';
+import { CustomUser } from '@/lib/auth.config';
 
 declare module 'next-auth' {
-  interface Session {
-    accessToken?: string;
-    user: {
-      id: string;
-      email: string;
-      role?: string;
-      verification_level?: number;
-      pay_in?: boolean;
-      pay_out?: boolean;
-      created_at?: string;
-      updated_at?: string;
-    }
-  }
+  interface User extends CustomUser {}
 
-  interface User {
-    id: string;
-    email: string;
-    role?: string;
-    verification_level?: number;
-    pay_in?: boolean;
-    pay_out?: boolean;
-    access_token?: string;
-    created_at?: string;
-    updated_at?: string;
+  interface Session {
+    user: CustomUser;
   }
 }
 
 declare module 'next-auth/jwt' {
   interface JWT {
-    id: string;
-    email: string;
-    role?: string;
-    verification_level?: number;
-    pay_in?: boolean;
-    pay_out?: boolean;
-    accessToken?: string;
-    created_at?: string;
-    updated_at?: string;
+    user?: CustomUser;
   }
 }

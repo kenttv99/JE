@@ -1,39 +1,32 @@
-// frontend/middleware.ts
-import { withAuth } from "next-auth/middleware";
+// frontend/src/middleware.ts
 import { NextResponse } from 'next/server';
-import { ExtendedJWT } from './src/types/auth';
+import { getToken } from 'next-auth/jwt';
+import { withAuth } from 'next-auth/middleware';
 
 export default withAuth(
-  function middleware(req) {
-    const token = req.nextauth.token as ExtendedJWT | null;
-    const { pathname } = req.nextUrl;
+  async function middleware(req) {
+    const token = await getToken({ req });
+    const pathname = req.nextUrl.pathname;
 
-    // If user is authenticated
+    // If token exists but trying to access login page, redirect based on role
+    if (token && pathname === '/login') {
+      const role = token.role as string;
+      const redirectPath = role === 'trader' ? '/trader/profile' : `/${role}`;
+      return NextResponse.redirect(new URL(redirectPath, req.url));
+    }
+
+    // Protected routes check
     if (token) {
-      const userRole = token.role;
-
-      // Only redirect from login if we're authenticated
-      if (pathname === '/login') {
-        switch (userRole) {
-          case 'trader':
-            return NextResponse.redirect(new URL('/trader/profile', req.url));
-          case 'admin':
-            return NextResponse.redirect(new URL('/admin', req.url));
-          case 'merchant':
-            return NextResponse.redirect(new URL('/merchant', req.url));
-          default:
-            return NextResponse.redirect(new URL('/', req.url));
-        }
-      }
-
-      // Role-based path protection
-      if (pathname.startsWith('/trader') && userRole !== 'trader') {
+      const role = token.role as string;
+      
+      // Role-based access control
+      if (pathname.startsWith('/trader') && role !== 'trader') {
         return NextResponse.redirect(new URL('/', req.url));
       }
-      if (pathname.startsWith('/admin') && userRole !== 'admin') {
+      if (pathname.startsWith('/admin') && role !== 'admin') {
         return NextResponse.redirect(new URL('/', req.url));
       }
-      if (pathname.startsWith('/merchant') && userRole !== 'merchant') {
+      if (pathname.startsWith('/merchant') && role !== 'merchant') {
         return NextResponse.redirect(new URL('/', req.url));
       }
     }
@@ -42,10 +35,7 @@ export default withAuth(
   },
   {
     callbacks: {
-      authorized: ({ token }) => true, // Let the middleware handle the auth logic
-    },
-    pages: {
-      signIn: '/login',
+      authorized: ({ token }) => !!token,
     },
   }
 );
@@ -53,9 +43,8 @@ export default withAuth(
 export const config = {
   matcher: [
     '/login',
-    '/user',
+    '/trader/:path*',
     '/admin/:path*',
     '/merchant/:path*',
-    '/trader/:path*',
   ],
 };
