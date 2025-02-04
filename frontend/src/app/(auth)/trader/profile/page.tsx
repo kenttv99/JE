@@ -2,42 +2,19 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { TimeZone, TraderProfile } from '@/types/trader';
+import { useAuth } from '@/hooks/useAuth';
+import { useDateTime } from '@/hooks/useDateTime';
 import { useTraderTimezone } from '@/hooks/useTraderTimezone';
 import { usePasswordChange } from '@/hooks/usePasswordChange';
-
-interface ProfileUser {
-  id: string;
-  email: string;
-  role: string;
-  pay_in: boolean;
-  pay_out: boolean;
-  access: boolean;
-  created_at: string;
-  updated_at: string;
-  verification_level?: string;
-}
-
-const formatDate = (date: Date, offset: number): string => {
-  const d = new Date(date.getTime() + offset * 60 * 60 * 1000);
-  return d.toISOString().slice(0, 19).replace('T', ' '); // YYYY-MM-DD HH:MM:SS format
-};
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function TraderProfilePage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-  const [currentTime, setCurrentTime] = useState<string>('');
-  const [loading, setLoading] = useState(true);
-
-  const {
-    timeZones,
+  const { session, status, isLoading } = useAuth('trader');
+  const { 
+    timeZones, 
     selectedTimezone,
-    loading: timezoneLoading,
-    error,
-    fetchTimeZones,
-    handleTimezoneChange
+    error: timezoneError,
+    handleTimezoneChange 
   } = useTraderTimezone();
 
   const {
@@ -49,45 +26,13 @@ export default function TraderProfilePage() {
     handlePasswordInput
   } = usePasswordChange();
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-    }
-  }, [status, router]);
-
-  useEffect(() => {
-    if (timeZones.length > 0) {
-      const selectedTz = timeZones.find(tz => tz.id === selectedTimezone);
-      const timer = setInterval(() => {
-        setCurrentTime(formatDate(new Date(), selectedTz?.utc_offset || 0));
-      }, 1000);
-      return () => clearInterval(timer);
-    }
-  }, [selectedTimezone, timeZones]);
-
-  useEffect(() => {
-    if (session?.user && timeZones.length === 0) {
-      fetchTimeZones();
-      setLoading(false);
-    }
-  }, [session, timeZones.length, fetchTimeZones]);
-
-  if (status === 'loading' || loading || timezoneLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Загрузка...</p>
-        </div>
-      </div>
-    );
+  const currentTime = useDateTime(timeZones.find(tz => tz.id === selectedTimezone)?.utc_offset);
+  
+  if (isLoading || !session?.user) {
+    return <LoadingSpinner />;
   }
 
-  if (!session?.user) {
-    return null;
-  }
-
-  const user = session.user as ProfileUser;
+  const user = session.user;
 
   return (
     <div className="min-mx-[200px]">
@@ -100,9 +45,8 @@ export default function TraderProfilePage() {
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Two Column Layout with equal height */}
           <div className="grid grid-cols-2 gap-6 auto-rows-fr">
-            {/* Left Column - now with full height */}
+            {/* Left Column - User Information */}
             <div className="h-full">
               <div className="bg-white p-6 rounded-lg border border-gray-200 h-full">
                 <h2 className="text-xl font-semibold mb-4">Информация о пользователе</h2>
@@ -125,14 +69,17 @@ export default function TraderProfilePage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Дата регистрации</label>
                     <p className="mt-1 text-gray-900">
-                      {formatDate(new Date(user.created_at), timeZones.find(tz => tz.id === selectedTimezone)?.utc_offset || 0)}
+                      {user.created_at 
+                        ? new Date(user.created_at).toISOString().slice(0, 19).replace('T', ' ')
+                        : 'Не указана'
+                      }
                     </p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Right Column - with flex column layout for equal spacing */}
+            {/* Right Column */}
             <div className="h-full flex flex-col space-y-6">
               {/* Trading Directions */}
               <div className="bg-white p-6 rounded-lg border border-gray-200 flex-1">
@@ -170,9 +117,9 @@ export default function TraderProfilePage() {
                       ))}
                     </select>
                   </div>
-                  {error && (
+                  {timezoneError && (
                     <div className="text-red-500 text-sm mt-2">
-                      {error}
+                      {timezoneError}
                     </div>
                   )}
                 </div>
@@ -180,7 +127,7 @@ export default function TraderProfilePage() {
             </div>
           </div>
 
-          {/* Full Width Password Change Section */}
+          {/* Password Change Section */}
           <div className="bg-white p-6 rounded-lg border border-gray-200">
             <h2 className="text-xl font-semibold mb-4">Смена пароля</h2>
             <form onSubmit={handlePasswordChange} className="space-y-4">
