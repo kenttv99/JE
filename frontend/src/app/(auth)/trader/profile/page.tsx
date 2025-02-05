@@ -7,10 +7,11 @@ import { useTraderTimezone } from '@/hooks/useTraderTimezone';
 import { usePasswordChange } from '@/hooks/usePasswordChange';
 import { useProfile } from '@/hooks/useProfile';
 import { TraderData, DEFAULT_TRADER_DATA } from '@/types/auth';
+import LoadingSpinner from '@/components/LoadingSpinner'
 
-const LoadingSpinner: FC = () => (
-  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500" />
-);
+// const LoadingSpinner: FC = () => (
+//   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500" />
+// );
 
 interface InfoFieldProps {
   label: string;
@@ -79,9 +80,9 @@ const TraderProfilePage: FC = () => {
   if (status === 'loading' || (profileLoading && !profileError)) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <LoadingSpinner />
-          <p className="mt-2 text-sm text-gray-600">Загрузка профиля...</p>
+        <div className="flex flex-col items-center justify-center">
+          <LoadingSpinner/>
+          <p className="mt-2 text-sm text-gray-600">Загрузка профиля</p>
         </div>
       </div>
     );

@@ -25,9 +25,9 @@ const LoadingSpinner: FC<LoadingSpinnerProps> = ({
           className={`animate-spin rounded-full border-2 border-gray-200 border-b-blue-500 ${sizeClasses[size]} ${className}`} 
           role="status"
         />
-        {showText && (
+        {/* {showText && (
           <p className="text-gray-600 mt-2">Загрузка...</p>
-        )}
+        )} */}
       </div>
     </div>
   );

@@ -24,13 +24,13 @@ export default function AuthLayout({
     }
   }, [status, router, isRedirecting]);
 
-  if (status === 'loading' || isRedirecting) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-2xl font-semibold">Загрузка...</div>
-      </div>
-    );
-  }
+  // if (status === 'loading' || isRedirecting) {
+  //   return (
+  //     <div className="min-h-screen flex items-center justify-center">
+  //       <div className="text-2xl font-semibold">Загрузка...</div>
+  //     </div>
+  //   );
+  // }
 
   if (!session) {
     return null;
