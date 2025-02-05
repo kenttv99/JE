@@ -1,4 +1,4 @@
-// frontend/src/middleware.ts
+// frontend/middleware.ts
 import { NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { withAuth } from 'next-auth/middleware';
@@ -8,31 +8,51 @@ export default withAuth(
     const token = await getToken({ req });
     const pathname = req.nextUrl.pathname;
 
-    // Protected routes check only
+    // If trying to access protected routes without authentication, redirect to login
+    if (!token && (
+      pathname.startsWith('/trader') ||
+      pathname.startsWith('/admin') ||
+      pathname.startsWith('/merchant')
+    )) {
+      return NextResponse.redirect(new URL('/login', req.url));
+    }
+
+    // If authenticated but trying to access wrong role's routes
     if (token) {
       const role = token.role as string;
       
-      // Role-based access control
+      // Role-based access control with specific redirects
       if (pathname.startsWith('/trader') && role !== 'trader') {
-        return NextResponse.redirect(new URL('/', req.url));
+        return NextResponse.redirect(new URL(`/${role}`, req.url));
       }
       if (pathname.startsWith('/admin') && role !== 'admin') {
-        return NextResponse.redirect(new URL('/', req.url));
+        return NextResponse.redirect(new URL(`/${role}`, req.url));
       }
       if (pathname.startsWith('/merchant') && role !== 'merchant') {
-        return NextResponse.redirect(new URL('/', req.url));
+        return NextResponse.redirect(new URL(`/${role}`, req.url));
       }
     }
 
+    // Allow the request to proceed
     return NextResponse.next();
   },
   {
     callbacks: {
       authorized: ({ token, req }) => {
-        // Allow access to login page regardless of auth status
+        // Allow access to login page always
         if (req.nextUrl.pathname === '/login') return true;
-        // Require token for protected routes
-        return !!token;
+        
+        // For protected routes, require token
+        if (
+          req.nextUrl.pathname.startsWith('/trader') ||
+          req.nextUrl.pathname.startsWith('/admin') ||
+          req.nextUrl.pathname.startsWith('/merchant')
+        ) {
+          return !!token;
+        }
+        
+        // Allow access to public routes
+        return true;
       },
     },
   }

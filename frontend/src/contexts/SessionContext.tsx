@@ -1,8 +1,8 @@
 // frontend/src/contexts/SessionContext.tsx
 'use client';
 
-import { createContext, useContext } from 'react';
-import { useSession } from 'next-auth/react';
+import { useEffect, createContext, useContext } from 'react';
+import { signOut, useSession } from 'next-auth/react';
 import { CustomSession } from '@/types/auth';
 
 interface SessionContextType {
@@ -20,17 +20,25 @@ const SessionContext = createContext<SessionContextType>({
 export const useSessionContext = () => useContext(SessionContext);
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
-  const { data: session, status } = useSession();
+    const { data: session, status } = useSession();
+    
+    // Handle session expiration
+    useEffect(() => {
+      if (session?.error === "RefreshAccessTokenError") {
+        signOut({ redirect: true, callbackUrl: '/login' });
+      }
+    }, [session]);
+  
+    return (
+      <SessionContext.Provider 
+        value={{ 
+          session: session as CustomSession, 
+          status,
+          isLoading: status === 'loading'
+        }}
+      >
+        {children}
+      </SessionContext.Provider>
+    );
+  }
 
-  return (
-    <SessionContext.Provider 
-      value={{ 
-        session: session as CustomSession, 
-        status,
-        isLoading: status === 'loading'
-      }}
-    >
-      {children}
-    </SessionContext.Provider>
-  );
-}
