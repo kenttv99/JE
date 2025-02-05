@@ -1,17 +1,14 @@
 'use client';
 
-import { FC, useMemo, useEffect } from 'react';
+import { FC, useMemo, useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useTraderTimezone } from '@/hooks/useTraderTimezone';
 import { usePasswordChange } from '@/hooks/usePasswordChange';
 import { useProfile } from '@/hooks/useProfile';
 import { TraderData, DEFAULT_TRADER_DATA } from '@/types/auth';
-import LoadingSpinner from '@/components/LoadingSpinner'
-
-// const LoadingSpinner: FC = () => (
-//   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500" />
-// );
+import LoadingSpinner from '@/components/LoadingSpinner';
+import { useTraderAddresses } from '@/hooks/useTraderAddresses';
 
 interface InfoFieldProps {
   label: string;
@@ -43,6 +40,81 @@ const StatusBadge: FC<StatusBadgeProps> = ({ enabled, label, description }) => (
     </div>
   </div>
 );
+
+const TrustedAddresses: FC = () => {
+  const { addresses, isLoading, error } = useTraderAddresses();
+  const [isOpen, setIsOpen] = useState(false);
+
+  if (isLoading) {
+    return (
+      <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="flex justify-center">
+          <LoadingSpinner />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white p-6 rounded-lg border border-gray-200">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold text-gray-800">
+          Доверенные адреса
+        </h2>
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          {isOpen ? 'Скрыть' : 'Показать'}
+        </button>
+      </div>
+      
+      {isOpen && (
+        <div className="mt-4">
+          {error ? (
+            <p className="text-red-600 text-sm">{error}</p>
+          ) : addresses.length === 0 ? (
+            <div className="text-center py-4 text-gray-500">
+              Нет доверенных адресов
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {addresses.map((address) => (
+                <div
+                  key={address.id}
+                  className="p-4 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors duration-200"
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {address.wallet_number}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {address.network} • {address.coin}
+                      </p>
+                    </div>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                        ${address.status === 'verified' ? 'bg-green-100 text-green-800' : 
+                          address.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                          'bg-yellow-100 text-yellow-800'}`}
+                    >
+                      {address.status === 'verified' ? 'Подтвержден' :
+                       address.status === 'rejected' ? 'Отклонен' : 'На проверке'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Обновлено: {new Date(address.updated_at).toLocaleString('ru-RU')}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const TraderProfilePage: FC = () => {
   const router = useRouter();
@@ -191,6 +263,9 @@ const TraderProfilePage: FC = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Trusted Addresses */}
+                <TrustedAddresses />
 
                 {/* Password Change */}
                 <div className="bg-white p-6 rounded-lg border border-gray-200">
