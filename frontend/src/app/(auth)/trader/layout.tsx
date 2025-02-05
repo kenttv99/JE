@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
@@ -113,13 +113,13 @@ export default function TraderLayout({
             <div className="text-sm text-gray-500 mb-2">
               Статус верификации: {session.user.verification_level || 'Не верифицирован'}
             </div>
-            <Link
-              href="/api/auth/signout"
-              className="flex items-center px-4 py-2 text-red-600 hover:bg-red-50 rounded-md transition-colors duration-200"
+            <button
+              onClick={() => signOut({ callbackUrl: '/login' })}
+              className="flex items-center px-4 py-2 text-red-600 hover:bg-red-50 rounded-md transition-colors duration-200 w-full"
             >
               <ArrowLeftOnRectangleIcon className="h-5 w-5 mr-3" />
               Выйти
-            </Link>
+            </button>
           </div>
         </div>
       </aside>
