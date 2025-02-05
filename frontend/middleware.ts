@@ -1,62 +1,44 @@
 // frontend/middleware.ts
 import { NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { withAuth } from 'next-auth/middleware';
+import { type NextRequest } from 'next/server';
 
-export default withAuth(
-  async function middleware(req) {
-    const token = await getToken({ req });
-    const pathname = req.nextUrl.pathname;
+export async function middleware(req: NextRequest) {
+  const token = await getToken({ req });
+  const { pathname } = req.nextUrl;
 
-    // If trying to access protected routes without authentication, redirect to login
-    if (!token && (
-      pathname.startsWith('/trader') ||
-      pathname.startsWith('/admin') ||
-      pathname.startsWith('/merchant')
-    )) {
-      return NextResponse.redirect(new URL('/login', req.url));
+  // Always allow access to login page and API routes
+  if (pathname.startsWith('/api') || pathname === '/login') {
+    if (token && pathname === '/login') {
+      // If user is already authenticated and tries to access login, 
+      // redirect to their role-specific page
+      return NextResponse.redirect(new URL('/trader/profile', req.url));
     }
-
-    // If authenticated but trying to access wrong role's routes
-    if (token) {
-      const role = token.role as string;
-      
-      // Role-based access control with specific redirects
-      if (pathname.startsWith('/trader') && role !== 'trader') {
-        return NextResponse.redirect(new URL(`/${role}`, req.url));
-      }
-      if (pathname.startsWith('/admin') && role !== 'admin') {
-        return NextResponse.redirect(new URL(`/${role}`, req.url));
-      }
-      if (pathname.startsWith('/merchant') && role !== 'merchant') {
-        return NextResponse.redirect(new URL(`/${role}`, req.url));
-      }
-    }
-
-    // Allow the request to proceed
     return NextResponse.next();
-  },
-  {
-    callbacks: {
-      authorized: ({ token, req }) => {
-        // Allow access to login page always
-        if (req.nextUrl.pathname === '/login') return true;
-        
-        // For protected routes, require token
-        if (
-          req.nextUrl.pathname.startsWith('/trader') ||
-          req.nextUrl.pathname.startsWith('/admin') ||
-          req.nextUrl.pathname.startsWith('/merchant')
-        ) {
-          return !!token;
-        }
-        
-        // Allow access to public routes
-        return true;
-      },
-    },
   }
-);
+
+  // No token, redirect to login
+  if (!token) {
+    const loginUrl = new URL('/login', req.url);
+    loginUrl.searchParams.set('callbackUrl', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // Check token expiry
+  if (token.error === "RefreshAccessTokenError") {
+    const loginUrl = new URL('/login', req.url);
+    loginUrl.searchParams.set('callbackUrl', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // Role-based access control
+  const role = token.role as string;
+  if (pathname.startsWith('/trader') && role !== 'trader') {
+    return NextResponse.redirect(new URL(`/${role}`, req.url));
+  }
+
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: [
@@ -64,5 +46,6 @@ export const config = {
     '/trader/:path*',
     '/admin/:path*',
     '/merchant/:path*',
-  ],
+    '/api/auth/:path*'
+  ]
 };
