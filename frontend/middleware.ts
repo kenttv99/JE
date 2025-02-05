@@ -8,14 +8,7 @@ export default withAuth(
     const token = await getToken({ req });
     const pathname = req.nextUrl.pathname;
 
-    // If token exists but trying to access login page, redirect based on role
-    if (token && pathname === '/login') {
-      const role = token.role as string;
-      const redirectPath = role === 'trader' ? '/trader/profile' : `/${role}`;
-      return NextResponse.redirect(new URL(redirectPath, req.url));
-    }
-
-    // Protected routes check
+    // Protected routes check only
     if (token) {
       const role = token.role as string;
       
@@ -35,7 +28,12 @@ export default withAuth(
   },
   {
     callbacks: {
-      authorized: ({ token }) => !!token,
+      authorized: ({ token, req }) => {
+        // Allow access to login page regardless of auth status
+        if (req.nextUrl.pathname === '/login') return true;
+        // Require token for protected routes
+        return !!token;
+      },
     },
   }
 );
