@@ -1,23 +1,17 @@
-// frontend/src/app/layout.tsx
-'use client';
+import './globals.css';
+import { Providers } from './providers';
 
-import { SessionProvider } from 'next-auth/react';
-import { ReactNode } from 'react';
-import { SessionProvider as CustomSessionProvider } from '@/contexts/SessionContext';
-
-interface RootLayoutProps {
-  children: ReactNode;
-}
-
-export default function RootLayout({ children }: RootLayoutProps) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
-      <body>
-        <SessionProvider>
-          <CustomSessionProvider>
-            {children}
-          </CustomSessionProvider>
-        </SessionProvider>
+      <body className="min-h-screen bg-gray-50">
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

@@ -1,11 +1,28 @@
 // frontend/src/components/LoadingSpinner.tsx
-export default function LoadingSpinner() {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Загрузка...</p>
-        </div>
+import { FC } from 'react';
+
+interface LoadingSpinnerProps {
+  className?: string;
+  showText?: boolean;
+}
+
+const LoadingSpinner: FC<LoadingSpinnerProps> = ({ 
+  className = "h-12 w-12", 
+  showText = true 
+}) => {
+  return (
+    <div className="flex items-center justify-center">
+      <div className="text-center">
+        <div 
+          className={`animate-spin rounded-full border-b-2 border-blue-500 ${className}`} 
+          role="status"
+        />
+        {showText && (
+          <p className="text-gray-600 mt-2">Загрузка...</p>
+        )}
       </div>
-    );
-  }
+    </div>
+  );
+};
+
+export default LoadingSpinner;
