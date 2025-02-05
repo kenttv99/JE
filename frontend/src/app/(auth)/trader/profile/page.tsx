@@ -1,6 +1,6 @@
 'use client';
 
-import { FC, useMemo, useEffect, useState } from 'react';
+import { FC } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useTraderTimezone } from '@/hooks/useTraderTimezone';
@@ -9,7 +9,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useTraderAddresses } from '@/hooks/useTraderAddresses';
 import { TraderData, DEFAULT_TRADER_DATA } from '@/types/auth';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { useMemo } from 'react';
 
 interface InfoFieldProps {
   label: string;
@@ -42,56 +42,49 @@ const StatusBadge: FC<StatusBadgeProps> = ({ enabled, label, description }) => (
   </div>
 );
 
-interface TrustedAddressesModalProps {
-  onClose: () => void;
-}
-
 const TrustedAddressesList: FC = () => {
   const { addresses, isLoading, error } = useTraderAddresses();
 
   return (
-    <div className="absolute right-0 mt-2 w-96 bg-white rounded-md shadow-lg overflow-hidden z-50 border border-gray-200">
-      <div className="max-h-96 overflow-y-auto">
-        {isLoading ? (
-          <div className="flex justify-center py-4">
-            <LoadingSpinner />
-          </div>
-        ) : error ? (
-          <p className="text-red-600 text-sm p-4">{error}</p>
-        ) : addresses.length === 0 ? (
-          <div className="text-center py-4 text-gray-500">
-            Нет доверенных адресов
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-200">
-            {addresses.map((address) => (
-              <div
-                key={address.id}
-                className="p-4 hover:bg-gray-50 transition-colors duration-150"
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-medium text-gray-900">{address.wallet_number}</p>
-                    <p className="text-sm text-gray-500">{address.network} • {address.coin}</p>
-                  </div>
-                  <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                      ${address.status === 'verified' ? 'bg-green-100 text-green-800' : 
-                        address.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                        'bg-yellow-100 text-yellow-800'}`}
-                  >
+    <div className="divide-y divide-gray-200">
+      {isLoading ? (
+        <div className="flex justify-center py-4">
+          <LoadingSpinner />
+        </div>
+      ) : error ? (
+        <p className="text-red-600 text-sm p-4">{error}</p>
+      ) : addresses.length === 0 ? (
+        <div className="text-center py-4 text-gray-500">
+          Нет доверенных адресов
+        </div>
+      ) : (
+        <>
+          {addresses.map((address) => (
+            <div key={address.id} className="p-4 hover:bg-gray-50">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-900 truncate">{address.wallet_number}</p>
+                  <p className="text-sm text-gray-500">{address.network} • {address.coin}</p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Обновлено: {new Date(address.updated_at).toLocaleString('ru-RU')}
+                  </p>
+                </div>
+                <div className="flex-shrink-0">
+                  <span className={`
+                    inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap
+                    ${address.status === 'verified' ? 'bg-green-100 text-green-800' :
+                      address.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                      'bg-yellow-100 text-yellow-800'}
+                  `}>
                     {address.status === 'verified' ? 'Подтвержден' :
                      address.status === 'rejected' ? 'Отклонен' : 'На проверке'}
                   </span>
                 </div>
-                <p className="text-xs text-gray-400 mt-2">
-                  Обновлено: {new Date(address.updated_at).toLocaleString('ru-RU')}
-                </p>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            </div>
+          ))}
+        </>
+      )}
     </div>
   );
 };
@@ -100,8 +93,14 @@ const TraderProfilePage: FC = () => {
   const router = useRouter();
   const { data: session, status } = useSession();
   const { profile, isLoading: profileLoading, error: profileError } = useProfile();
-  const [showAddressesModal, setShowAddressesModal] = useState(false);
-  
+  const {
+    isOpen,
+    dropdownRef,
+    handleMouseEnter,
+    handleMouseLeave,
+    toggleDropdown
+  } = useTraderAddresses();
+
   const { 
     timeZones, 
     selectedTimezone,
@@ -119,12 +118,6 @@ const TraderProfilePage: FC = () => {
     handlePasswordInput
   } = usePasswordChange();
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.replace('/login');
-    }
-  }, [status, router]);
-
   const traderData: TraderData = useMemo(() => ({
     ...DEFAULT_TRADER_DATA,
     ...(session?.user || {}),
@@ -135,7 +128,7 @@ const TraderProfilePage: FC = () => {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center justify-center">
-          <LoadingSpinner/>
+          <LoadingSpinner />
           <p className="mt-2 text-sm text-gray-600">Загрузка профиля</p>
         </div>
       </div>
@@ -172,22 +165,28 @@ const TraderProfilePage: FC = () => {
         <div className="bg-white shadow rounded-lg">
           {/* Header */}
           <div className="bg-blue-600 px-6 py-4 rounded-t-lg">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-white">Профиль трейдера</h1>
-            <div className="relative">
-              <button
-                onClick={() => setShowAddressesModal(!showAddressesModal)}
-                className="px-4 py-2 text-sm font-medium text-blue-600 bg-white rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Доверенные адреса
-              </button>
-              {showAddressesModal && <TrustedAddressesList />}
+            <div className="flex justify-between items-center">
+              <h1 className="text-2xl font-bold text-white">Профиль трейдера</h1>
+              <div className="relative">
+                <button
+                  onClick={toggleDropdown}
+                  className="px-4 py-2 text-sm font-medium text-blue-600 bg-white rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Доверенные адреса
+                </button>
+                {isOpen && (
+                  <div
+                    ref={dropdownRef}
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={handleMouseLeave}
+                    className="absolute right-0 mt-2 w-96 bg-white rounded-md shadow-lg overflow-hidden z-50 border border-gray-200"
+                  >
+                    <TrustedAddressesList />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-
-          {/* Trusted Addresses Modal
-          {showAddressesModal && <TrustedAddressesModal onClose={() => setShowAddressesModal(false)} />} */}
 
           {/* Main Content */}
           <div className="p-6">
@@ -321,7 +320,7 @@ const TraderProfilePage: FC = () => {
                       disabled={isSubmitting}
                       className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white
                         ${isSubmitting ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'}
-                        focus:outline-nonefocus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+                        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
                         transition-colors duration-200
                         disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
