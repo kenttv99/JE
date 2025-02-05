@@ -108,13 +108,15 @@ export const authOptions: NextAuthOptions = {
           accessToken: customUser.access_token,
           created_at: customUser.created_at,
           updated_at: customUser.updated_at,
-          tokenExpires: Math.floor(Date.now() / 1000) + 24 * 60 * 60
+          tokenExpires: Math.floor(Date.now() / 1000) + 23 * 60 * 60
         };
       }
 
       // Check token expiration
       const tokenExpires = token.tokenExpires as number | undefined;
-      if (tokenExpires && Math.floor(Date.now() / 1000) > tokenExpires) {
+      const currentTime = Math.floor(Date.now() / 1000);
+      // Add a 5-minute buffer before expiration
+      if (tokenExpires && currentTime > tokenExpires - 300) {
         return { ...token, error: "RefreshAccessTokenError" };
       }
 

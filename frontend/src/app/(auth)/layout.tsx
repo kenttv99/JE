@@ -1,4 +1,3 @@
-// frontend/src/app/(auth)/layout.tsx
 'use client';
 
 import { useSession } from 'next-auth/react';
@@ -15,23 +14,27 @@ export default function AuthLayout({
   const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
+    // Only redirect if we're sure the user is unauthenticated
     if (status === 'unauthenticated' && !isRedirecting) {
       setIsRedirecting(true);
-      const timeout = setTimeout(() => {
-        router.push('/login');
-      }, 100);
-      return () => clearTimeout(timeout);
+      router.replace('/login'); // Use replace instead of push to prevent history stacking
+    }
+    // Reset redirecting state when status changes
+    if (status !== 'unauthenticated') {
+      setIsRedirecting(false);
     }
   }, [status, router, isRedirecting]);
 
-  // if (status === 'loading' || isRedirecting) {
-  //   return (
-  //     <div className="min-h-screen flex items-center justify-center">
-  //       <div className="text-2xl font-semibold">Загрузка...</div>
-  //     </div>
-  //   );
-  // }
+  // Show loading state only when we're not sure about authentication
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-2xl font-semibold">Загрузка...</div>
+      </div>
+    );
+  }
 
+  // Only render children if we have a session
   if (!session) {
     return null;
   }
