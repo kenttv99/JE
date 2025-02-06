@@ -23,8 +23,8 @@ export function useTraderOrders(filterStatus: string) {
         });
         setOrders(response.data);
       } catch (error) {
-        setError('Error fetching orders');
         console.error('Error fetching orders:', error);
+        setOrders([]); // Set orders to an empty array on error
       } finally {
         setLoading(false);
       }
