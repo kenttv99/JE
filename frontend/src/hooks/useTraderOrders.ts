@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 
 interface Order {
@@ -7,31 +7,33 @@ interface Order {
   detailsNumber: string;
   createdAt: string;
   status: string;
-  // Add other fields as necessary
 }
 
-export function useTraderOrders(filterStatus: string) {
+interface UseTraderOrdersResult {
+  orders: Order[];
+  loading: boolean;
+  error: string | null;
+}
+
+export const useTraderOrders = (): UseTraderOrdersResult => {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const response = await axios.get('/api/orders', {
-          params: { status: filterStatus }
-        });
-        setOrders(response.data);
-      } catch (error) {
-        console.error('Error fetching orders:', error);
-        setOrders([]); // Set orders to an empty array on error
-      } finally {
-        setLoading(false);
-      }
-    };
+    setLoading(true);
+    setError(null);
 
-    fetchOrders();
-  }, [filterStatus]);
+    axios.get('/api/orders?status=processing')
+      .then(response => {
+        setOrders(response.data);
+        setLoading(false);
+      })
+      .catch(error => {
+        setError(error.message);
+        setLoading(false);
+      });
+  }, []);
 
   return { orders, loading, error };
-}
+};

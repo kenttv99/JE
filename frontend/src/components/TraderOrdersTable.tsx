@@ -109,33 +109,20 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div>
-        <div className="mb-4">
-          <label htmlFor="columnOrder" className="block text-sm font-medium text-gray-700">
-            Change Column Order:
-          </label>
-          <input
-            type="text"
-            id="columnOrder"
-            name="columnOrder"
-            className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-            placeholder="Enter column order (comma-separated)"
-            onBlur={(e) => handleColumnOrderChange(e.target.value.split(','))}
-          />
-        </div>
-        <div className="overflow-x-auto">
-          <table {...getTableProps()} className="min-w-full divide-y divide-gray-200 border">
-            <thead className="bg-gray-100">
-              {headerGroups.map((headerGroup: HeaderGroup<Order>) => (
-                <tr {...headerGroup.getHeaderGroupProps()}>
-                  {headerGroup.headers.map((column: ColumnInstance<Order>, index: number) => (
-                    <DragableColumnHeader key={column.id} column={column} index={index} />
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody {...getTableBodyProps()} className="bg-white divide-y divide-gray-200">
-              {rows.map((row: Row<Order>) => {
+      <div className="overflow-x-auto">
+        <table {...getTableProps()} className="min-w-full divide-y divide-gray-200 border">
+          <thead className="bg-gray-100">
+            {headerGroups.map((headerGroup: HeaderGroup<Order>) => (
+              <tr {...headerGroup.getHeaderGroupProps()}>
+                {headerGroup.headers.map((column: ColumnInstance<Order>, index: number) => (
+                  <DragableColumnHeader key={column.id} column={column} index={index} />
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody {...getTableBodyProps()} className="bg-white divide-y divide-gray-200">
+            {rows.length > 0 ? (
+              rows.map((row: Row<Order>) => {
                 prepareRow(row);
                 return (
                   <tr {...row.getRowProps()} className="hover:bg-gray-100 transition-colors">
@@ -149,10 +136,16 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
                     ))}
                   </tr>
                 );
-              })}
-            </tbody>
-          </table>
-        </div>
+              })
+            ) : (
+              <tr>
+                <td colSpan={columns.length} className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-center">
+                  Нет активных ордеров
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </DndProvider>
   );
