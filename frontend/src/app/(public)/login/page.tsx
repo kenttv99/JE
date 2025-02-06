@@ -1,14 +1,14 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useState, Suspense } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
-export default function LoginPage() {
+function LoginPageComponent() {
   const router = useRouter();
   const { data: session, status } = useSession({ required: false });
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams(); 
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -37,7 +37,7 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
       setError('Пожалуйста, заполните все поля');
       return;
@@ -161,5 +161,13 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner size="lg" />}>
+      <LoginPageComponent />
+    </Suspense>
   );
 }
