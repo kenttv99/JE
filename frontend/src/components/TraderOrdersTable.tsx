@@ -10,6 +10,8 @@ import {
   CellProps,
   ColumnInstance,
 } from 'react-table';
+import { DndProvider, useDrag, useDrop } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 
 interface Order {
   id: string;
@@ -66,64 +68,93 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
     setColumnOrder,
   } = useTable<Order>(
     { columns, data },
-    useColumnOrder
+    useColumnOrder,
   ) as TableInstance<Order> & { setColumnOrder: (order: string[]) => void };
 
   const handleColumnOrderChange = (newOrder: string[]) => {
     setColumnOrder(newOrder);
   };
 
+  const DragableColumnHeader = ({ column, index }: { column: ColumnInstance<Order>; index: number }) => {
+    const [, ref] = useDrag({
+      type: 'COLUMN',
+      item: { index },
+    });
+
+    const [, drop] = useDrop({
+      accept: 'COLUMN',
+      hover: (draggedItem: { index: number }) => {
+        if (draggedItem.index !== index) {
+          const newOrder = [...headerGroups[0].headers];
+          const [removed] = newOrder.splice(draggedItem.index, 1);
+          newOrder.splice(index, 0, removed);
+          handleColumnOrderChange(newOrder.map(col => col.id as string));
+          draggedItem.index = index;
+        }
+      },
+    });
+
+    const combinedRef = (node: HTMLTableHeaderCellElement | null) => {
+      ref(node);
+      drop(node);
+    };
+
+    return (
+      <th {...column.getHeaderProps()} ref={combinedRef}
+        className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border-r">
+        {column.render('Header')}
+      </th>
+    );
+  };
+
   return (
-    <div>
-      <div className="mb-4">
-        <label htmlFor="columnOrder" className="block text-sm font-medium text-gray-700">
-          Change Column Order:
-        </label>
-        <input
-          type="text"
-          id="columnOrder"
-          name="columnOrder"
-          className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-          placeholder="Enter column order (comma-separated)"
-          onBlur={(e) => handleColumnOrderChange(e.target.value.split(','))}
-        />
-      </div>
-      <div className="overflow-x-auto">
-        <table {...getTableProps()} className="min-w-full divide-y divide-gray-200 border">
-          <thead className="bg-gray-100">
-            {headerGroups.map((headerGroup: HeaderGroup<Order>) => (
-              <tr {...headerGroup.getHeaderGroupProps()}>
-                {headerGroup.headers.map((column: ColumnInstance<Order>) => (
-                  <th
-                    {...column.getHeaderProps()}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border-r"
-                  >
-                    {column.render('Header')}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody {...getTableBodyProps()} className="bg-white divide-y divide-gray-200">
-            {rows.map((row: Row<Order>) => {
-              prepareRow(row);
-              return (
-                <tr {...row.getRowProps()} className="hover:bg-gray-100 transition-colors">
-                  {row.cells.map((cell: Cell<Order>) => (
-                    <td
-                      {...cell.getCellProps()}
-                      className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 border-r"
-                    >
-                      {cell.render('Cell')}
-                    </td>
+    <DndProvider backend={HTML5Backend}>
+      <div>
+        <div className="mb-4">
+          <label htmlFor="columnOrder" className="block text-sm font-medium text-gray-700">
+            Change Column Order:
+          </label>
+          <input
+            type="text"
+            id="columnOrder"
+            name="columnOrder"
+            className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+            placeholder="Enter column order (comma-separated)"
+            onBlur={(e) => handleColumnOrderChange(e.target.value.split(','))}
+          />
+        </div>
+        <div className="overflow-x-auto">
+          <table {...getTableProps()} className="min-w-full divide-y divide-gray-200 border">
+            <thead className="bg-gray-100">
+              {headerGroups.map((headerGroup: HeaderGroup<Order>) => (
+                <tr {...headerGroup.getHeaderGroupProps()}>
+                  {headerGroup.headers.map((column: ColumnInstance<Order>, index: number) => (
+                    <DragableColumnHeader key={column.id} column={column} index={index} />
                   ))}
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              ))}
+            </thead>
+            <tbody {...getTableBodyProps()} className="bg-white divide-y divide-gray-200">
+              {rows.map((row: Row<Order>) => {
+                prepareRow(row);
+                return (
+                  <tr {...row.getRowProps()} className="hover:bg-gray-100 transition-colors">
+                    {row.cells.map((cell: Cell<Order>) => (
+                      <td
+                        {...cell.getCellProps()}
+                        className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 border-r"
+                      >
+                        {cell.render('Cell')}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+    </DndProvider>
   );
 };
 
