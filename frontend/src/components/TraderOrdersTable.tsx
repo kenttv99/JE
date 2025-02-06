@@ -1,5 +1,15 @@
 import React, { useMemo } from 'react';
-import { useTable, useColumnOrder } from 'react-table';
+import {
+  useTable,
+  useColumnOrder,
+  Column,
+  HeaderGroup,
+  Row,
+  Cell,
+  TableInstance,
+  CellProps,
+  ColumnInstance,
+} from 'react-table';
 
 interface Order {
   id: string;
@@ -16,16 +26,32 @@ interface OrdersTableProps {
 const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
   const data = useMemo(() => orders, [orders]);
 
-  const columns = useMemo(
+  const columns = useMemo<Column<Order>[]>(
     () => [
       { Header: 'ID', accessor: 'id' },
       { Header: 'Тип реквизитов', accessor: 'detailsType' },
       { Header: 'Номер реквизита', accessor: 'detailsNumber' },
       { Header: 'Дата создания', accessor: 'createdAt' },
-      { Header: 'Таймер', accessor: 'timer' },
-      { Header: 'Отмена', accessor: 'cancel' },
-      { Header: 'Подтверждение', accessor: 'confirm' },
-      { Header: 'Тикеты', accessor: 'tickets' },
+      {
+        Header: 'Таймер',
+        accessor: 'timer' as keyof Order,
+        Cell: ({ row }: CellProps<Order>) => <span>{/* Timer implementation */}</span>,
+      },
+      {
+        Header: 'Отмена',
+        accessor: 'cancel' as keyof Order,
+        Cell: ({ row }: CellProps<Order>) => <button>Отменить</button>,
+      },
+      {
+        Header: 'Подтверждение',
+        accessor: 'confirm' as keyof Order,
+        Cell: ({ row }: CellProps<Order>) => <button>Подтвердить</button>,
+      },
+      {
+        Header: 'Тикеты',
+        accessor: 'tickets' as keyof Order,
+        Cell: ({ row }: CellProps<Order>) => <span>{/* Tickets implementation */}</span>,
+      },
       { Header: 'Статус', accessor: 'status' },
     ],
     []
@@ -38,7 +64,10 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
     rows,
     prepareRow,
     setColumnOrder,
-  } = useTable({ columns, data }, useColumnOrder);
+  } = useTable<Order>(
+    { columns, data },
+    useColumnOrder
+  ) as TableInstance<Order> & { setColumnOrder: (order: string[]) => void };
 
   const handleColumnOrderChange = (newOrder: string[]) => {
     setColumnOrder(newOrder);
@@ -62,9 +91,9 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
       <div className="overflow-x-auto">
         <table {...getTableProps()} className="min-w-full divide-y divide-gray-200 border">
           <thead className="bg-gray-100">
-            {headerGroups.map(headerGroup => (
+            {headerGroups.map((headerGroup: HeaderGroup<Order>) => (
               <tr {...headerGroup.getHeaderGroupProps()}>
-                {headerGroup.headers.map(column => (
+                {headerGroup.headers.map((column: ColumnInstance<Order>) => (
                   <th
                     {...column.getHeaderProps()}
                     className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border-r"
@@ -76,11 +105,11 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
             ))}
           </thead>
           <tbody {...getTableBodyProps()} className="bg-white divide-y divide-gray-200">
-            {rows.map(row => {
+            {rows.map((row: Row<Order>) => {
               prepareRow(row);
               return (
                 <tr {...row.getRowProps()} className="hover:bg-gray-100 transition-colors">
-                  {row.cells.map(cell => (
+                  {row.cells.map((cell: Cell<Order>) => (
                     <td
                       {...cell.getCellProps()}
                       className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 border-r"
