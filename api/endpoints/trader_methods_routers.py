@@ -1,91 +1,93 @@
-from datetime import datetime
 import logging
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from typing import List
+from fastapi import FastAPI, Request
+from fastapi.openapi.utils import get_openapi
+from fastapi.middleware.cors import CORSMiddleware
 
-from database.init_db import get_async_db, PaymentMethodTrader
-from api.schemas import TraderMethodCreateRequest, TraderMethodResponse
+from api.endpoints.exchange_routers import router as exchange_router
+from api.endpoints.auth_routers import router as auth_router
+from api.endpoints.user_orders_routers import router as user_orders_router
+from api.endpoints.referrals_routers import router as referrals_router
+from api.endpoints.roles_routers import router as roles_router
+from api.endpoints.payments_routers import router as payments_router
+from api.endpoints.trader_routers import router as trader_router
+from api.endpoints.trader_addresses_routers import router as trader_addresses_router
+from api.endpoints.timezone_routers import router as timezone_router
+from api.endpoints.trader_methods_routers import router as trader_methods_router
 
-# Setup logging
+# Initialize FastAPI app
+app = FastAPI(
+    title="Crypto Exchange API",
+    version="1.0.0",
+    description="API for managing a cryptocurrency exchange",
+)
+
+# CORS Configuration
+origins = [
+    "http://localhost:3000",  # Replace with your frontend address
+    "https://example.com",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Logging Configuration
 from config.logging_config import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+# Include Routers
+app.include_router(exchange_router, prefix="/api/v1/exchange", tags=["Exchange"])
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])
+app.include_router(user_orders_router, prefix="/api/v1/orders", tags=["Orders"])
+app.include_router(referrals_router, prefix="/api/v1/referrals", tags=["Referrals"])
+app.include_router(roles_router, prefix="/api/v1/roles", tags=["Roles"])
+app.include_router(payments_router, prefix="/api/v1/payments", tags=["Payments"])
+app.include_router(trader_router, prefix="/api/v1/traders", tags=["Traders"])
+app.include_router(trader_addresses_router, prefix="/api/v1/trader_addresses", tags=["Trader Addresses"])
+app.include_router(timezone_router, prefix="/api/v1/timezones", tags=["Timezones"])
+app.include_router(trader_methods_router, prefix="/api/v1/trader_methods", tags=["Trader Methods"])
 
-@router.post("/add_method", response_model=TraderMethodResponse)
-async def add_method(request: TraderMethodCreateRequest, db: AsyncSession = Depends(get_async_db)):
-    """Add a new method."""
-    logger.info("Adding method with name: %s", request.name)
-    
-    new_method = PaymentMethodTrader(
-        method_name=request.name,
-        description=request.details,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+# Middleware for Logging Requests
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """Log incoming requests and outgoing responses."""
+    logger.info(f"Received request: {request.method} {request.url}")
+    response = await call_next(request)
+    logger.info(f"Response: {response.status_code}")
+    return response
+
+# Custom OpenAPI
+def custom_openapi():
+    """Customize OpenAPI schema."""
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title="Crypto Exchange API",
+        version="1.0.0",
+        description="API for managing a cryptocurrency exchange",
+        routes=app.routes,
     )
-    db.add(new_method)
-    
-    try:
-        await db.commit()
-    except Exception as e:
-        await db.rollback()
-        logger.error("Error adding method %s: %s", request.name, e)
-        raise HTTPException(status_code=500, detail="Error adding method")
-    
-    await db.refresh(new_method)
-    logger.info("Method %s added successfully", request.name)
-    return new_method
+    openapi_schema["components"]["securitySchemes"] = {
+        "OAuth2PasswordBearer": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+        }
+    }
+    for path in openapi_schema["paths"]:
+        for method in openapi_schema["paths"][path]:
+            openapi_schema["paths"][path][method]["security"] = [{"OAuth2PasswordBearer": []}]
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
 
-@router.delete("/{method_id}")
-async def delete_method(method_id: int, db: AsyncSession = Depends(get_async_db)):
-    """Delete a method."""
-    logger.info("Deleting method with ID: %d", method_id)
-    
-    result = await db.execute(select(PaymentMethodTrader).filter(PaymentMethodTrader.id == method_id))
-    method = result.scalars().first()
-    if not method:
-        logger.warning("Method with ID %d not found", method_id)
-        raise HTTPException(status_code=404, detail="Method not found")
-    
-    await db.delete(method)
-    
-    try:
-        await db.commit()
-    except Exception as e:
-        await db.rollback()
-        logger.error("Error deleting method %d: %s", method_id, e)
-        raise HTTPException(status_code=500, detail="Error deleting method")
-    
-    logger.info("Method %d deleted successfully", method_id)
-    return {"message": "Method deleted successfully"}
+app.openapi = custom_openapi
 
-@router.get("/get_methods", response_model=List[TraderMethodResponse])
-async def get_all_methods(db: AsyncSession = Depends(get_async_db)):
-    """Get all methods."""
-    logger.info("Getting all methods")
-    
-    result = await db.execute(select(PaymentMethodTrader))
-    methods = result.scalars().all()
-    
-    if not methods:
-        logger.warning("No methods found")
-        raise HTTPException(status_code=404, detail="No methods found")
-    
-    return methods
-
-@router.get("/get_{method_id}", response_model=TraderMethodResponse)
-async def get_method(method_id: int, db: AsyncSession = Depends(get_async_db)):
-    """Get details of a method."""
-    logger.info("Getting details of method with ID: %d", method_id)
-    
-    result = await db.execute(select(PaymentMethodTrader).filter(PaymentMethodTrader.id == method_id))
-    method = result.scalars().first()
-    
-    if not method:
-        logger.warning("Method with ID %d not found", method_id)
-        raise HTTPException(status_code=404, detail="Method not found")
-    
-    return method
+# Run Uvicorn Server
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

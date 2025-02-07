@@ -1,27 +1,30 @@
 import logging
 from fastapi import FastAPI, Request
 from fastapi.openapi.utils import get_openapi
+from fastapi.middleware.cors import CORSMiddleware
+
 from api.endpoints.exchange_routers import router as exchange_router
 from api.endpoints.auth_routers import router as auth_router
 from api.endpoints.user_orders_routers import router as user_orders_router
 from api.endpoints.referrals_routers import router as referrals_router
 from api.endpoints.roles_routers import router as roles_router
-from api.endpoints.payments_routers import router as payments_routers
-from api.endpoints.trader_routers import router as trader_routers
-from api.endpoints.trader_addresses_routers import router as trader_addresses_routers
-from api.endpoints.timezone_routers import router as timezone_routers
-from fastapi.middleware.cors import CORSMiddleware
+from api.endpoints.payments_routers import router as payments_router
+from api.endpoints.trader_routers import router as trader_router
+from api.endpoints.trader_addresses_routers import router as trader_addresses_router
+from api.endpoints.timezone_routers import router as timezone_router
+from api.endpoints.trader_methods_routers import router as trader_methods_router
+from api.endpoints.trader_orders_router import router as trader_orders_router
 
-# Инициализация приложения
+# Initialize FastAPI app
 app = FastAPI(
     title="Crypto Exchange API",
     version="1.0.0",
-    description="API для управления криптовалютным обменником",
+    description="API for managing a cryptocurrency exchange",
 )
 
-#CORS
+# CORS Configuration
 origins = [
-    "http://localhost:3000",  # Замените на адрес вашего фронтенда
+    "http://localhost:3000",  # Replace with your frontend address
     "https://example.com",
 ]
 
@@ -33,41 +36,42 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-# Настройка логирования с ротацией
+# Logging Configuration
 from config.logging_config import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-# Подключение маршрутов
-app.include_router(exchange_router, prefix="/api/v1", tags=["Exchange"])
-app.include_router(auth_router, prefix="/api/v1/auth", tags=["User"])
-app.include_router(trader_routers, prefix="/api/v1/traders", tags=["Traders"])
+# Include Routers
+app.include_router(exchange_router, prefix="/api/v1/exchange", tags=["Exchange"])
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(user_orders_router, prefix="/api/v1/orders", tags=["Orders"])
 app.include_router(referrals_router, prefix="/api/v1/referrals", tags=["Referrals"])
 app.include_router(roles_router, prefix="/api/v1/roles", tags=["Roles"])
-app.include_router(payments_routers, prefix="/api/v1/payments", tags=["Payments"])
-app.include_router(trader_addresses_routers, prefix="/api/v1/trader_addresses", tags=["Trader's adresses"])
-app.include_router(timezone_routers, prefix="/api/v1/trader_timezones", tags=["Trader's timezones"])
+app.include_router(payments_router, prefix="/api/v1/payments", tags=["Payments"])
+app.include_router(trader_router, prefix="/api/v1/traders", tags=["Traders"])
+app.include_router(trader_addresses_router, prefix="/api/v1/trader_addresses", tags=["Trader Addresses"])
+app.include_router(timezone_router, prefix="/api/v1/timezones", tags=["Timezones"])
+app.include_router(trader_methods_router, prefix="/api/v1/trader_methods", tags=["Trader Methods"])
+app.include_router(trader_orders_router, prefix="/api/v1/trader_orders", tags=["Trader Orders"])
 
-# Middleware для логирования
+# Middleware for Logging Requests
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    """Логирование входящих запросов и исходящих ответов."""
-    logger.info(f"Получен запрос: {request.method} {request.url}")
+    """Log incoming requests and outgoing responses."""
+    logger.info(f"Received request: {request.method} {request.url}")
     response = await call_next(request)
-    logger.info(f"Ответ: {response.status_code}")
+    logger.info(f"Response: {response.status_code}")
     return response
 
-# Кастомизация OpenAPI
+# Custom OpenAPI
 def custom_openapi():
-    """Настройка OpenAPI схемы."""
+    """Customize OpenAPI schema."""
     if app.openapi_schema:
         return app.openapi_schema
     openapi_schema = get_openapi(
         title="Crypto Exchange API",
         version="1.0.0",
-        description="API для управления криптовалютным обменником",
+        description="API for managing a cryptocurrency exchange",
         routes=app.routes,
     )
     openapi_schema["components"]["securitySchemes"] = {
@@ -85,7 +89,7 @@ def custom_openapi():
 
 app.openapi = custom_openapi
 
-# Запуск через Uvicorn
+# Run Uvicorn Server
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

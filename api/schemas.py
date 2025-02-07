@@ -84,7 +84,7 @@ class UserDetailedResponse(BaseModel):
     verification_level: VerificationLevelEnum
     created_at: datetime
     updated_at: datetime
-    orders: List['OrderResponse'] = []
+    orders: List['TraderOrderResponse'] = []
     referral_code: Optional[str] = None
 
     class Config:
@@ -102,7 +102,7 @@ class PaymentMethodSchema(BaseModel):
     class Config:
         from_attributes = True
 
-class OrderResponse(BaseModel):
+class TraderOrderResponse(BaseModel):
     id: int
     order_type: OrderTypeEnum
     currency: str
@@ -114,6 +114,23 @@ class OrderResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     payment_method: Optional[PaymentMethodSchema] = None
+
+    class Config:
+        from_attributes = True
+
+class TraderOrderCreate(BaseModel):
+    order_type: OrderTypeEnum
+    currency: str
+    amount: Decimal
+    total_rub: Decimal
+    payment_method_id: int
+
+    class Config:
+        from_attributes = True
+
+class TraderOrderUpdate(BaseModel):
+    status: OrderStatus
+    aml_status: Optional[AMLStatusEnum] = None
 
     class Config:
         from_attributes = True
