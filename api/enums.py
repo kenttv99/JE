@@ -46,7 +46,7 @@ class TraderPaymentMethodEnum(Enum):
     CARD = "CARD"
     CRYPTO = "CRYPTO"
 
-class OrderStatus(Enum):
+class TraderOrderStatus(Enum):
     pending = "pending"
     processing = "processing"
     completed = "completed"

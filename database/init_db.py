@@ -28,7 +28,11 @@ from api.enums import (
     OrderTypeEnum,
     AMLStatusEnum,
     PaymentMethodEnum,
-    VerificationLevelEnum
+    VerificationLevelEnum,
+    TraderPaymentMethodEnum,
+    TraderVerificationLevelEnum,
+    TraderAddressStatusEnum,
+    TraderOrderTypeEnum
 )
 
 # Создание асинхронного движка SQLAlchemy
@@ -101,7 +105,7 @@ class Trader(Base):
     email = Column(String(255), unique=True, nullable=False)
     password_hash = Column(Text, nullable=False)
     avatar_url = Column(String(255), nullable=True)
-    verification_level = Column(Integer, default=0)
+    verification_level = Column(Enum(TraderVerificationLevelEnum), default=TraderVerificationLevelEnum.UNVERIFIED, nullable=False)
     referrer_id = Column(Integer, ForeignKey("traders.id"), nullable=True)
     referrer_percent = Column(DECIMAL(5, 2), default=0)
     pay_in = Column(Boolean, default=False)
@@ -132,7 +136,7 @@ class TraderAddress(Base):
     wallet_number = Column(String(255), nullable=False)
     network = Column(String(50), nullable=False)
     coin = Column(String(50), nullable=False)
-    status = Column(Enum(AddressStatusEnum), nullable=False, default=AddressStatusEnum.check)
+    status = Column(Enum(TraderAddressStatusEnum), nullable=False, default=TraderAddressStatusEnum.check)
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -268,7 +272,7 @@ class TraderOrder(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     trader_id = Column(Integer, ForeignKey("traders.id"), nullable=False)
-    order_type = Column(Enum(OrderTypeEnum, name='ordertypeenum'), nullable=False)
+    order_type = Column(Enum(TraderOrderTypeEnum, name='traderordertypeenum'), nullable=False)
     currency = Column(String(10), nullable=False)
     amount = Column(DECIMAL(20, 8), nullable=False)
     total_rub = Column(DECIMAL(20, 2), nullable=False)
@@ -287,6 +291,7 @@ class TraderOrder(Base):
 
     # Связи
     trader = relationship("Trader", back_populates="orders")
+    req_trader = relationship("ReqTrader", back_populates="order", cascade="all, delete-orphan")
     payment_method = relationship("PaymentMethodTrader", back_populates="orders")
 
 
@@ -294,7 +299,7 @@ class PaymentMethodTrader(Base):
     __tablename__ = "payment_methods_trader"
 
     id = Column(Integer, primary_key=True, index=True)
-    method_name = Column(Enum(PaymentMethodEnum), unique=True, nullable=False)
+    method_name = Column(Enum(TraderPaymentMethodEnum), unique=True, nullable=False)
     description = Column(String(255), nullable=True)
 
     # Связь с ордерами
@@ -306,6 +311,7 @@ class ReqTrader(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     trader_id = Column(Integer, ForeignKey("traders.id"), nullable=False)
+    order_id = Column(Integer, ForeignKey("trader_orders.id"), nullable=False)
     payment_method = Column(String(50), nullable=False)
     bank = Column(String(100), nullable=False)
     payment_details = Column(Text, nullable=False)
@@ -320,6 +326,7 @@ class ReqTrader(Base):
 
     # Связи
     trader = relationship("Trader", back_populates="req_traders")
+    order = relationship("TraderOrder", back_populates="req_trader")
 
 
 async def init_db():
