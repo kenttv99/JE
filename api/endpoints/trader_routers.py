@@ -20,6 +20,7 @@ from api.schemas import (
     ChangePasswordRequest,
     TraderDetailedResponse
 )
+from api.enums import TraderVerificationLevelEnum
 from constants import ACCESS_TOKEN_EXPIRE_MINUTES
 
 # Setup logging
@@ -59,7 +60,7 @@ async def register_trader(request: TraderRegisterRequest, db: AsyncSession = Dep
         new_trader = Trader(
             email=request.email,
             password_hash=hashed_password,
-            verification_level=0,
+            verification_level=TraderVerificationLevelEnum.UNVERIFIED,  # Set default verification level
             time_zone_id=moscow_tz.id,  # Set Moscow time zone
             pay_in=False,
             pay_out=False,
@@ -123,7 +124,7 @@ async def login_trader(request: TraderLoginRequest, db: AsyncSession = Depends(g
                 "trader": {
                     "id": str(trader.id),
                     "email": trader.email,
-                    "verification_level": trader.verification_level,
+                    "verification_level": trader.verification_level.value,
                     "pay_in": trader.pay_in,
                     "pay_out": trader.pay_out,
                     "access": trader.access,  # Added this field

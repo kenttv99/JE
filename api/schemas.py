@@ -8,7 +8,8 @@ from api.enums import (
     AMLStatusEnum,
     PaymentMethodEnum,
     VerificationLevelEnum,
-    AddressStatusEnum
+    AddressStatusEnum,
+    TraderPaymentMethodEnum
 )
 
 # -----------------------
@@ -355,10 +356,8 @@ class TraderMethodCreateRequest(BaseModel):
 
 class TraderMethodResponse(BaseModel):
     id: int
-    name: str
+    method_name: str
     details: Optional[str] = None
-    created_at: datetime
-    updated_at: datetime
 
     class Config:
         from_attributes = True

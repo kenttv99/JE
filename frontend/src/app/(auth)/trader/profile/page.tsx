@@ -199,7 +199,7 @@ const TraderProfilePage: FC = () => {
                     Основная информация
                   </h2>
                   <InfoField label="Email" value={traderData.email} />
-                  <InfoField label="Статус" value={traderData.verification_level ? `Уровень ${traderData.verification_level}` : 'Не верифицирован'} />
+                  <InfoField label="Статус" value={traderData.verification_level ? `${traderData.verification_level}` : 'Не верифицирован'} />
                   <InfoField 
                     label="Дата регистрации" 
                     value={traderData.created_at 

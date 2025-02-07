@@ -10,7 +10,7 @@ from typing import List
 from database.init_db import get_async_db
 from database.init_db import TraderAddress, Trader
 from api.auth import get_current_trader
-from api.enums import AddressStatusEnum
+from api.enums import TraderAddressStatusEnum
 from api.schemas import TraderAddressCreate, TraderAddressResponse
 from config.logging_config import setup_logging
 
@@ -35,7 +35,7 @@ async def create_trader_address(
             wallet_number=address.wallet_number,
             network=address.network,
             coin=address.coin,
-            status=AddressStatusEnum.check,
+            status=TraderAddressStatusEnum.check,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
         )
@@ -99,7 +99,7 @@ async def get_trader_addresses(
 @router.patch("/{address_id}/update_status")
 async def update_address_status(
     address_id: int,
-    status: AddressStatusEnum,
+    status: TraderAddressStatusEnum,
     db: AsyncSession = Depends(get_async_db),
     current_trader: Trader = Depends(get_current_trader)
 ):
