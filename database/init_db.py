@@ -93,7 +93,6 @@ class User(Base):
     role = relationship("Role", back_populates="users")
     orders = relationship("ExchangeOrder", back_populates="user")
     
-    # Add these models to database/init_db.py
 
 class Trader(Base):
     __tablename__ = "traders"
@@ -122,6 +121,7 @@ class Trader(Base):
     addresses = relationship("TraderAddress", back_populates="trader", cascade="all, delete-orphan")
     time_zone = relationship("TimeZone", backref="traders")
     orders = relationship("TraderOrder", back_populates="trader")  # Add relationship to TraderOrder
+    req_traders = relationship("ReqTrader", back_populates="trader")  # Add relationship to ReqTrader
 
 
 class TraderAddress(Base):
@@ -227,34 +227,6 @@ class ExchangeOrder(Base):
     payment_method = relationship("PaymentMethod", back_populates="orders")
 
 
-class TraderOrder(Base):
-    __tablename__ = "trader_orders"
-
-    id = Column(Integer, primary_key=True, index=True)
-    trader_id = Column(Integer, ForeignKey("traders.id"), nullable=False)
-    order_type = Column(Enum(OrderTypeEnum, name='ordertypeenum'), nullable=False)
-    currency = Column(String(10), nullable=False)
-    amount = Column(DECIMAL(20, 8), nullable=False)
-    total_rub = Column(DECIMAL(20, 2), nullable=False)
-    median_rate = Column(DECIMAL(20, 8), nullable=False)
-    status = Column(Enum(OrderStatus, name='orderstatus'), nullable=False, default=OrderStatus.pending)
-    created_at = Column(TIMESTAMP, default=datetime.utcnow)
-    updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Поля для AML проверки
-    crypto_address = Column(String(255), nullable=False)
-    crypto_network = Column(String(100), nullable=False)
-    aml_status = Column(Enum(AMLStatusEnum, name='amlstatusenum'), nullable=False, default=AMLStatusEnum.pending)
-    
-    # Foreign key для PaymentMethod
-    payment_method_id = Column(Integer, ForeignKey("payment_methods.id"), nullable=False)
-
-    # Связи
-    trader = relationship("Trader", back_populates="orders")
-    payments = relationship("PaymentTrader", back_populates="order", cascade="all, delete-orphan")
-    payment_method = relationship("PaymentMethodTrader", back_populates="orders")
-
-
 class Payment(Base):
     __tablename__ = "payments"
 
@@ -276,6 +248,27 @@ class Payment(Base):
     order = relationship("ExchangeOrder", back_populates="payments")
 
 
+# class PaymentTrader(Base):
+#     __tablename__ = "payments_trader"
+
+#     id = Column(Integer, primary_key=True, index=True)
+#     order_id = Column(Integer, ForeignKey("trader_orders.id"), nullable=False)
+#     payment_method = Column(String(50), nullable=False)
+#     bank = Column(String(100), nullable=False)
+#     payment_details = Column(Text, nullable=False)
+#     status = Column(Enum(OrderStatus, name='paymentstatus'), default=OrderStatus.pending)
+#     created_at = Column(TIMESTAMP, default=datetime.utcnow)
+#     updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+#     # Новые поля
+#     can_buy = Column(Boolean, default=True, nullable=False)     # Возможность использовать для покупки
+#     can_sell = Column(Boolean, default=False, nullable=False)   # Возможность использовать для продажи
+#     fee_percentage = Column(DECIMAL(5, 2), default=Decimal('0.00'), nullable=False)  # Комиссия за транзакцию
+
+#     # Связь с заказом
+#     order = relationship("TraderOrder", back_populates="payments")
+
+
 class PaymentMethod(Base):
     __tablename__ = "payment_methods"
 
@@ -285,13 +278,51 @@ class PaymentMethod(Base):
 
     # Связь с ордерами
     orders = relationship("ExchangeOrder", back_populates="payment_method")
+    
+class TraderOrder(Base):
+    __tablename__ = "trader_orders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    trader_id = Column(Integer, ForeignKey("traders.id"), nullable=False)
+    order_type = Column(Enum(OrderTypeEnum, name='ordertypeenum'), nullable=False)
+    currency = Column(String(10), nullable=False)
+    amount = Column(DECIMAL(20, 8), nullable=False)
+    total_rub = Column(DECIMAL(20, 2), nullable=False)
+    median_rate = Column(DECIMAL(20, 8), nullable=False)
+    status = Column(Enum(OrderStatus, name='orderstatus'), nullable=False, default=OrderStatus.pending)
+    created_at = Column(TIMESTAMP, default=datetime.utcnow)
+    updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Поля для AML проверки
+    crypto_address = Column(String(255), nullable=False)
+    crypto_network = Column(String(100), nullable=False)
+    aml_status = Column(Enum(AMLStatusEnum, name='amlstatusenum'), nullable=False, default=AMLStatusEnum.pending)
+    
+    # Foreign key для PaymentMethodTrader
+    payment_method_id = Column(Integer, ForeignKey("payment_methods_trader.id"), nullable=False)
+
+    # Связи
+    trader = relationship("Trader", back_populates="orders")
+    payments = relationship("PaymentTrader", back_populates="order", cascade="all, delete-orphan")
+    payment_method = relationship("PaymentMethodTrader", back_populates="orders")
+
+
+class PaymentMethodTrader(Base):
+    __tablename__ = "payment_methods_trader"
+
+    id = Column(Integer, primary_key=True, index=True)
+    method_name = Column(Enum(PaymentMethodEnum), unique=True, nullable=False)
+    description = Column(String(255), nullable=True)
+
+    # Связь с ордерами
+    orders = relationship("TraderOrder", back_populates="payment_method")
 
 
 class ReqTrader(Base):
     __tablename__ = "req_traders"
 
     id = Column(Integer, primary_key=True, index=True)
-    order_id = Column(Integer, ForeignKey("exchange_orders.id"), nullable=False)
+    trader_id = Column(Integer, ForeignKey("traders.id"), nullable=False)
     payment_method = Column(String(50), nullable=False)
     bank = Column(String(100), nullable=False)
     payment_details = Column(Text, nullable=False)
@@ -304,16 +335,8 @@ class ReqTrader(Base):
     can_sell = Column(Boolean, default=False, nullable=False)   # Возможность использовать для продажи
     fee_percentage = Column(DECIMAL(5, 2), default=Decimal('0.00'), nullable=False)  # Комиссия за транзакцию
 
-
-class PaymentMethodTrader(Base):
-    __tablename__ = "payment_methods_trader"
-
-    id = Column(Integer, primary_key=True, index=True)
-    method_name = Column(Enum(PaymentMethodEnum), unique=True, nullable=False)
-    description = Column(String(255), nullable=True)
-
-    # Связь с ордерами
-    orders = relationship("TraderOrder", back_populates="payment_method")
+    # Связи
+    trader = relationship("Trader", back_populates="req_traders")
 
 
 async def init_db():
