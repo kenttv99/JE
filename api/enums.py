@@ -66,4 +66,7 @@ class TraderAddressStatusEnum(Enum):
 
 class TraderOrderTypeEnum(Enum):
     buy = "buy"
-    sell = "sell"    
+    sell = "sell"
+    
+class TraderFiatEnum(Enum):
+    RUB = "RUB"    

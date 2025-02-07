@@ -32,7 +32,8 @@ from api.enums import (
     TraderPaymentMethodEnum,
     TraderVerificationLevelEnum,
     TraderAddressStatusEnum,
-    TraderOrderTypeEnum
+    TraderOrderTypeEnum,
+    TraderFiatEnum
 )
 
 # Создание асинхронного движка SQLAlchemy
@@ -274,17 +275,13 @@ class TraderOrder(Base):
     trader_id = Column(Integer, ForeignKey("traders.id"), nullable=False)
     order_type = Column(Enum(TraderOrderTypeEnum, name='traderordertypeenum'), nullable=False)
     currency = Column(String(10), nullable=False)
-    amount = Column(DECIMAL(20, 8), nullable=False)
-    total_rub = Column(DECIMAL(20, 2), nullable=False)
+    fiat = Column(Enum(TraderFiatEnum, name='traderfiatenum'), nullable=False)
+    amount_currency = Column(DECIMAL(20, 8), nullable=False)
+    total_fiat = Column(DECIMAL(20, 2), nullable=False)
     median_rate = Column(DECIMAL(20, 8), nullable=False)
     status = Column(Enum(OrderStatus, name='orderstatus'), nullable=False, default=OrderStatus.pending)
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Поля для AML проверки
-    crypto_address = Column(String(255), nullable=False)
-    crypto_network = Column(String(100), nullable=False)
-    aml_status = Column(Enum(AMLStatusEnum, name='amlstatusenum'), nullable=False, default=AMLStatusEnum.pending)
     
     # Foreign key для PaymentMethodTrader
     payment_method_id = Column(Integer, ForeignKey("payment_methods_trader.id"), nullable=False)
