@@ -1,4 +1,3 @@
-# api/endpoints/trader_routers.py
 from datetime import timedelta
 import logging
 from fastapi import APIRouter, Depends, HTTPException

@@ -56,7 +56,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
 
 
 async def get_current_trader(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_async_db)):
-    """Gets the current trader by JWT token."""
+    """Gets the current trader by JWT token and checks if the trader is active."""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_email: Optional[str] = payload.get("sub")
@@ -70,13 +70,10 @@ async def get_current_trader(token: str = Depends(oauth2_scheme), db: AsyncSessi
     trader = result.scalars().first()
     if trader is None:
         raise HTTPException(status_code=401, detail="Trader not found")
+    if not trader.access:
+        raise HTTPException(status_code=403, detail="Trader account is disabled")
     return trader
 
-async def get_current_active_trader(current_trader: Trader = Depends(get_current_trader)):
-    """Check if the trader is active and has access."""
-    if not current_trader.access:
-        raise HTTPException(status_code=403, detail="Trader account is disabled")
-    return current_trader
 
 def create_trader_token(trader: Trader) -> str:
     """Create a JWT token specifically for traders."""

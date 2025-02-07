@@ -310,3 +310,24 @@ class ExchangeRateResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# -----------------------
+# Trader Method Schemas
+# -----------------------
+
+class TraderMethodCreateRequest(BaseModel):
+    name: str
+    details: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class TraderMethodResponse(BaseModel):
+    id: int
+    name: str
+    details: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True

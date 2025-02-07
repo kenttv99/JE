@@ -5,10 +5,6 @@ from typing import List
 
 from .. import crud, models, schemas
 from database.init_db import ExchangeRate, get_async_db
-from .garantex_api import (
-    fetch_usdt_rub_garantex_rates,
-    fetch_btc_rub_garantex_rates
-)
 
 # Creating a new router for trader orders
 router = APIRouter()

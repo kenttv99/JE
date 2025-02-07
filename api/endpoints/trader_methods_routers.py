@@ -3,11 +3,10 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.orm import selectinload
 from typing import List
 
-from database.init_db import get_async_db, Method, Trader
-from api.schemas import MethodCreateRequest, MethodResponse, TraderResponse
+from database.init_db import get_async_db, PaymentMethodTrader
+from api.schemas import TraderMethodCreateRequest, TraderMethodResponse
 
 # Setup logging
 from config.logging_config import setup_logging
@@ -16,14 +15,14 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-@router.post("/add_method", response_model=MethodResponse)
-async def add_method(request: MethodCreateRequest, db: AsyncSession = Depends(get_async_db)):
+@router.post("/add_method", response_model=TraderMethodResponse)
+async def add_method(request: TraderMethodCreateRequest, db: AsyncSession = Depends(get_async_db)):
     """Add a new method."""
     logger.info("Adding method with name: %s", request.name)
     
-    new_method = Method(
-        name=request.name,
-        details=request.details,
+    new_method = PaymentMethodTrader(
+        method_name=request.name,
+        description=request.details,
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow()
     )
@@ -45,7 +44,7 @@ async def delete_method(method_id: int, db: AsyncSession = Depends(get_async_db)
     """Delete a method."""
     logger.info("Deleting method with ID: %d", method_id)
     
-    result = await db.execute(select(Method).filter(Method.id == method_id))
+    result = await db.execute(select(PaymentMethodTrader).filter(PaymentMethodTrader.id == method_id))
     method = result.scalars().first()
     if not method:
         logger.warning("Method with ID %d not found", method_id)
@@ -63,12 +62,12 @@ async def delete_method(method_id: int, db: AsyncSession = Depends(get_async_db)
     logger.info("Method %d deleted successfully", method_id)
     return {"message": "Method deleted successfully"}
 
-@router.get("/get_methods", response_model=List[MethodResponse])
+@router.get("/get_methods", response_model=List[TraderMethodResponse])
 async def get_all_methods(db: AsyncSession = Depends(get_async_db)):
     """Get all methods."""
     logger.info("Getting all methods")
     
-    result = await db.execute(select(Method))
+    result = await db.execute(select(PaymentMethodTrader))
     methods = result.scalars().all()
     
     if not methods:
@@ -77,12 +76,12 @@ async def get_all_methods(db: AsyncSession = Depends(get_async_db)):
     
     return methods
 
-@router.get("/get_{method_id}", response_model=MethodResponse)
+@router.get("/get_{method_id}", response_model=TraderMethodResponse)
 async def get_method(method_id: int, db: AsyncSession = Depends(get_async_db)):
     """Get details of a method."""
     logger.info("Getting details of method with ID: %d", method_id)
     
-    result = await db.execute(select(Method).filter(Method.id == method_id))
+    result = await db.execute(select(PaymentMethodTrader).filter(PaymentMethodTrader.id == method_id))
     method = result.scalars().first()
     
     if not method:
