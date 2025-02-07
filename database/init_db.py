@@ -273,6 +273,7 @@ class TraderOrder(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     trader_id = Column(Integer, ForeignKey("traders.id"), nullable=False)
+    #trader_req = Column(String(10), nullable=False)
     order_type = Column(Enum(TraderOrderTypeEnum, name='traderordertypeenum'), nullable=False)
     currency = Column(String(10), nullable=False)
     fiat = Column(Enum(TraderFiatEnum, name='traderfiatenum'), nullable=False)
