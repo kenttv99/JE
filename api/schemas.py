@@ -161,6 +161,20 @@ class UpdateOrderStatusRequest(BaseModel):
     class Config:
         from_attributes = True
 
+class OrderResponse(BaseModel):
+    id: int
+    order_type: OrderTypeEnum
+    currency: str
+    amount: Decimal
+    total_rub: Decimal
+    status: OrderStatus
+    created_at: datetime
+    updated_at: datetime
+    payment_method: Optional[PaymentMethodSchema] = None
+
+    class Config:
+        from_attributes = True
+
 # -----------------------
 # Role Schemas
 # -----------------------

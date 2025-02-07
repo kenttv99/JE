@@ -1,93 +1,43 @@
 import logging
-from fastapi import FastAPI, Request
-from fastapi.openapi.utils import get_openapi
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from typing import List
 
-from api.endpoints.exchange_routers import router as exchange_router
-from api.endpoints.auth_routers import router as auth_router
-from api.endpoints.user_orders_routers import router as user_orders_router
-from api.endpoints.referrals_routers import router as referrals_router
-from api.endpoints.roles_routers import router as roles_router
-from api.endpoints.payments_routers import router as payments_router
-from api.endpoints.trader_routers import router as trader_router
-from api.endpoints.trader_addresses_routers import router as trader_addresses_router
-from api.endpoints.timezone_routers import router as timezone_router
-from api.endpoints.trader_methods_routers import router as trader_methods_router
+from database.init_db import get_async_db, PaymentMethodTrader
+from api.schemas import TraderMethodCreateRequest, TraderMethodResponse
 
-# Initialize FastAPI app
-app = FastAPI(
-    title="Crypto Exchange API",
-    version="1.0.0",
-    description="API for managing a cryptocurrency exchange",
-)
 
-# CORS Configuration
-origins = [
-    "http://localhost:3000",  # Replace with your frontend address
-    "https://example.com",
-]
+router = APIRouter()
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+@router.post("/", response_model=TraderMethodResponse)
+async def create_trader_method(
+    method: TraderMethodCreateRequest, 
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    Create a new trader method.
+    """
+    try:
+        new_method = PaymentMethodTrader(name=method.name, details=method.details)
+        db.add(new_method)
+        await db.commit()
+        await db.refresh(new_method)
+        return new_method
+    except Exception as e:
+        await db.rollback()
+        logging.error(f"Error creating trader method: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
-# Logging Configuration
-from config.logging_config import setup_logging
-setup_logging()
-logger = logging.getLogger(__name__)
-
-# Include Routers
-app.include_router(exchange_router, prefix="/api/v1/exchange", tags=["Exchange"])
-app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])
-app.include_router(user_orders_router, prefix="/api/v1/orders", tags=["Orders"])
-app.include_router(referrals_router, prefix="/api/v1/referrals", tags=["Referrals"])
-app.include_router(roles_router, prefix="/api/v1/roles", tags=["Roles"])
-app.include_router(payments_router, prefix="/api/v1/payments", tags=["Payments"])
-app.include_router(trader_router, prefix="/api/v1/traders", tags=["Traders"])
-app.include_router(trader_addresses_router, prefix="/api/v1/trader_addresses", tags=["Trader Addresses"])
-app.include_router(timezone_router, prefix="/api/v1/timezones", tags=["Timezones"])
-app.include_router(trader_methods_router, prefix="/api/v1/trader_methods", tags=["Trader Methods"])
-
-# Middleware for Logging Requests
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    """Log incoming requests and outgoing responses."""
-    logger.info(f"Received request: {request.method} {request.url}")
-    response = await call_next(request)
-    logger.info(f"Response: {response.status_code}")
-    return response
-
-# Custom OpenAPI
-def custom_openapi():
-    """Customize OpenAPI schema."""
-    if app.openapi_schema:
-        return app.openapi_schema
-    openapi_schema = get_openapi(
-        title="Crypto Exchange API",
-        version="1.0.0",
-        description="API for managing a cryptocurrency exchange",
-        routes=app.routes,
-    )
-    openapi_schema["components"]["securitySchemes"] = {
-        "OAuth2PasswordBearer": {
-            "type": "http",
-            "scheme": "bearer",
-            "bearerFormat": "JWT",
-        }
-    }
-    for path in openapi_schema["paths"]:
-        for method in openapi_schema["paths"][path]:
-            openapi_schema["paths"][path][method]["security"] = [{"OAuth2PasswordBearer": []}]
-    app.openapi_schema = openapi_schema
-    return app.openapi_schema
-
-app.openapi = custom_openapi
-
-# Run Uvicorn Server
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+@router.get("/", response_model=List[TraderMethodResponse])
+async def get_trader_methods(db: AsyncSession = Depends(get_async_db)):
+    """
+    Get all trader methods.
+    """
+    try:
+        result = await db.execute(select(PaymentMethodTrader))
+        methods = result.scalars().all()
+        return methods
+    except Exception as e:
+        logging.error(f"Error fetching trader methods: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
