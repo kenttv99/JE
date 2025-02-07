@@ -72,12 +72,12 @@ const TrustedAddressesList: FC = () => {
                 <div className="flex-shrink-0">
                   <span className={`
                     inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap
-                    ${address.status === 'verified' ? 'bg-green-100 text-green-800' :
-                      address.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                    ${address.status === 'approve' ? 'bg-green-100 text-green-800' :
+                      address.status === 'delete' ? 'bg-red-100 text-red-800' :
                       'bg-yellow-100 text-yellow-800'}
                   `}>
-                    {address.status === 'verified' ? 'Подтвержден' :
-                     address.status === 'rejected' ? 'Отклонен' : 'На проверке'}
+                    {address.status === 'approve' ? 'Сохранен' :
+                     address.status === 'delete' ? 'Отклонен' : 'На проверке'}
                   </span>
                 </div>
               </div>

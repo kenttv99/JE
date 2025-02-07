@@ -8,7 +8,7 @@ export interface TraderAddress {
   wallet_number: string;
   network: string;
   coin: string;
-  status: 'check' | 'verified' | 'rejected';
+  status: 'check' | 'approve' | 'delete';
   created_at: string;
   updated_at: string;
 }

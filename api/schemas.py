@@ -9,7 +9,8 @@ from api.enums import (
     PaymentMethodEnum,
     VerificationLevelEnum,
     AddressStatusEnum,
-    TraderPaymentMethodEnum
+    TraderPaymentMethodEnum,
+    TraderAddressStatusEnum  # Ensure to import this enum
 )
 
 # -----------------------
@@ -293,12 +294,12 @@ class TraderAddressBase(BaseModel):
         from_attributes = True
 
 class TraderAddressCreate(TraderAddressBase):
-    pass
+    pass  # Removing trader_id as it will be derived from the authenticated user
 
 class TraderAddressResponse(TraderAddressBase):
     id: int
     trader_id: int
-    status: AddressStatusEnum
+    status: TraderAddressStatusEnum  # Ensure to use TraderAddressStatusEnum here
     created_at: datetime
     updated_at: datetime
 
@@ -306,7 +307,7 @@ class TraderAddressResponse(TraderAddressBase):
         from_attributes = True
 
 class TraderAddressStatusUpdate(BaseModel):
-    status: AddressStatusEnum
+    status: TraderAddressStatusEnum  # Ensure to use TraderAddressStatusEnum here
 
     class Config:
         from_attributes = True
