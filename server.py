@@ -50,7 +50,7 @@ app.include_router(roles_router, prefix="/api/v1/roles", tags=["Roles"])
 app.include_router(payments_router, prefix="/api/v1/payments", tags=["Payments"])
 app.include_router(trader_router, prefix="/api/v1/traders", tags=["Traders"])
 app.include_router(trader_addresses_router, prefix="/api/v1/trader_addresses", tags=["Trader Addresses"])
-app.include_router(timezone_router, prefix="/api/v1/timezones", tags=["Timezones"])
+app.include_router(timezone_router, prefix="/api/v1/trader_timezones", tags=["Timezones"])
 app.include_router(trader_methods_router, prefix="/api/v1/trader_methods", tags=["Trader Methods"])
 app.include_router(trader_orders_router, prefix="/api/v1/trader_orders", tags=["Trader Orders"])
 

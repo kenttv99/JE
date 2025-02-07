@@ -287,7 +287,6 @@ class TraderOrder(Base):
 
     # Связи
     trader = relationship("Trader", back_populates="orders")
-    payments = relationship("PaymentTrader", back_populates="order", cascade="all, delete-orphan")
     payment_method = relationship("PaymentMethodTrader", back_populates="orders")
 
 
