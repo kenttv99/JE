@@ -291,7 +291,6 @@ class TraderOrder(Base):
 
     # Связи
     trader = relationship("Trader", back_populates="orders")
-    req_trader = relationship("ReqTrader", back_populates="order", cascade="all, delete-orphan")
     payment_method = relationship("PaymentMethodTrader", back_populates="orders")
 
 
@@ -311,7 +310,6 @@ class ReqTrader(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     trader_id = Column(Integer, ForeignKey("traders.id"), nullable=False)
-    order_id = Column(Integer, ForeignKey("trader_orders.id"), nullable=False)
     payment_method = Column(String(50), nullable=False)
     bank = Column(String(100), nullable=False)
     payment_details = Column(Text, nullable=False)
@@ -326,7 +324,6 @@ class ReqTrader(Base):
 
     # Связи
     trader = relationship("Trader", back_populates="req_traders")
-    order = relationship("TraderOrder", back_populates="req_trader")
 
 
 async def init_db():
