@@ -1,6 +1,6 @@
 import asyncio
 from typing import AsyncGenerator
-from decimal import Decimal  # Импорт Decimal
+from decimal import Decimal
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from constants import DATABASE_URL
 from sqlalchemy.orm import (
@@ -27,7 +27,7 @@ from api.enums import (
     OrderStatus,
     OrderTypeEnum,
     AMLStatusEnum,
-    PaymentMethodEnum,  # Импортируем PaymentMethodEnum из api.enums
+    PaymentMethodEnum,
     VerificationLevelEnum
 )
 
@@ -92,7 +92,7 @@ class User(Base):
     )
     role = relationship("Role", back_populates="users")
     orders = relationship("ExchangeOrder", back_populates="user")
-    
+
 
 class Trader(Base):
     __tablename__ = "traders"
@@ -120,8 +120,8 @@ class Trader(Base):
     )
     addresses = relationship("TraderAddress", back_populates="trader", cascade="all, delete-orphan")
     time_zone = relationship("TimeZone", backref="traders")
-    orders = relationship("TraderOrder", back_populates="trader")  # Add relationship to TraderOrder
-    req_traders = relationship("ReqTrader", back_populates="trader")  # Add relationship to ReqTrader
+    orders = relationship("TraderOrder", back_populates="trader")
+    req_traders = relationship("ReqTrader", back_populates="trader")
 
 
 class TraderAddress(Base):
@@ -139,6 +139,7 @@ class TraderAddress(Base):
     # Relationship
     trader = relationship("Trader", back_populates="addresses")
 
+
 class Merchant(Base):
     __tablename__ = "merchants"
 
@@ -153,6 +154,7 @@ class Merchant(Base):
     access = Column(Boolean, default=True)
     two_fa_code = Column(String(32), nullable=True)
 
+
 class AdminUser(Base):
     __tablename__ = "admins_users"
 
@@ -164,6 +166,7 @@ class AdminUser(Base):
     access = Column(Boolean, default=True)
     two_fa_code = Column(String(32), nullable=True)
 
+
 class AdminTrader(Base):
     __tablename__ = "admins_traders"
 
@@ -174,6 +177,7 @@ class AdminTrader(Base):
     updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
     access = Column(Boolean, default=True)
     two_fa_code = Column(String(32), nullable=True)
+
 
 class AdminMerchant(Base):
     __tablename__ = "admins_merchants"
@@ -248,27 +252,6 @@ class Payment(Base):
     order = relationship("ExchangeOrder", back_populates="payments")
 
 
-# class PaymentTrader(Base):
-#     __tablename__ = "payments_trader"
-
-#     id = Column(Integer, primary_key=True, index=True)
-#     order_id = Column(Integer, ForeignKey("trader_orders.id"), nullable=False)
-#     payment_method = Column(String(50), nullable=False)
-#     bank = Column(String(100), nullable=False)
-#     payment_details = Column(Text, nullable=False)
-#     status = Column(Enum(OrderStatus, name='paymentstatus'), default=OrderStatus.pending)
-#     created_at = Column(TIMESTAMP, default=datetime.utcnow)
-#     updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-#     # Новые поля
-#     can_buy = Column(Boolean, default=True, nullable=False)     # Возможность использовать для покупки
-#     can_sell = Column(Boolean, default=False, nullable=False)   # Возможность использовать для продажи
-#     fee_percentage = Column(DECIMAL(5, 2), default=Decimal('0.00'), nullable=False)  # Комиссия за транзакцию
-
-#     # Связь с заказом
-#     order = relationship("TraderOrder", back_populates="payments")
-
-
 class PaymentMethod(Base):
     __tablename__ = "payment_methods"
 
@@ -278,7 +261,8 @@ class PaymentMethod(Base):
 
     # Связь с ордерами
     orders = relationship("ExchangeOrder", back_populates="payment_method")
-    
+
+
 class TraderOrder(Base):
     __tablename__ = "trader_orders"
 
