@@ -1,35 +1,29 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { signOut, useSession } from 'next-auth/react';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { 
-  UserIcon, 
-  ShoppingCartIcon, 
-  ChartBarIcon, 
-  ChatBubbleLeftRightIcon, 
+import {
+  UserIcon,
+  ShoppingCartIcon,
   DocumentTextIcon,
-  Bars3Icon,
+  ChartBarIcon,
+  ChatBubbleLeftRightIcon,
   XMarkIcon,
+  Bars3Icon,
   ArrowLeftOnRectangleIcon
 } from '@heroicons/react/24/outline';
+import Link from 'next/link';
+import { useSession, signOut } from 'next-auth/react';
+import { useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { traderNavigation } from '@/config/navigation';
 
-export default function TraderLayout({
-  children,
-}: {
+interface TraderLayoutProps {
   children: React.ReactNode;
-}) {
+}
+
+export default function TraderLayout({ children }: TraderLayoutProps) {
+  const { data: session, status } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
-  const { data: session, status } = useSession();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (status === 'authenticated' && session?.user?.role !== 'trader') {
-      router.push('/login');
-    }
-  }, [status, session, router]);
 
   if (status === 'loading') {
     return (
@@ -45,14 +39,6 @@ export default function TraderLayout({
   if (!session || session.user.role !== 'trader') {
     return null;
   }
-
-  const menuItems = [
-    { name: 'Профиль', href: '/trader/profile', icon: UserIcon },
-    { name: 'Ордера', href: '/trader/orders', icon: ShoppingCartIcon },
-    { name: 'Реквизиты', href: '/trader/details', icon: DocumentTextIcon },
-    { name: 'Статистика', href: '/trader/statistics', icon: ChartBarIcon },
-    { name: 'Апелляции', href: '/trader/appeals', icon: ChatBubbleLeftRightIcon },
-  ];
 
   const isActive = (path: string) => pathname === path;
 
@@ -88,7 +74,7 @@ export default function TraderLayout({
 
           <nav className="flex-1 overflow-y-auto p-4">
             <ul className="space-y-2">
-              {menuItems.map((item) => {
+              {traderNavigation.map((item) => {
                 const Icon = item.icon;
                 return (
                   <li key={item.href}>

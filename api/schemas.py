@@ -7,6 +7,7 @@ from api.enums import (
     OrderTypeEnum,
     AMLStatusEnum,
     PaymentMethodEnum,
+    TraderOrderStatus,
     VerificationLevelEnum,
     AddressStatusEnum,
     TraderPaymentMethodEnum,
@@ -374,19 +375,20 @@ class TraderMethodResponse(BaseModel):
 class ReqTraderBase(BaseModel):
     payment_method: str
     bank: str
-    payment_details: str
+    req_number: str
+    fio: str
 
     class Config:
         from_attributes = True
 
 class ReqTraderCreate(ReqTraderBase):
-    status: OrderStatus
+    status: TraderOrderStatus
 
 class ReqTraderUpdate(BaseModel):
     payment_method: Optional[str] = None
     bank: Optional[str] = None
     payment_details: Optional[str] = None
-    status: Optional[OrderStatus] = None
+    status: Optional[TraderOrderStatus] = None
 
     class Config:
         from_attributes = True
@@ -394,7 +396,7 @@ class ReqTraderUpdate(BaseModel):
 class ReqTraderResponse(ReqTraderBase):
     id: int
     trader_id: int
-    status: OrderStatus
+    status: TraderOrderStatus
     created_at: datetime
     updated_at: datetime
 

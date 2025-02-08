@@ -311,7 +311,8 @@ class ReqTrader(Base):
     trader_id = Column(Integer, ForeignKey("traders.id"), nullable=False)
     payment_method = Column(String(50), nullable=False)
     bank = Column(String(100), nullable=False)
-    payment_details = Column(String, nullable=False)
+    req_number = Column(String, nullable=False)
+    fio = Column(String, nullable=False)
     status = Column(Enum(OrderStatus, name='paymentstatus'), default=OrderStatus.pending)
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -324,6 +325,14 @@ class ReqTrader(Base):
     # Связи
     trader = relationship("Trader", back_populates="req_traders")
     orders = relationship('TraderOrder', back_populates='trader_req')
+    
+class BanksTrader(Base):
+    __tablename__ = "banks_traders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    method_name = Column(Enum(PaymentMethodEnum), unique=True, nullable=False)
+    description = Column(String(255), nullable=True)
+    interbank = Column(Boolean, default=False, nullable=False)
 
 
 async def init_db():

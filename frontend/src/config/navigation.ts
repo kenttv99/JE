@@ -1,4 +1,3 @@
-// frontend/src/config/navigation.ts
 import { UserIcon, ShoppingCartIcon, DocumentTextIcon, ChartBarIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 
 export const traderNavigation = [
