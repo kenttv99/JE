@@ -10,7 +10,7 @@ from api.enums import (
     VerificationLevelEnum,
     AddressStatusEnum,
     TraderPaymentMethodEnum,
-    TraderAddressStatusEnum  # Ensure to import this enum
+    TraderAddressStatusEnum
 )
 
 # -----------------------
@@ -106,16 +106,18 @@ class PaymentMethodSchema(BaseModel):
 
 class TraderOrderResponse(BaseModel):
     id: int
+    trader_id: int
     order_type: OrderTypeEnum
     currency: str
-    amount: Decimal
-    total_rub: Decimal
+    fiat: str
+    amount_currency: Decimal
+    total_fiat: Decimal
     median_rate: Decimal
     status: OrderStatus
-    aml_status: AMLStatusEnum
     created_at: datetime
     updated_at: datetime
-    payment_method: Optional[PaymentMethodSchema] = None
+    payment_method_id: int
+    trader_req_id: int  # Include trader_req_id field
 
     class Config:
         from_attributes = True
@@ -123,9 +125,11 @@ class TraderOrderResponse(BaseModel):
 class TraderOrderCreate(BaseModel):
     order_type: OrderTypeEnum
     currency: str
-    amount: Decimal
-    total_rub: Decimal
+    fiat: str
+    amount_currency: Decimal
+    total_fiat: Decimal
     payment_method_id: int
+    trader_req_id: int  # Include trader_req_id field
 
     class Config:
         from_attributes = True
@@ -359,6 +363,40 @@ class TraderMethodResponse(BaseModel):
     id: int
     method_name: str
     details: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+        
+# -----------------------
+# ReqTrader Schemas
+# -----------------------
+
+class ReqTraderBase(BaseModel):
+    payment_method: str
+    bank: str
+    payment_details: str
+
+    class Config:
+        from_attributes = True
+
+class ReqTraderCreate(ReqTraderBase):
+    status: OrderStatus
+
+class ReqTraderUpdate(BaseModel):
+    payment_method: Optional[str] = None
+    bank: Optional[str] = None
+    payment_details: Optional[str] = None
+    status: Optional[OrderStatus] = None
+
+    class Config:
+        from_attributes = True
+
+class ReqTraderResponse(ReqTraderBase):
+    id: int
+    trader_id: int
+    status: OrderStatus
+    created_at: datetime
+    updated_at: datetime
 
     class Config:
         from_attributes = True

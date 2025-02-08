@@ -7,8 +7,6 @@ from database.init_db import TraderOrder, get_async_db
 from api.schemas import TraderOrderResponse, TraderOrderCreate, TraderOrderUpdate
 from api.auth import get_current_trader
 
-
-# Creating a new router for trader orders
 router = APIRouter()
 
 @router.get("/", response_model=List[TraderOrderResponse])

@@ -273,7 +273,7 @@ class TraderOrder(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     trader_id = Column(Integer, ForeignKey("traders.id"), nullable=False)
-    #trader_req = Column(String(10), nullable=False)
+    trader_req_id = Column(Integer, ForeignKey('req_traders.id'), nullable=False)  # Link to trader's requisite
     order_type = Column(Enum(TraderOrderTypeEnum, name='traderordertypeenum'), nullable=False)
     currency = Column(String(10), nullable=False)
     fiat = Column(Enum(TraderFiatEnum, name='traderfiatenum'), nullable=False)
@@ -290,6 +290,7 @@ class TraderOrder(Base):
     # Связи
     trader = relationship("Trader", back_populates="orders")
     payment_method = relationship("PaymentMethodTrader", back_populates="orders")
+    trader_req = relationship('ReqTrader', back_populates='orders')  # Relationship with trader's requisite
 
 
 class PaymentMethodTrader(Base):
@@ -310,7 +311,7 @@ class ReqTrader(Base):
     trader_id = Column(Integer, ForeignKey("traders.id"), nullable=False)
     payment_method = Column(String(50), nullable=False)
     bank = Column(String(100), nullable=False)
-    payment_details = Column(Text, nullable=False)
+    payment_details = Column(String, nullable=False)
     status = Column(Enum(OrderStatus, name='paymentstatus'), default=OrderStatus.pending)
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -322,10 +323,13 @@ class ReqTrader(Base):
 
     # Связи
     trader = relationship("Trader", back_populates="req_traders")
+    orders = relationship('TraderOrder', back_populates='trader_req')
 
 
 async def init_db():
-    """Инициализация базы данных."""
+    """
+    Инициализация базы данных.
+    """
     try:
         async with engine.begin() as conn:
             # Создание всех таблиц
@@ -345,7 +349,7 @@ class TimeZone(Base):
     utc_offset = Column(Integer, nullable=False)  # Offset in minutes
     is_active = Column(Boolean, default=True)
     regions = Column(String(), nullable=True)
-
+    
     def __repr__(self):
         return f"<TimeZone(name='{self.name}', display_name='{self.display_name}')>"
 

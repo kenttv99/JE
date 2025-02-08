@@ -14,6 +14,7 @@ from api.endpoints.trader_addresses_routers import router as trader_addresses_ro
 from api.endpoints.timezone_routers import router as timezone_router
 from api.endpoints.trader_methods_routers import router as trader_methods_router
 from api.endpoints.trader_orders_router import router as trader_orders_router
+from api.endpoints.trader_req_routers import router as trader_req_routers
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -53,6 +54,7 @@ app.include_router(trader_addresses_router, prefix="/api/v1/trader_addresses", t
 app.include_router(timezone_router, prefix="/api/v1/trader_timezones", tags=["Timezones"])
 app.include_router(trader_methods_router, prefix="/api/v1/trader_methods", tags=["Trader Methods"])
 app.include_router(trader_orders_router, prefix="/api/v1/trader_orders", tags=["Trader Orders"])
+app.include_router(trader_req_routers, prefix="/api/v1/trader_req", tags=["Trader Requisites"])
 
 # Middleware for Logging Requests
 @app.middleware("http")
