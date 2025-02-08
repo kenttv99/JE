@@ -387,7 +387,7 @@ class ReqTraderCreate(ReqTraderBase):
 class ReqTraderUpdate(BaseModel):
     payment_method: Optional[str] = None
     bank: Optional[str] = None
-    payment_details: Optional[str] = None
+    req_number: Optional[str] = None
     status: Optional[TraderOrderStatus] = None
 
     class Config:

@@ -310,7 +310,7 @@ class ReqTrader(Base):
     id = Column(Integer, primary_key=True, index=True)
     trader_id = Column(Integer, ForeignKey("traders.id"), nullable=False)
     payment_method = Column(String(50), nullable=False)
-    bank = Column(String(100), nullable=False)
+    bank = Column(String(100), ForeignKey("banks_traders.bank_name"), nullable=False)  # Link to BanksTrader
     req_number = Column(String, nullable=False)
     fio = Column(String, nullable=False)
     status = Column(Enum(OrderStatus, name='paymentstatus'), default=OrderStatus.pending)
@@ -325,14 +325,32 @@ class ReqTrader(Base):
     # Связи
     trader = relationship("Trader", back_populates="req_traders")
     orders = relationship('TraderOrder', back_populates='trader_req')
-    
+    bank_trader = relationship("BanksTrader", back_populates="req_traders")
+
+
 class BanksTrader(Base):
     __tablename__ = "banks_traders"
 
     id = Column(Integer, primary_key=True, index=True)
-    method_name = Column(Enum(PaymentMethodEnum), unique=True, nullable=False)
+    bank_name = Column(String(100), unique=True, nullable=False)
     description = Column(String(255), nullable=True)
     interbank = Column(Boolean, default=False, nullable=False)
+
+    # Связь с реквизитами трейдеров
+    req_traders = relationship("ReqTrader", back_populates="bank_trader")
+    
+class TimeZone(Base):
+    __tablename__ = "time_zones"
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String(50), nullable=False)  # e.g., "Europe/Moscow"
+    display_name = Column(String(100), nullable=False)  # e.g., "(UTC+03:00) Moscow"
+    utc_offset = Column(Integer, nullable=False)  # Offset in minutes
+    is_active = Column(Boolean, default=True)
+    regions = Column(String(), nullable=True)
+    
+    def __repr__(self):
+        return f"<TimeZone(name='{self.name}', display_name='{self.display_name}')>"
 
 
 async def init_db():
@@ -348,20 +366,6 @@ async def init_db():
         print(f"Произошла ошибка при инициализации базы данных: {e}")
     finally:
         await engine.dispose()
-        
-class TimeZone(Base):
-    __tablename__ = "time_zones"
-    
-    id = Column(Integer, primary_key=True)
-    name = Column(String(50), nullable=False)  # e.g., "Europe/Moscow"
-    display_name = Column(String(100), nullable=False)  # e.g., "(UTC+03:00) Moscow"
-    utc_offset = Column(Integer, nullable=False)  # Offset in minutes
-    is_active = Column(Boolean, default=True)
-    regions = Column(String(), nullable=True)
-    
-    def __repr__(self):
-        return f"<TimeZone(name='{self.name}', display_name='{self.display_name}')>"
-
 
 @asynccontextmanager
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
