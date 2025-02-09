@@ -402,3 +402,50 @@ class ReqTraderResponse(ReqTraderBase):
 
     class Config:
         from_attributes = True
+        
+# -----------------------
+# BanksTrader Schemas
+# -----------------------
+
+class BanksTraderBase(BaseModel):
+    bank_name: str
+    description: Optional[str] = None
+    interbank: bool = False
+
+    class Config:
+        from_attributes = True
+
+class BanksTraderCreate(BanksTraderBase):
+    pass
+
+class BanksTraderUpdate(BanksTraderBase):
+    pass
+
+class BanksTraderResponse(BanksTraderBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+        
+# -----------------------
+# FiatCurrencyTrader Schemas
+# -----------------------
+
+class FiatCurrencyTraderBase(BaseModel):
+    currency_name: str
+    description: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class FiatCurrencyTraderCreate(FiatCurrencyTraderBase):
+    pass
+
+class FiatCurrencyTraderUpdate(FiatCurrencyTraderBase):
+    pass
+
+class FiatCurrencyTraderResponse(FiatCurrencyTraderBase):
+    id: int
+
+    class Config:
+        from_attributes = True

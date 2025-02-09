@@ -338,6 +338,16 @@ class BanksTrader(Base):
 
     # Связь с реквизитами трейдеров
     req_traders = relationship("ReqTrader", back_populates="bank_trader")
+
+class FiatCurrencyTrader(Base):
+    __tablename__ = "fiat_currencies_trader"
+
+    id = Column(Integer, primary_key=True, index=True)
+    currency_name = Column(String(50), unique=True, nullable=False)
+    description = Column(String(255), nullable=True)
+
+    # Связь с трейдерами
+    traders = relationship("Trader", back_populates="fiat_currency")
     
 class TimeZone(Base):
     __tablename__ = "time_zones"
