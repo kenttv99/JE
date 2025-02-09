@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.auth import hash_password
 from database.init_db import AsyncSessionLocal, TimeZone, init_db
-from database.init_db import Role, User, PaymentMethod, PaymentMethodEnum  # Добавляем PaymentMethod и PaymentMethodEnum
+from database.init_db import Role, User, PaymentMethod, PaymentMethodEnum, FiatCurrencyTrader  # Добавляем необходимые модели и enum
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -225,6 +225,31 @@ async def init_time_zones(db: AsyncSession) -> None:
         logger.error(f"Error initializing Russian time zones: {str(e)}")
         raise
 
+async def init_fiat_currencies(db: AsyncSession):
+    """
+    Асинхронная инициализация валют для трейдеров.
+    """
+    try:
+        # Построение запроса для подсчёта количества валют
+        stmt = select(func.count()).select_from(FiatCurrencyTrader)
+        count = await db.scalar(stmt)
+        
+        if count == 0:
+            # Если валют нет, добавляем стандартные валюты
+            fiat_currencies = [
+                FiatCurrencyTrader(currency_name="RUB", description="Russian Ruble"),
+                FiatCurrencyTrader(currency_name="KZT", description="Kazakhstani Tenge"),
+                FiatCurrencyTrader(currency_name="UZS", description="Uzbekistani Som"),
+            ]
+            db.add_all(fiat_currencies)
+            await db.commit()
+            logger.info("Валюты трейдеров успешно инициализированы")
+        else:
+            logger.info("Валюты трейдеров уже существуют в базе данных")
+    except SQLAlchemyError as e:
+        await db.rollback()
+        logger.error(f"Произошла ошибка при инициализации валют трейдеров: {e}")
+
 async def init_data(db: AsyncSession):
     """
     Общая асинхронная инициализация данных.
@@ -233,6 +258,7 @@ async def init_data(db: AsyncSession):
     await init_payment_methods(db)  # Добавляем инициализацию методов оплаты
     await init_users(db)
     await init_time_zones(db)
+    await init_fiat_currencies(db)  # Добавляем инициализацию валют для трейдеров
 
 async def main():
     """

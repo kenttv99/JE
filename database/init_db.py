@@ -116,6 +116,7 @@ class Trader(Base):
     access = Column(Boolean, default=True)
     two_factor_auth_token = Column(String(32), nullable=True)
     time_zone_id = Column(Integer, ForeignKey('time_zones.id'), nullable=False)
+    fiat_currency_id = Column(Integer, ForeignKey('fiat_currencies_trader.id'), nullable=False, default=1)  # New field to link to fiat currency
 
     # Relationships
     referred_traders = relationship(
@@ -127,6 +128,7 @@ class Trader(Base):
     time_zone = relationship("TimeZone", backref="traders")
     orders = relationship("TraderOrder", back_populates="trader")
     req_traders = relationship("ReqTrader", back_populates="trader")
+    fiat_currency = relationship("FiatCurrencyTrader", back_populates="traders")  # New relationship with FiatCurrencyTrader
 
 
 class TraderAddress(Base):
@@ -339,6 +341,7 @@ class BanksTrader(Base):
     # Связь с реквизитами трейдеров
     req_traders = relationship("ReqTrader", back_populates="bank_trader")
 
+
 class FiatCurrencyTrader(Base):
     __tablename__ = "fiat_currencies_trader"
 
@@ -348,7 +351,8 @@ class FiatCurrencyTrader(Base):
 
     # Связь с трейдерами
     traders = relationship("Trader", back_populates="fiat_currency")
-    
+
+
 class TimeZone(Base):
     __tablename__ = "time_zones"
     
@@ -376,7 +380,7 @@ async def init_db():
         print(f"Произошла ошибка при инициализации базы данных: {e}")
     finally:
         await engine.dispose()
-
+        
 @asynccontextmanager
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
