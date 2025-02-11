@@ -129,6 +129,7 @@ class Trader(Base):
     orders = relationship("TraderOrder", back_populates="trader")
     req_traders = relationship("ReqTrader", back_populates="trader")
     fiat_currency = relationship("FiatCurrencyTrader", back_populates="traders")  # New relationship with FiatCurrencyTrader
+    balance_trader = relationship("BalanceTrader", back_populates="traders")
 
 
 class TraderAddress(Base):
@@ -351,6 +352,19 @@ class FiatCurrencyTrader(Base):
 
     # Связь с трейдерами
     traders = relationship("Trader", back_populates="fiat_currency")
+    balance_trader = relationship("BalanceTrader", back_populates="fiat_currency")
+    
+class BalanceTrader(Base):
+    __tablename__ = "balances_traders"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    trader_id = Column(Integer, ForeignKey("traders.id"), nullable=False)
+    fiat = Column(Integer, ForeignKey("fiat_currencies_trader.id"), nullable=False)
+    balance = Column(DECIMAL(20, 2), nullable=False)
+    
+    # Связь с трейдерами
+    traders = relationship("Trader", back_populates="balance_trader")
+    fiats_currency = relationship("FiatCurrencyTrader", back_populates="balance_trader")
 
 
 class TimeZone(Base):
