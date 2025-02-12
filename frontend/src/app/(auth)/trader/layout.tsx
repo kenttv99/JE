@@ -72,17 +72,6 @@ export default function TraderLayout({ children }: TraderLayoutProps) {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="min-h-screen pt-16 flex flex-col items-center justify-center">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">ВЫ НАХОДИТЕСЬ В КАБИНЕТЕ ТРЕЙДЕРА</h2>
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="px-6 py-3 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-200"
-        >
-          Открыть меню
-        </button>
-      </main>
-
       {/* Sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-40 pt-16
@@ -130,6 +119,13 @@ export default function TraderLayout({ children }: TraderLayoutProps) {
           </div>
         </div>
       </aside>
+
+      {/* Main Content */}
+      <main className={`min-h-screen pt-16 ${sidebarOpen ? 'lg:ml-64' : ''} transition-all duration-300`}>
+        <div className="p-4">
+          {children}
+        </div>
+      </main>
 
       {/* Overlay for mobile */}
       {sidebarOpen && (
