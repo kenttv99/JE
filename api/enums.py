@@ -65,8 +65,13 @@ class TraderAddressStatusEnum(Enum):
     delete = "delete"
 
 class TraderOrderTypeEnum(Enum):
-    buy = "buy"
-    sell = "sell"
+    pay_in = "pay_in"
+    pay_out = "pay_out"
     
 class TraderFiatEnum(Enum):
     RUB = "RUB"    
+    
+class TraderReqStatus(Enum):
+    approve = "approve"
+    check = "check"
+    delete = "delete"

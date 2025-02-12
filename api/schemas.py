@@ -8,6 +8,8 @@ from api.enums import (
     AMLStatusEnum,
     PaymentMethodEnum,
     TraderOrderStatus,
+    TraderOrderTypeEnum,
+    TraderReqStatus,
     TraderVerificationLevelEnum,
     VerificationLevelEnum,
     AddressStatusEnum,
@@ -125,7 +127,7 @@ class TraderOrderResponse(BaseModel):
         from_attributes = True
 
 class TraderOrderCreate(BaseModel):
-    order_type: OrderTypeEnum
+    order_type: TraderOrderTypeEnum
     currency: str
     fiat: str
     amount_currency: Decimal
@@ -385,7 +387,7 @@ class ReqTraderBase(BaseModel):
         from_attributes = True
 
 class ReqTraderCreate(ReqTraderBase):
-    status: TraderOrderStatus
+    status: TraderReqStatus
 
 class ReqTraderUpdate(BaseModel):
     payment_method: Optional[str] = None
