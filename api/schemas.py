@@ -8,6 +8,7 @@ from api.enums import (
     AMLStatusEnum,
     PaymentMethodEnum,
     TraderOrderStatus,
+    TraderVerificationLevelEnum,
     VerificationLevelEnum,
     AddressStatusEnum,
     TraderPaymentMethodEnum,
@@ -273,7 +274,7 @@ class TraderRegisterRequest(BaseModel):
 class TraderDetailedResponse(BaseModel):
     id: int
     email: str
-    verification_level: int
+    verification_level: TraderVerificationLevelEnum
     time_zone_id: int
     time_zone_name: Optional[str]
     time_zone_offset: Optional[int]
@@ -282,6 +283,8 @@ class TraderDetailedResponse(BaseModel):
     access: bool
     created_at: datetime
     updated_at: datetime
+    balance: Optional[Decimal]
+    fiat_currency: Optional[str]
 
     class Config:
         from_attributes = True

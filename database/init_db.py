@@ -294,6 +294,7 @@ class TraderOrder(Base):
     trader = relationship("Trader", back_populates="orders")
     payment_method = relationship("PaymentMethodTrader", back_populates="orders")
     trader_req = relationship('ReqTrader', back_populates='orders')  # Relationship with trader's requisite
+    
 
 
 class PaymentMethodTrader(Base):
@@ -364,7 +365,7 @@ class BalanceTrader(Base):
     
     # Связь с трейдерами
     traders = relationship("Trader", back_populates="balance_trader")
-    fiats_currency = relationship("FiatCurrencyTrader", back_populates="balance_trader")
+    fiat_currency = relationship("FiatCurrencyTrader", back_populates="balance_trader")
 
 
 class TimeZone(Base):
