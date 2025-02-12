@@ -1,11 +1,6 @@
 'use client';
 
 import {
-  UserIcon,
-  ShoppingCartIcon,
-  DocumentTextIcon,
-  ChartBarIcon,
-  ChatBubbleLeftRightIcon,
   XMarkIcon,
   Bars3Icon,
   ArrowLeftOnRectangleIcon
@@ -15,6 +10,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { traderNavigation } from '@/config/navigation';
+import { useProfile } from '@/hooks/useProfile';
 
 interface TraderLayoutProps {
   children: React.ReactNode;
@@ -24,6 +20,7 @@ export default function TraderLayout({ children }: TraderLayoutProps) {
   const { data: session, status } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const { profile, isLoading } = useProfile();
 
   if (status === 'loading') {
     return (
@@ -44,25 +41,49 @@ export default function TraderLayout({ children }: TraderLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Header */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-white shadow-sm z-50">
         <div className="container h-full mx-auto px-4">
-          <div className="h-full flex items-center">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 rounded-md bg-white border border-gray-200 hover:bg-gray-50 mr-4 focus:outline-none"
-              aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
-            >
-              {sidebarOpen ? (
-                <XMarkIcon className="h-6 w-6 text-gray-600" />
-              ) : (
-                <Bars3Icon className="h-6 w-6 text-gray-600" />
-              )}
-            </button>
-            <h1 className="text-xl font-semibold text-gray-800">Кабинет ахуенного трейдера</h1>
+          <div className="h-full flex items-center justify-between">
+            <div className="flex items-center">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="p-2 rounded-md bg-white border border-gray-200 hover:bg-gray-50 mr-4 focus:outline-none"
+                aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+              >
+                {sidebarOpen ? (
+                  <XMarkIcon className="h-6 w-6 text-gray-600" />
+                ) : (
+                  <Bars3Icon className="h-6 w-6 text-gray-600" />
+                )}
+              </button>
+              <h1 className="text-xl font-semibold text-gray-800">Кабинет трейдера</h1>
+            </div>
+
+            {/* Balance Display */}
+            <div className="flex items-center">
+              <div className={`bg-gray-100 rounded-md px-4 py-2 flex items-center ${isLoading ? 'animate-pulse' : ''}`}>
+                <span className="text-sm font-medium text-gray-700">
+                  {isLoading ? 'Загрузка...' : `Баланс: ${profile?.balance || '0.00'} ${profile?.fiat_currency || 'RUB'}`}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </header>
 
+      {/* Main Content */}
+      <main className="min-h-screen pt-16 flex flex-col items-center justify-center">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">ВЫ НАХОДИТЕСЬ В КАБИНЕТЕ ТРЕЙДЕРА</h2>
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="px-6 py-3 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-200"
+        >
+          Открыть меню
+        </button>
+      </main>
+
+      {/* Sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-40 pt-16
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
@@ -110,15 +131,7 @@ export default function TraderLayout({ children }: TraderLayoutProps) {
         </div>
       </aside>
 
-      <main 
-        className={`min-h-screen pt-16 transition-all duration-300 ease-in-out
-          ${sidebarOpen ? 'lg:ml-64' : 'ml-0'}`}
-      >
-        <div className="rounded-lg mx-4 md:mx-6 overflow-hidden">
-          {children}
-        </div>
-      </main>
-
+      {/* Overlay for mobile */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-gray-600 bg-opacity-50 z-30 lg:hidden"

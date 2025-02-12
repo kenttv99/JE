@@ -1,4 +1,3 @@
-// frontend/src/lib/api/index.ts
 import axios from 'axios';
 import { getSession, signOut } from 'next-auth/react';
 
@@ -15,8 +14,8 @@ api.interceptors.request.use(
     // Get current session
     const session = await getSession();
     
-    // If session exists and has accessToken, add it to headers
-    if (session?.accessToken) {
+    // Update this line to match the token name from auth.ts
+    if (session?.accessToken) { // This now matches the name in auth.ts
       config.headers['Authorization'] = `Bearer ${session.accessToken}`;
     }
     return config;
@@ -37,7 +36,9 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        // Use Next-Auth signOut instead of direct window.location
+        // Add logging to help debug authentication issues
+        console.error('Authentication error:', error.response?.data);
+        
         await signOut({ 
           redirect: true,
           callbackUrl: '/login'
@@ -53,5 +54,25 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Add request/response logging in development
+if (process.env.NODE_ENV === 'development') {
+  api.interceptors.request.use(request => {
+    console.log('Starting Request:', {
+      url: request.url,
+      method: request.method,
+      headers: request.headers
+    });
+    return request;
+  });
+
+  api.interceptors.response.use(response => {
+    console.log('Response:', {
+      status: response.status,
+      data: response.data
+    });
+    return response;
+  });
+}
 
 export default api;

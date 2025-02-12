@@ -200,8 +200,11 @@ async def get_trader_profile(
                 joinedload(Trader.fiat_currency)
             )
             .filter(Trader.id == current_trader.id)
+            # Add unique() to handle multiple rows from joined collections
+            .distinct()
         )
-        trader = result.scalar_one_or_none()
+        # Use unique().scalar_one_or_none() instead of just scalar_one_or_none()
+        trader = result.unique().scalar_one_or_none()
         
         if not trader:
             raise HTTPException(status_code=404, detail="Trader not found")
