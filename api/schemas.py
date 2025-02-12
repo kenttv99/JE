@@ -382,25 +382,31 @@ class ReqTraderBase(BaseModel):
     bank: str
     req_number: str
     fio: str
+    status: Optional[TraderReqStatus] = Field(default=TraderReqStatus.approve)
 
     class Config:
         from_attributes = True
 
 class ReqTraderCreate(ReqTraderBase):
-    status: TraderReqStatus
+    pass
 
 class ReqTraderUpdate(BaseModel):
     payment_method: Optional[str] = None
     bank: Optional[str] = None
     req_number: Optional[str] = None
+    fio: Optional[str] = None
     status: Optional[TraderOrderStatus] = None
 
     class Config:
         from_attributes = True
 
-class ReqTraderResponse(ReqTraderBase):
+class ReqTraderResponse(BaseModel):
     id: int
     trader_id: int
+    payment_method: str
+    bank: str
+    req_number: str
+    fio: str
     status: TraderOrderStatus
     created_at: datetime
     updated_at: datetime
