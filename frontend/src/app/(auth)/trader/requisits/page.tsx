@@ -1,150 +1,32 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useTraderRequisites } from '@/hooks/useTraderRequisites';
-import { useRequisiteForm } from '@/hooks/useTraderRequisiteForm';
+import { useState } from 'react';
+import { useTraderRequisites, useRequisiteForm, useRequisiteUpdater } from '@/hooks/useTraderRequisites';
 import RequisitesTable from '@/components/TraderRequisitesTable';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IoCloseOutline, IoArrowBack } from 'react-icons/io5';
-import api from '@/lib/api';
-
-interface PaymentMethod {
-  id: number;
-  method_name: string;
-  details: string | null;
-}
-
-interface Bank {
-  id: number;
-  bank_name: string;
-  description: string | null;
-}
-
-interface Requisite {
-  id: number;
-  payment_method: string;
-  bank: string;
-  req_number: string;
-  fio: string;
-  can_buy: boolean;
-  can_sell: boolean;
-  created_at: string;
-  status: string;
-}
-
-interface RequisiteFormData {
-  payment_method: string;
-  bank: string;
-  req_number: string;
-  fio: string;
-  can_buy: boolean;
-  can_sell: boolean;
-}
-
-interface FormError {
-  field: string;
-  message: string;
-}
 
 const RequisitesPage = () => {
-  const { requisites: initialRequisites, loading: reqLoading, error: reqError, refetch } = useTraderRequisites();
-  const { paymentMethods, banks, loading: formLoading } = useRequisiteForm();
-  const [requisites, setRequisites] = useState<Requisite[]>(initialRequisites || []);
+  const { requisites, loading: reqLoading, refetch } = useTraderRequisites();
+  const {
+    paymentMethods,
+    banks,
+    loading: formLoading,
+    formData,
+    formErrors,
+    selectedMethod,
+    handleMethodSelect,
+    handleInputChange,
+    addRequisite,
+    resetForm
+  } = useRequisiteForm();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
-  const [formErrors, setFormErrors] = useState<FormError[]>([]);
-  const [formData, setFormData] = useState<RequisiteFormData>({
-    payment_method: '',
-    bank: '',
-    req_number: '',
-    fio: '',
-    can_buy: false,
-    can_sell: false,
-  });
-
-  useEffect(() => {
-    if (initialRequisites) {
-      setRequisites(initialRequisites);
-    }
-  }, [initialRequisites]);
-
-  const resetForm = () => {
-    setFormData({
-      payment_method: '',
-      bank: '',
-      req_number: '',
-      fio: '',
-      can_buy: false,
-      can_sell: false,
-    });
-    setSelectedMethod(null);
-    setFormErrors([]);
-  };
-
-  const validateForm = (): boolean => {
-    const errors: FormError[] = [];
-
-    if (!formData.payment_method) {
-      errors.push({ field: 'payment_method', message: 'Выберите метод оплаты' });
-    }
-    if (!formData.bank) {
-      errors.push({ field: 'bank', message: 'Выберите банк' });
-    }
-    if (!formData.req_number) {
-      errors.push({ field: 'req_number', message: 'Введите номер реквизита' });
-    }
-    if (!formData.fio) {
-      errors.push({ field: 'fio', message: 'Введите ФИО' });
-    }
-
-    setFormErrors(errors);
-    return errors.length === 0;
-  };
-
-  const handleMethodSelect = (method: PaymentMethod) => {
-    setSelectedMethod(method);
-    setFormData(prev => ({
-      ...prev,
-      payment_method: method.method_name,
-    }));
-    setFormErrors([]);
-  };
-
-  const handleBack = () => {
-    setSelectedMethod(null);
-    setFormData(prev => ({
-      ...prev,
-      payment_method: '',
-      bank: '',
-    }));
-    setFormErrors([]);
-  };
 
   const handleAddRequisite = async () => {
-    try {
-      if (!validateForm()) {
-        return;
-      }
-
-      const response = await api.post<Requisite>('/api/v1/trader_req/add_requisite', {
-        ...formData,
-        status: 'approve',
-      });
-
-      if (response.data) {
-        setRequisites(prev => [...prev, response.data]);
-      } else {
-        const updatedData = await refetch();
-        if (updatedData) {
-          setRequisites(updatedData);
-        }
-      }
-
+    const newRequisite = await addRequisite();
+    if (newRequisite) {
+      await refetch();
       setIsModalOpen(false);
-      resetForm();
-    } catch (error) {
-      console.error('Failed to add requisite:', error);
-      setFormErrors([{ field: 'general', message: 'Произошла ошибка при сохранении реквизита' }]);
     }
   };
 
@@ -191,7 +73,7 @@ const RequisitesPage = () => {
           <div className="p-6">
             <RequisitesTable 
               requisites={requisites}
-              onUpdate={setRequisites}
+              onUpdate={() => refetch()}
             />
           </div>
         </div>
@@ -219,7 +101,7 @@ const RequisitesPage = () => {
                   <div className="flex items-center space-x-3">
                     {selectedMethod && (
                       <button
-                        onClick={handleBack}
+                        onClick={() => handleMethodSelect(null)}
                         className="text-gray-400 hover:text-gray-500 transition-colors"
                       >
                         <IoArrowBack size={24} />
@@ -285,14 +167,11 @@ const RequisitesPage = () => {
                       <div className="space-y-2">
                         <label className="block text-sm font-medium text-gray-700">БАНК</label>
                         <select
-                          className={`block w-full pl-3 pr-10 py-2.5 text-base border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg transition-all duration-200 ${
+                          className={`block w-full pl-3 pr-10 py-2.5 text-base border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg ${
                             formErrors.find(err => err.field === 'bank') ? 'border-red-500' : ''
                           }`}
                           value={formData.bank}
-                          onChange={(e) => {
-                            setFormData({ ...formData, bank: e.target.value });
-                            setFormErrors(formErrors.filter(err => err.field !== 'bank'));
-                          }}
+                          onChange={(e) => handleInputChange('bank', e.target.value)}
                         >
                           <option value="">Выберите банк</option>
                           {banks.map((bank) => (
@@ -308,14 +187,11 @@ const RequisitesPage = () => {
                         <label className="block text-sm font-medium text-gray-700">НОМЕР РЕКВИЗИТА</label>
                         <input
                           type="text"
-                          className={`block w-full px-3 py-2.5 text-base border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg transition-all duration-200 ${
+                          className={`block w-full px-3 py-2.5 text-base border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg ${
                             formErrors.find(err => err.field === 'req_number') ? 'border-red-500' : ''
                           }`}
                           value={formData.req_number}
-                          onChange={(e) => {
-                            setFormData({ ...formData, req_number: e.target.value });
-                            setFormErrors(formErrors.filter(err => err.field !== 'req_number'));
-                          }}
+                          onChange={(e) => handleInputChange('req_number', e.target.value)}
                           placeholder="Введите номер реквизита"
                         />
                         {renderErrorMessage('req_number')}
@@ -325,14 +201,11 @@ const RequisitesPage = () => {
                         <label className="block text-sm font-medium text-gray-700">ФИО</label>
                         <input
                           type="text"
-                          className={`block w-full px-3 py-2.5 text-base border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg transition-all duration-200 ${
+                          className={`block w-full px-3 py-2.5 text-base border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg ${
                             formErrors.find(err => err.field === 'fio') ? 'border-red-500' : ''
                           }`}
                           value={formData.fio}
-                          onChange={(e) => {
-                            setFormData({ ...formData, fio: e.target.value });
-                            setFormErrors(formErrors.filter(err => err.field !== 'fio'));
-                          }}
+                          onChange={(e) => handleInputChange('fio', e.target.value)}
                           placeholder="Введите ФИО"
                         />
                         {renderErrorMessage('fio')}
@@ -344,7 +217,7 @@ const RequisitesPage = () => {
                           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <span className="text-sm text-gray-600">PayIn</span>
                             <div
-                              onClick={() => setFormData(prev => ({ ...prev, can_buy: !prev.can_buy }))}
+                              onClick={() => handleInputChange('can_buy', !formData.can_buy)}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out cursor-pointer ${
                                 formData.can_buy ? 'bg-blue-500' : 'bg-gray-200'
                               }`}
@@ -359,7 +232,7 @@ const RequisitesPage = () => {
                           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <span className="text-sm text-gray-600">PayOut</span>
                             <div
-                              onClick={() => setFormData(prev => ({ ...prev, can_sell: !prev.can_sell }))}
+                              onClick={() => handleInputChange('can_sell', !formData.can_sell)}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out cursor-pointer ${
                                 formData.can_sell ? 'bg-blue-500' : 'bg-gray-200'
                               }`}
@@ -385,8 +258,7 @@ const RequisitesPage = () => {
                         </button>
                         <button
                           onClick={handleAddRequisite}
-                          className="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                          disabled={formErrors.length > 0}
+                          className="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 hover:shadow-lg"
                         >
                           Сохранить
                         </button>

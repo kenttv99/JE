@@ -29,8 +29,8 @@ const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onUpdate 
   ) => {
     try {
       setUpdating(requisiteId);
-      // Changed from PATCH to POST method
-      const response = await api.post<Requisite>(`/api/v1/trader_req/update_requisite/${requisiteId}`, {
+      // Changed from PATCH to PUT method
+      const response = await api.put<Requisite>(`/api/v1/trader_req/update_requisite/${requisiteId}`, {
         [field]: !currentValue
       });
 
