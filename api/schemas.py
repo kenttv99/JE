@@ -410,6 +410,8 @@ class ReqTraderResponse(BaseModel):
     req_number: str
     fio: str
     status: TraderReqStatus
+    can_buy: bool  # Add this field
+    can_sell: bool # Add this field
     created_at: datetime
     updated_at: datetime
 
