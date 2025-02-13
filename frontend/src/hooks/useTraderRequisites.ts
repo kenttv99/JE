@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 
-interface Requisite {
+export interface Requisite {
   id: number;
   payment_method: string;
   bank: string;
@@ -11,18 +11,7 @@ interface Requisite {
   can_sell: boolean;
   status: string;
   created_at: string;
-}
-
-interface PaymentMethod {
-  id: number;
-  method_name: string;
-  details: string | null;
-}
-
-interface Bank {
-  id: number;
-  bank_name: string;
-  description: string | null;
+  updated_at: string;
 }
 
 interface FormError {
@@ -35,8 +24,7 @@ interface RequisiteFormData {
   bank: string;
   req_number: string;
   fio: string;
-  can_buy: boolean;
-  can_sell: boolean;
+  status?: string;
 }
 
 export const useTraderRequisites = () => {
@@ -77,44 +65,49 @@ export const useTraderRequisites = () => {
 };
 
 export const useRequisiteForm = () => {
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
-  const [banks, setBanks] = useState<Bank[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
+  const [banks, setBanks] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [selectedMethod, setSelectedMethod] = useState('');
   const [formData, setFormData] = useState<RequisiteFormData>({
     payment_method: '',
     bank: '',
     req_number: '',
     fio: '',
-    can_buy: false,
-    can_sell: false,
   });
   const [formErrors, setFormErrors] = useState<FormError[]>([]);
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
+
+  const fetchOptions = async () => {
+    try {
+      const [methodsResponse, banksResponse] = await Promise.all([
+        api.get<string[]>('/api/v1/trader_req/payment_methods'),
+        api.get<string[]>('/api/v1/trader_req/banks')
+      ]);
+      setPaymentMethods(methodsResponse.data);
+      setBanks(banksResponse.data);
+    } catch (error) {
+      console.error('Failed to fetch form options:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [methodsResponse, banksResponse] = await Promise.all([
-          api.get<PaymentMethod[]>('/api/v1/trader_methods/get_methods'),
-          api.get<Bank[]>('/api/v1/banks_trader/')
-        ]);
-        
-        setPaymentMethods(methodsResponse.data);
-        setBanks(banksResponse.data);
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error('Failed to fetch form data'));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    fetchOptions();
   }, []);
+
+  const handleMethodSelect = (method: string) => {
+    setSelectedMethod(method);
+    setFormData(prev => ({ ...prev, payment_method: method }));
+  };
+
+  const handleInputChange = (field: keyof RequisiteFormData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormErrors(prev => prev.filter(error => error.field !== field));
+  };
 
   const validateForm = (): boolean => {
     const errors: FormError[] = [];
-
     if (!formData.payment_method) {
       errors.push({ field: 'payment_method', message: 'Выберите метод оплаты' });
     }
@@ -132,60 +125,35 @@ export const useRequisiteForm = () => {
     return errors.length === 0;
   };
 
+  const addRequisite = async () => {
+    if (!validateForm()) {
+      return null;
+    }
+    try {
+      const response = await api.post<Requisite>('/api/v1/trader_req/add_requisite', formData);
+      resetForm();
+      return response.data;
+    } catch (error) {
+      console.error('Failed to add requisite:', error);
+      return null;
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       payment_method: '',
       bank: '',
       req_number: '',
       fio: '',
-      can_buy: false,
-      can_sell: false,
     });
-    setSelectedMethod(null);
+    setSelectedMethod('');
     setFormErrors([]);
-  };
-
-  const handleMethodSelect = (method: PaymentMethod | null) => {
-    setSelectedMethod(method);
-    setFormData(prev => ({
-      ...prev,
-      payment_method: method?.method_name || '',
-    }));
-    setFormErrors([]);
-  };
-
-  const handleInputChange = (field: keyof RequisiteFormData, value: string | boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    setFormErrors(formErrors.filter(err => err.field !== field));
-  };
-
-  const addRequisite = async () => {
-    try {
-      if (!validateForm()) {
-        return null;
-      }
-
-      const response = await api.post<Requisite>('/api/v1/trader_req/add_requisite', {
-        ...formData,
-        status: 'approve',
-      });
-
-      resetForm();
-      return response.data;
-    } catch (error) {
-      setFormErrors([{ field: 'general', message: 'Произошла ошибка при сохранении реквизита' }]);
-      return null;
-    }
   };
 
   return {
     paymentMethods,
     banks,
     loading,
-    error,
     formData,
     formErrors,
     selectedMethod,
@@ -193,44 +161,5 @@ export const useRequisiteForm = () => {
     handleInputChange,
     addRequisite,
     resetForm,
-    validateForm
   };
 };
-
-export const useRequisiteUpdater = () => {
-    const [updating, setUpdating] = useState<number | null>(null);
-  
-    const handleDirectionToggle = async (
-      requisite: Requisite,
-      field: 'can_buy' | 'can_sell',
-      currentValue: boolean,
-      onUpdate?: (updatedRequisite: Requisite) => void
-    ) => {
-      try {
-        setUpdating(requisite.id);
-        
-        // Include all existing fields in the update request
-        const updateData = {
-          payment_method: requisite.payment_method,
-          bank: requisite.bank,
-          req_number: requisite.req_number,
-          fio: requisite.fio,
-          status: requisite.status,
-          can_buy: field === 'can_buy' ? !currentValue : requisite.can_buy,
-          can_sell: field === 'can_sell' ? !currentValue : requisite.can_sell
-        };
-  
-        const response = await api.put<Requisite>(`/api/v1/trader_req/update_requisite/${requisite.id}`, updateData);
-  
-        if (response.data && onUpdate) {
-          onUpdate(response.data);
-        }
-      } catch (error) {
-        console.error('Failed to update requisite:', error);
-      } finally {
-        setUpdating(null);
-      }
-    };
-  
-    return { updating, handleDirectionToggle };
-  };
