@@ -77,7 +77,7 @@ const RequisitesPage = () => {
           <div className="p-6">
             <RequisitesTable 
               requisites={requisites}
-              onUpdate={handleRequisiteUpdate}
+              onUpdate={() => refetch()}
             />
           </div>
         </div>

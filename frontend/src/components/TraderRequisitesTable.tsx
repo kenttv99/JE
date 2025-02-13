@@ -19,9 +19,8 @@ interface RequisitesTableProps {
   onUpdate?: (updatedRequisites: Requisite[]) => void;
 }
 
-const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites: initialRequisites, onUpdate }) => {
+const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onUpdate }) => {
   const [updating, setUpdating] = useState<number | null>(null);
-  const [localRequisites, setLocalRequisites] = useState<Requisite[]>(initialRequisites);
 
   const handleDirectionToggle = async (
     requisiteId: number, 
@@ -30,17 +29,18 @@ const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites: initialRe
   ) => {
     try {
       setUpdating(requisiteId);
-      const currentRequisite = localRequisites.find(req => req.id === requisiteId);
+      const currentRequisite = requisites.find(req => req.id === requisiteId);
       if (!currentRequisite) return;
 
-      // Optimistically update the local state
-      const updatedRequisites = localRequisites.map(req =>
+      // Optimistically update the UI
+      const optimisticUpdate = requisites.map(req =>
         req.id === requisiteId ? { ...req, [field]: !currentValue } : req
       );
-      setLocalRequisites(updatedRequisites);
+      if (onUpdate) {
+        onUpdate(optimisticUpdate);
+      }
 
-      // Send the update to the server
-      await api.put<Requisite>(`/api/v1/trader_req/update_requisite/${requisiteId}`, {
+      const response = await api.put<Requisite>(`/api/v1/trader_req/update_requisite/${requisiteId}`, {
         payment_method: currentRequisite.payment_method,
         bank: currentRequisite.bank,
         req_number: currentRequisite.req_number,
@@ -49,14 +49,18 @@ const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites: initialRe
         [field]: !currentValue
       });
 
-      // No need to update from response since we already updated locally
-      if (onUpdate) {
+      if (response.data && onUpdate) {
+        const updatedRequisites = requisites.map(req =>
+          req.id === requisiteId ? response.data : req
+        );
         onUpdate(updatedRequisites);
       }
     } catch (error) {
       console.error('Failed to update requisite:', error);
-      // Revert the local state on error
-      setLocalRequisites(localRequisites);
+      // Revert to original state on error
+      if (onUpdate) {
+        onUpdate(requisites);
+      }
     } finally {
       setUpdating(null);
     }
@@ -91,7 +95,7 @@ const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites: initialRe
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {localRequisites.map((requisite) => (
+          {requisites.map((requisite) => (
             <tr key={requisite.id} className="hover:bg-gray-50">
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 {requisite.payment_method}
@@ -107,10 +111,12 @@ const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites: initialRe
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div
-                  onClick={() => !updating && handleDirectionToggle(requisite.id, 'can_buy', requisite.can_buy)}
+                  onClick={() => handleDirectionToggle(requisite.id, 'can_buy', requisite.can_buy)}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out cursor-pointer ${
-                    updating === requisite.id ? 'opacity-50 cursor-not-allowed' : ''
-                  } ${requisite.can_buy ? 'bg-blue-500' : 'bg-gray-200'}`}
+                    updating === requisite.id ? 'opacity-50' : ''
+                  } ${
+                    requisite.can_buy ? 'bg-blue-500' : 'bg-gray-200'
+                  }`}
                 >
                   <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ease-in-out ${
@@ -121,10 +127,12 @@ const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites: initialRe
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div
-                  onClick={() => !updating && handleDirectionToggle(requisite.id, 'can_sell', requisite.can_sell)}
+                  onClick={() => handleDirectionToggle(requisite.id, 'can_sell', requisite.can_sell)}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out cursor-pointer ${
-                    updating === requisite.id ? 'opacity-50 cursor-not-allowed' : ''
-                  } ${requisite.can_sell ? 'bg-blue-500' : 'bg-gray-200'}`}
+                    updating === requisite.id ? 'opacity-50' : ''
+                  } ${
+                    requisite.can_sell ? 'bg-blue-500' : 'bg-gray-200'
+                  }`}
                 >
                   <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ease-in-out ${
@@ -138,13 +146,6 @@ const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites: initialRe
               </td>
             </tr>
           ))}
-          {localRequisites.length === 0 && (
-            <tr>
-              <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
-                Нет доступных реквизитов
-              </td>
-            </tr>
-          )}
         </tbody>
       </table>
     </div>
