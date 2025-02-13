@@ -1,22 +1,20 @@
-'use client';
-
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IoCloseOutline, IoArrowBack } from 'react-icons/io5';
 
-interface PaymentMethod {
+export interface PaymentMethod {
   id: number;
   method_name: string;
   details: string | null;
 }
 
-interface Bank {
+export interface Bank {
   id: number;
   bank_name: string;
   description: string | null;
 }
 
-interface RequisiteFormData {
+export interface RequisiteFormData {
   payment_method: string;
   bank: string;
   req_number: string;
