@@ -28,6 +28,7 @@ from api.enums import (
     OrderTypeEnum,
     AMLStatusEnum,
     PaymentMethodEnum,
+    TraderReqStatus,
     VerificationLevelEnum,
     TraderPaymentMethodEnum,
     TraderVerificationLevelEnum,
@@ -317,7 +318,7 @@ class ReqTrader(Base):
     bank = Column(String(100), ForeignKey("banks_traders.bank_name"), nullable=False)  # Link to BanksTrader
     req_number = Column(String, nullable=False)
     fio = Column(String, nullable=False)
-    status = Column(Enum(OrderStatus, name='paymentstatus'), default=OrderStatus.pending)
+    status = Column(Enum(TraderReqStatus, name='traderreqstatus'), default=TraderReqStatus.approve)
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
 

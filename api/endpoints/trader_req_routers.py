@@ -26,6 +26,7 @@ async def create_trader_requisite(
             payment_method=requisite.payment_method,
             bank=requisite.bank,
             req_number=requisite.req_number,
+            fio = requisite.fio,
             status=requisite.status,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
@@ -39,6 +40,7 @@ async def create_trader_requisite(
             payment_method=new_requisite.payment_method,
             bank=new_requisite.bank,
             req_number=new_requisite.req_number,
+            fio = new_requisite.fio,
             status=new_requisite.status,
             created_at=new_requisite.created_at,
             updated_at=new_requisite.updated_at
@@ -63,6 +65,7 @@ async def get_trader_requisites(db: AsyncSession = Depends(get_async_db)):
                 payment_method=requisite.payment_method,
                 bank=requisite.bank,
                 req_number=requisite.req_number,
+                fio = requisite.fio,
                 status=requisite.status,
                 created_at=requisite.created_at,
                 updated_at=requisite.updated_at
@@ -101,6 +104,7 @@ async def update_trader_requisite(
             payment_method=requisite.payment_method,
             bank=requisite.bank,
             req_number=requisite.req_number,
+            fio = requisite.fio,
             status=requisite.status,
             created_at=requisite.created_at,
             updated_at=requisite.updated_at

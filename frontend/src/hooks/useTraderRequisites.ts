@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/lib/api';
 
 interface Requisite {
   id: number;
   payment_method: string;
   bank: string;
-  payment_details: string;
+  req_number: string;
+  fio: string;
+  can_buy: boolean;
+  can_sell: boolean;
   status: string;
+  created_at: string;
 }
 
 export const useTraderRequisites = () => {
@@ -14,20 +18,34 @@ export const useTraderRequisites = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
-    const fetchRequisites = async () => {
-      try {
-        const response = await axios.get<Requisite[]>('/api/v1/trader_req/all_requisites');
-        setRequisites(response.data);
-      } catch (err) {
-        setError(err as Error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchRequisites = async () => {
+    try {
+      const response = await api.get<Requisite[]>('/api/v1/trader_req/requisites');
+      return response.data;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Failed to fetch requisites');
+      setError(error);
+      return null;
+    }
+  };
 
-    fetchRequisites();
+  const refetch = async () => {
+    setLoading(true);
+    try {
+      const data = await fetchRequisites();
+      if (data) {
+        setRequisites(data);
+        return data;
+      }
+    } finally {
+      setLoading(false);
+    }
+    return null;
+  };
+
+  useEffect(() => {
+    refetch();
   }, []);
 
-  return { requisites, loading, error };
+  return { requisites, loading, error, refetch };
 };

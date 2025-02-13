@@ -407,7 +407,7 @@ class ReqTraderResponse(BaseModel):
     bank: str
     req_number: str
     fio: str
-    status: TraderOrderStatus
+    status: TraderReqStatus
     created_at: datetime
     updated_at: datetime
 

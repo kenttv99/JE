@@ -26,7 +26,7 @@ export function useProfile() {
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 30 * 60 * 1000,   // 30 minutes
     retry: 1,
-    refetchInterval: 30000,    // Refresh every 30 seconds for balance updates
+    refetchInterval: 10000,    // Refresh every 30 seconds for balance updates
     refetchOnWindowFocus: true // Refresh when window regains focus
   });
 
