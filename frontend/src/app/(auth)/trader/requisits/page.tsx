@@ -63,11 +63,11 @@ const RequisitesPage = () => {
           <div className="p-6">
             <RequisitesTable
               requisites={requisites}
-              onUpdate={(updatedRequisites) => {
-                if (updatedRequisites && Array.isArray(updatedRequisites)) {
-                  refetch();
-                }
-              }}
+              // onUpdate={(updatedRequisites) => {   // Removed onUpdate prop
+              //   if (updatedRequisites && Array.isArray(updatedRequisites)) {
+              //     refetch();
+              //   }
+              // }}
             />
           </div>
         </div>

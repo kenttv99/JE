@@ -5,45 +5,42 @@ import { Requisite } from '@/hooks/useTraderRequisites';
 
 interface RequisitesTableProps {
   requisites: Requisite[];
-  onUpdate?: (updatedRequisites: Requisite[]) => void;
+  // onUpdate?: (updatedRequisites: Requisite[]) => void; // Removed onUpdate prop
 }
 
-const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onUpdate }) => {
+const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites }) => {
   const [updating, setUpdating] = useState<number | null>(null);
+    const [localRequisites, setLocalRequisites] = useState<Requisite[]>(requisites);
 
   const handleDirectionToggle = async (
-    requisiteId: number, 
-    field: 'can_buy' | 'can_sell', 
+    requisiteId: number,
+    field: 'can_buy' | 'can_sell',
     currentValue: boolean
   ) => {
     if (updating === requisiteId) return;
-    
+
     try {
       setUpdating(requisiteId);
-      const currentRequisite = requisites.find(req => req.id === requisiteId);
+      const currentRequisite = localRequisites.find(req => req.id === requisiteId);
       if (!currentRequisite) return;
 
-      const updatedRequisites = requisites.map(req =>
-        req.id === requisiteId ? { ...req, [field]: !currentValue } : req
+      const updatedRequisite = { ...currentRequisite, [field]: !currentValue };
+
+      setLocalRequisites(prevRequisites =>
+        prevRequisites.map(req => (req.id === requisiteId ? updatedRequisite : req))
       );
-      
-      if (onUpdate) {
-        onUpdate(updatedRequisites);
-      }
 
       await api.put<Requisite>(`/api/v1/trader_req/update_requisite/${requisiteId}`, {
-        payment_method: currentRequisite.payment_method,
-        bank: currentRequisite.bank,
-        req_number: currentRequisite.req_number,
-        fio: currentRequisite.fio,
-        status: currentRequisite.status,
+        payment_method: updatedRequisite.payment_method,
+        bank: updatedRequisite.bank,
+        req_number: updatedRequisite.req_number,
+        fio: updatedRequisite.fio,
+        status: updatedRequisite.status,
         [field]: !currentValue
       });
     } catch (error) {
       console.error('Failed to update requisite:', error);
-      if (onUpdate) {
-        onUpdate(requisites);
-      }
+        setLocalRequisites(requisites); // Revert to original requisites on error
     } finally {
       setUpdating(null);
     }
@@ -90,7 +87,7 @@ const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onUpdate 
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {requisites.map((requisite) => {
+          {localRequisites.map((requisite) => {
             const buyStyles = getSwitchStyles(requisite.can_buy === true, updating === requisite.id);
             const sellStyles = getSwitchStyles(requisite.can_sell === true, updating === requisite.id);
 
