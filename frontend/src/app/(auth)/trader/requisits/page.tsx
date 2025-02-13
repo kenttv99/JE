@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useTraderRequisites, useRequisiteForm } from '@/hooks/useTraderRequisites';
 import RequisitesTable from '@/components/TraderRequisitesTable';
 import AddTraderRequisiteModal from '@/components/AddTraderRequisiteModal';
@@ -12,18 +12,12 @@ const RequisitesPage = () => {
     paymentMethods,
     banks,
     loading: formLoading,
-    formData,
-    formErrors,
-    selectedMethod,
-    handleMethodSelect,
-    handleInputChange,
     addRequisite,
     resetForm
   } = useRequisiteForm();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Convert string arrays to proper types
   const formattedPaymentMethods: PaymentMethod[] = paymentMethods.map((method, index) => ({
     id: index + 1,
     method_name: method,
@@ -36,11 +30,20 @@ const RequisitesPage = () => {
     description: null
   }));
 
-  const handleSubmit = async (formData: RequisiteFormData) => {
-    await addRequisite();
-    await refetch();
+  const handleClose = useCallback(() => {
     setIsModalOpen(false);
-  };
+    resetForm();
+  }, [resetForm]);
+
+  const handleSubmit = useCallback(async (formData: RequisiteFormData) => {
+    try {
+      await addRequisite(formData);
+      await refetch();
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('Failed to add requisite:', error);
+    }
+  }, [addRequisite, refetch]);
 
   if (reqLoading || formLoading) {
     return (
@@ -60,6 +63,7 @@ const RequisitesPage = () => {
           <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4 flex justify-between items-center">
             <h1 className="text-2xl font-bold text-white">Реквизиты</h1>
             <button 
+              type="button"
               onClick={() => {
                 setIsModalOpen(true);
                 resetForm();
@@ -74,12 +78,8 @@ const RequisitesPage = () => {
             <RequisitesTable 
               requisites={requisites}
               onUpdate={(updatedRequisites) => {
-                if (updatedRequisites) {
-                  requisites.forEach((req, index) => {
-                    if (updatedRequisites[index]) {
-                      requisites[index] = updatedRequisites[index];
-                    }
-                  });
+                if (updatedRequisites && Array.isArray(updatedRequisites)) {
+                  refetch();
                 }
               }}
             />
@@ -89,7 +89,7 @@ const RequisitesPage = () => {
 
       <AddTraderRequisiteModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleClose}
         onSubmit={handleSubmit}
         paymentMethods={formattedPaymentMethods}
         banks={formattedBanks}

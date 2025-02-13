@@ -19,12 +19,14 @@ interface FormError {
   message: string;
 }
 
-interface RequisiteFormData {
+export interface RequisiteFormData {
   payment_method: string;
   bank: string;
   req_number: string;
   fio: string;
-  status?: string;
+  can_buy: boolean;
+  can_sell: boolean;
+  created_at?: string;
 }
 
 export const useTraderRequisites = () => {
@@ -68,14 +70,17 @@ export const useRequisiteForm = () => {
   const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
   const [banks, setBanks] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedMethod, setSelectedMethod] = useState('');
   const [formData, setFormData] = useState<RequisiteFormData>({
     payment_method: '',
     bank: '',
     req_number: '',
     fio: '',
+    can_buy: false,
+    can_sell: false,
+    created_at: new Date().toISOString()
   });
   const [formErrors, setFormErrors] = useState<FormError[]>([]);
+  const [selectedMethod, setSelectedMethod] = useState('');
 
   const fetchOptions = async () => {
     try {
@@ -125,12 +130,13 @@ export const useRequisiteForm = () => {
     return errors.length === 0;
   };
 
-  const addRequisite = async () => {
+  const addRequisite = async (data?: RequisiteFormData) => {
+    const dataToSubmit = data || formData;
     if (!validateForm()) {
       return null;
     }
     try {
-      const response = await api.post<Requisite>('/api/v1/trader_req/add_requisite', formData);
+      const response = await api.post<Requisite>('/api/v1/trader_req/add_requisite', dataToSubmit);
       resetForm();
       return response.data;
     } catch (error) {
@@ -145,6 +151,9 @@ export const useRequisiteForm = () => {
       bank: '',
       req_number: '',
       fio: '',
+      can_buy: false,
+      can_sell: false,
+      created_at: new Date().toISOString()
     });
     setSelectedMethod('');
     setFormErrors([]);
@@ -160,6 +169,6 @@ export const useRequisiteForm = () => {
     handleMethodSelect,
     handleInputChange,
     addRequisite,
-    resetForm,
+    resetForm
   };
 };
