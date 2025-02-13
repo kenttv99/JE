@@ -29,14 +29,21 @@ const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onUpdate 
   ) => {
     try {
       setUpdating(requisiteId);
-      // Changed from PATCH to PUT method
+      const currentRequisite = requisites.find(req => req.id === requisiteId);
+      if (!currentRequisite) return;
+  
       const response = await api.put<Requisite>(`/api/v1/trader_req/update_requisite/${requisiteId}`, {
+        payment_method: currentRequisite.payment_method,
+        bank: currentRequisite.bank,
+        req_number: currentRequisite.req_number,
+        fio: currentRequisite.fio,
+        status: currentRequisite.status,
         [field]: !currentValue
       });
-
+  
       if (response.data && onUpdate) {
         const updatedRequisites = requisites.map(req =>
-          req.id === requisiteId ? { ...req, [field]: !currentValue } : req
+          req.id === requisiteId ? response.data : req
         );
         onUpdate(updatedRequisites);
       }

@@ -91,48 +91,40 @@ async def update_trader_requisite(
         if not requisite:
             raise HTTPException(status_code=404, detail="Requisite not found")
         
-        for key, value in requisite_update.dict().items():
+        update_data = requisite_update.dict(exclude_unset=True)
+        
+        # If we're only updating can_buy or can_sell, preserve the existing values
+        if set(update_data.keys()).issubset({'can_buy', 'can_sell'}):
+            update_data['payment_method'] = requisite.payment_method
+            update_data['bank'] = requisite.bank
+            update_data['req_number'] = requisite.req_number
+            update_data['fio'] = requisite.fio
+            update_data['status'] = requisite.status
+        
+        # Update the requisite with new values
+        for key, value in update_data.items():
             setattr(requisite, key, value)
         
         requisite.updated_at = datetime.utcnow()
         
         await db.commit()
         await db.refresh(requisite)
+        
         return ReqTraderResponse(
             id=requisite.id,
             trader_id=requisite.trader_id,
             payment_method=requisite.payment_method,
             bank=requisite.bank,
             req_number=requisite.req_number,
-            fio = requisite.fio,
+            fio=requisite.fio,
             status=requisite.status,
+            can_buy=requisite.can_buy,
+            can_sell=requisite.can_sell,
             created_at=requisite.created_at,
             updated_at=requisite.updated_at
         )
+        
     except Exception as e:
         await db.rollback()
         logging.error(f"Error updating trader requisite: {e}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
-
-@router.delete("/delete_requisite/{requisite_id}", response_model=ReqTraderResponse)
-async def delete_trader_requisite(
-    requisite_id: int,
-    db: AsyncSession = Depends(get_async_db)
-):
-    """
-    Delete a trader requisite.
-    """
-    try:
-        result = await db.execute(select(ReqTrader).where(ReqTrader.id == requisite_id))
-        requisite = result.scalar_one_or_none()
-        
-        if not requisite:
-            raise HTTPException(status_code=404, detail="Requisite not found")
-        
-        await db.delete(requisite)
-        await db.commit()
-        return requisite
-    except Exception as e:
-        await db.rollback()
-        logging.error(f"Error deleting trader requisite: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")

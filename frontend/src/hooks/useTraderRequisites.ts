@@ -198,29 +198,39 @@ export const useRequisiteForm = () => {
 };
 
 export const useRequisiteUpdater = () => {
-  const [updating, setUpdating] = useState<number | null>(null);
-
-  const handleDirectionToggle = async (
-    requisiteId: number,
-    field: 'can_buy' | 'can_sell',
-    currentValue: boolean,
-    onUpdate?: (updatedRequisite: Requisite) => void
-  ) => {
-    try {
-      setUpdating(requisiteId);
-      const response = await api.put<Requisite>(`/api/v1/trader_req/update_requisite/${requisiteId}`, {
-        [field]: !currentValue
-      });
-
-      if (response.data && onUpdate) {
-        onUpdate(response.data);
+    const [updating, setUpdating] = useState<number | null>(null);
+  
+    const handleDirectionToggle = async (
+      requisite: Requisite,
+      field: 'can_buy' | 'can_sell',
+      currentValue: boolean,
+      onUpdate?: (updatedRequisite: Requisite) => void
+    ) => {
+      try {
+        setUpdating(requisite.id);
+        
+        // Include all existing fields in the update request
+        const updateData = {
+          payment_method: requisite.payment_method,
+          bank: requisite.bank,
+          req_number: requisite.req_number,
+          fio: requisite.fio,
+          status: requisite.status,
+          can_buy: field === 'can_buy' ? !currentValue : requisite.can_buy,
+          can_sell: field === 'can_sell' ? !currentValue : requisite.can_sell
+        };
+  
+        const response = await api.put<Requisite>(`/api/v1/trader_req/update_requisite/${requisite.id}`, updateData);
+  
+        if (response.data && onUpdate) {
+          onUpdate(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to update requisite:', error);
+      } finally {
+        setUpdating(null);
       }
-    } catch (error) {
-      console.error('Failed to update requisite:', error);
-    } finally {
-      setUpdating(null);
-    }
+    };
+  
+    return { updating, handleDirectionToggle };
   };
-
-  return { updating, handleDirectionToggle };
-};
