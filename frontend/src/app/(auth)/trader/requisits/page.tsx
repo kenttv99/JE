@@ -77,7 +77,16 @@ const RequisitesPage = () => {
           <div className="p-6">
             <RequisitesTable 
               requisites={requisites}
-              onUpdate={() => refetch()}
+              onUpdate={(updatedRequisites) => {
+                if (updatedRequisites) {
+                  // Update local state without refetching
+                  requisites.forEach((req, index) => {
+                    if (updatedRequisites[index]) {
+                      requisites[index] = updatedRequisites[index];
+                    }
+                  });
+                }
+              }}
             />
           </div>
         </div>

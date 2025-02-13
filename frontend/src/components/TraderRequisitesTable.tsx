@@ -1,18 +1,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import api from '@/lib/api';
-
-interface Requisite {
-  id: number;
-  payment_method: string;
-  bank: string;
-  req_number: string;
-  fio: string;
-  can_buy: boolean;
-  can_sell: boolean;
-  status: string;
-  created_at: string;
-}
+import { Requisite } from '@/hooks/useTraderRequisites'; // Import the interface from the hook
 
 interface RequisitesTableProps {
   requisites: Requisite[];
@@ -27,20 +16,22 @@ const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onUpdate 
     field: 'can_buy' | 'can_sell', 
     currentValue: boolean
   ) => {
+    if (updating === requisiteId) return;
+    
     try {
       setUpdating(requisiteId);
       const currentRequisite = requisites.find(req => req.id === requisiteId);
       if (!currentRequisite) return;
 
-      // Optimistically update the UI
-      const optimisticUpdate = requisites.map(req =>
+      const updatedRequisites = requisites.map(req =>
         req.id === requisiteId ? { ...req, [field]: !currentValue } : req
       );
+      
       if (onUpdate) {
-        onUpdate(optimisticUpdate);
+        onUpdate(updatedRequisites);
       }
 
-      const response = await api.put<Requisite>(`/api/v1/trader_req/update_requisite/${requisiteId}`, {
+      await api.put<Requisite>(`/api/v1/trader_req/update_requisite/${requisiteId}`, {
         payment_method: currentRequisite.payment_method,
         bank: currentRequisite.bank,
         req_number: currentRequisite.req_number,
@@ -48,16 +39,9 @@ const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onUpdate 
         status: currentRequisite.status,
         [field]: !currentValue
       });
-
-      if (response.data && onUpdate) {
-        const updatedRequisites = requisites.map(req =>
-          req.id === requisiteId ? response.data : req
-        );
-        onUpdate(updatedRequisites);
-      }
     } catch (error) {
       console.error('Failed to update requisite:', error);
-      // Revert to original state on error
+      // Revert the state if API call fails
       if (onUpdate) {
         onUpdate(requisites);
       }
