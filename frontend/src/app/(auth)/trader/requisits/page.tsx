@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { useTraderRequisites, useRequisiteForm } from '@/hooks/useTraderRequisites';
 import RequisitesTable from '@/components/TraderRequisitesTable';
 import AddTraderRequisiteModal from '@/components/AddTraderRequisiteModal';
-import type { PaymentMethod, Bank, RequisiteFormData } from '@/components/AddTraderRequisiteModal';
+import type { RequisiteFormData } from '@/hooks/useTraderRequisites'; // Changed import location
 
 const RequisitesPage = () => {
   const { requisites, loading: reqLoading, refetch } = useTraderRequisites();
@@ -17,18 +17,6 @@ const RequisitesPage = () => {
   } = useRequisiteForm();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const formattedPaymentMethods: PaymentMethod[] = paymentMethods.map((method, index) => ({
-    id: index + 1,
-    method_name: method,
-    details: null
-  }));
-
-  const formattedBanks: Bank[] = banks.map((bank, index) => ({
-    id: index + 1,
-    bank_name: bank,
-    description: null
-  }));
 
   const handleClose = useCallback(() => {
     setIsModalOpen(false);
@@ -64,9 +52,7 @@ const RequisitesPage = () => {
             <h1 className="text-2xl font-bold text-white">Реквизиты</h1>
             <button 
               type="button"
-              onClick={() => {
-                setIsModalOpen(true);
-              }}
+              onClick={() => setIsModalOpen(true)}
               className="bg-white text-blue-500 px-6 py-2 rounded-full shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105 active:scale-95"
             >
               Добавить реквизиты
@@ -90,8 +76,8 @@ const RequisitesPage = () => {
         isOpen={isModalOpen}
         onClose={handleClose}
         onSubmit={handleSubmit}
-        paymentMethods={formattedPaymentMethods}
-        banks={formattedBanks}
+        paymentMethods={paymentMethods} // Pass the string arrays directly from the hook
+        banks={banks} // Pass the string arrays directly from the hook
       />
     </div>
   );

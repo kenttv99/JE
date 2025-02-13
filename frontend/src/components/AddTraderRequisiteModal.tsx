@@ -2,18 +2,6 @@
 
 import { useState } from 'react';
 
-export interface PaymentMethod {
-  id: number;
-  method_name: string;
-  details: string | null;
-}
-
-export interface Bank {
-  id: number;
-  bank_name: string;
-  description: string | null;
-}
-
 export interface RequisiteFormData {
   payment_method: string;
   bank: string;
@@ -28,8 +16,8 @@ interface AddRequisiteModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (formData: RequisiteFormData) => Promise<void>;
-  paymentMethods: PaymentMethod[];
-  banks: Bank[];
+  paymentMethods: string[];  // Changed: Now expects string arrays directly
+  banks: string[];          // Changed: Now expects string arrays directly
 }
 
 const AddTraderRequisiteModal = ({
@@ -39,7 +27,7 @@ const AddTraderRequisiteModal = ({
   paymentMethods,
   banks,
 }: AddRequisiteModalProps) => {
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
+  const [selectedMethodName, setSelectedMethodName] = useState<string>('');
   const [formData, setFormData] = useState<RequisiteFormData>({
     payment_method: '',
     bank: '',
@@ -65,11 +53,11 @@ const AddTraderRequisiteModal = ({
         >
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center space-x-3">
-              {selectedMethod && (
+              {selectedMethodName && (
                 <button
                   type="button"
                   onClick={() => {
-                    setSelectedMethod(null);
+                    setSelectedMethodName('');
                     setFormData(prev => ({
                       ...prev,
                       payment_method: '',
@@ -84,7 +72,7 @@ const AddTraderRequisiteModal = ({
                 </button>
               )}
               <h3 className="text-2xl font-semibold text-gray-900">
-                {selectedMethod ? 'Детали реквизита' : 'Выберите метод'}
+                {selectedMethodName ? 'Детали реквизита' : 'Выберите метод'}
               </h3>
             </div>
             <button
@@ -98,26 +86,23 @@ const AddTraderRequisiteModal = ({
             </button>
           </div>
 
-          {!selectedMethod ? (
+          {!selectedMethodName ? (
             <div className="space-y-4">
-              {paymentMethods.map((method) => (
+              {paymentMethods.map((methodName) => (
                 <button
-                  key={method.id}
+                  key={methodName}
                   type="button"
                   onClick={() => {
-                    setSelectedMethod(method);
+                    setSelectedMethodName(methodName);
                     setFormData(prev => ({
                       ...prev,
-                      payment_method: method.method_name
+                      payment_method: methodName
                     }));
                   }}
                   className="w-full p-4 text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200 flex items-center justify-between group"
                 >
                   <div>
-                    <div className="font-medium text-gray-900">{method.method_name}</div>
-                    {method.details && (
-                      <div className="text-sm text-gray-500 mt-1">{method.details}</div>
-                    )}
+                    <div className="font-medium text-gray-900">{methodName}</div>
                   </div>
                   <div className="text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -131,10 +116,7 @@ const AddTraderRequisiteModal = ({
             <div className="space-y-6">
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
                 <div className="text-sm text-gray-500">Выбранный метод</div>
-                <div className="font-medium text-blue-700">{selectedMethod.method_name}</div>
-                {selectedMethod.details && (
-                  <div className="text-sm text-blue-600 mt-1">{selectedMethod.details}</div>
-                )}
+                <div className="font-medium text-blue-700">{selectedMethodName}</div>
               </div>
 
               <div className="space-y-2">
@@ -145,14 +127,15 @@ const AddTraderRequisiteModal = ({
                   className="block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg transition-all duration-200"
                 >
                   <option value="">Выберите банк</option>
-                  {banks.map((bank) => (
-                    <option key={bank.id} value={bank.bank_name}>
-                      {bank.bank_name}
+                  {banks.map((bankName) => (
+                    <option key={bankName} value={bankName}>
+                      {bankName}
                     </option>
                   ))}
                 </select>
               </div>
 
+              {/* Rest of the form remains the same */}
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">НОМЕР РЕКВИЗИТА</label>
                 <input
