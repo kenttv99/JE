@@ -80,8 +80,8 @@ export const useRequisiteForm = () => {
   const fetchOptions = async () => {
     try {
       const [methodsResponse, banksResponse] = await Promise.all([
-        api.get<string[]>('/api/v1/trader_req/payment_methods'),
-        api.get<string[]>('/api/v1/trader_req/banks')
+        api.get<string[]>('/api/v1/trader_methods/get_methods'),
+        api.get<string[]>('/api/v1/banks_trader/')
       ]);
       setPaymentMethods(methodsResponse.data);
       setBanks(banksResponse.data);

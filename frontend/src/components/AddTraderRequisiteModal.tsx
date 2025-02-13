@@ -72,21 +72,23 @@ export default function AddRequisiteModal({
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="min-h-screen px-4 text-center">
+          <div className="flex items-center justify-center min-h-screen">
+            {/* Dark overlay */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-gray-800 bg-opacity-75 transition-opacity"
+              className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
               onClick={onClose}
             />
 
+            {/* Modal content */}
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               transition={{ type: "spring", duration: 0.5 }}
-              className="inline-block w-full max-w-md my-8 text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl"
+              className="w-full max-w-md m-4 bg-white shadow-xl rounded-2xl relative z-50"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6 space-y-6">
