@@ -141,7 +141,7 @@ const AddTraderRequisiteModal = ({
                 <label className="block text-sm font-medium text-gray-700">БАНК</label>
                 <select
                   value={formData.bank}
-                  onChange={(e) => setFormData({ ...formData, bank: e.target.value })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, bank: e.target.value }))}
                   className="block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg transition-all duration-200"
                 >
                   <option value="">Выберите банк</option>
@@ -158,7 +158,7 @@ const AddTraderRequisiteModal = ({
                 <input
                   type="text"
                   value={formData.req_number}
-                  onChange={(e) => setFormData({ ...formData, req_number: e.target.value })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, req_number: e.target.value }))}
                   className="block w-full px-3 py-2.5 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg transition-all duration-200"
                   placeholder="Введите номер реквизита"
                 />
@@ -169,7 +169,7 @@ const AddTraderRequisiteModal = ({
                 <input
                   type="text"
                   value={formData.fio}
-                  onChange={(e) => setFormData({ ...formData, fio: e.target.value })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, fio: e.target.value }))}
                   className="block w-full px-3 py-2.5 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg transition-all duration-200"
                   placeholder="Введите ФИО"
                 />
@@ -178,7 +178,7 @@ const AddTraderRequisiteModal = ({
               <div className="space-y-4">
                 <label className="block text-sm font-medium text-gray-700">НАСТРОЙКИ</label>
                 <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <span className="text-sm text-gray-600">PayIn</span>
                     <button
                       type="button"
@@ -224,8 +224,11 @@ const AddTraderRequisiteModal = ({
                 <button
                   type="button"
                   onClick={() => {
-                    formData.created_at = new Date().toISOString();
-                    onSubmit(formData);
+                    const submitData = {
+                      ...formData,
+                      created_at: new Date().toISOString()
+                    };
+                    onSubmit(submitData);
                   }}
                   className="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 hover:shadow-lg"
                 >

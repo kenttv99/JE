@@ -66,7 +66,6 @@ const RequisitesPage = () => {
               type="button"
               onClick={() => {
                 setIsModalOpen(true);
-                resetForm();
               }}
               className="bg-white text-blue-500 px-6 py-2 rounded-full shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105 active:scale-95"
             >
