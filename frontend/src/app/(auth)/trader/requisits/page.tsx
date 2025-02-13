@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { useTraderRequisites, useRequisiteForm } from '@/hooks/useTraderRequisites';
+import { useTraderRequisites } from '@/hooks/useTraderRequisites';
+import { useRequisiteForm as useCorrectRequisiteForm } from '@/hooks/useTraderRequisiteForm'; // Updated import
 import RequisitesTable from '@/components/TraderRequisitesTable';
 import AddTraderRequisiteModal from '@/components/AddTraderRequisiteModal';
-import type { RequisiteFormData } from '@/hooks/useTraderRequisites'; // Changed import location
+import type { RequisiteFormData } from '@/hooks/useTraderRequisites';
 
 const RequisitesPage = () => {
   const { requisites, loading: reqLoading, refetch } = useTraderRequisites();
@@ -14,7 +15,7 @@ const RequisitesPage = () => {
     loading: formLoading,
     addRequisite,
     resetForm
-  } = useRequisiteForm();
+  } = useCorrectRequisiteForm(); // Updated hook name
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -50,7 +51,7 @@ const RequisitesPage = () => {
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4 flex justify-between items-center">
             <h1 className="text-2xl font-bold text-white">Реквизиты</h1>
-            <button 
+            <button
               type="button"
               onClick={() => setIsModalOpen(true)}
               className="bg-white text-blue-500 px-6 py-2 rounded-full shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105 active:scale-95"
@@ -60,7 +61,7 @@ const RequisitesPage = () => {
           </div>
 
           <div className="p-6">
-            <RequisitesTable 
+            <RequisitesTable
               requisites={requisites}
               onUpdate={(updatedRequisites) => {
                 if (updatedRequisites && Array.isArray(updatedRequisites)) {
@@ -76,8 +77,8 @@ const RequisitesPage = () => {
         isOpen={isModalOpen}
         onClose={handleClose}
         onSubmit={handleSubmit}
-        paymentMethods={paymentMethods} // Pass the string arrays directly from the hook
-        banks={banks} // Pass the string arrays directly from the hook
+        paymentMethods={paymentMethods}
+        banks={banks}
       />
     </div>
   );
