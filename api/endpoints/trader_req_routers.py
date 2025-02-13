@@ -52,9 +52,6 @@ async def create_trader_requisite(
 
 @router.get("/all_requisites", response_model=List[ReqTraderResponse])
 async def get_trader_requisites(db: AsyncSession = Depends(get_async_db)):
-    """
-    Get all trader requisites.
-    """
     try:
         result = await db.execute(select(ReqTrader))
         requisites = result.scalars().all()
@@ -65,8 +62,10 @@ async def get_trader_requisites(db: AsyncSession = Depends(get_async_db)):
                 payment_method=requisite.payment_method,
                 bank=requisite.bank,
                 req_number=requisite.req_number,
-                fio = requisite.fio,
+                fio=requisite.fio,
                 status=requisite.status,
+                can_buy=requisite.can_buy,  # Add these fields
+                can_sell=requisite.can_sell, # Add these fields
                 created_at=requisite.created_at,
                 updated_at=requisite.updated_at
             ) for requisite in requisites
