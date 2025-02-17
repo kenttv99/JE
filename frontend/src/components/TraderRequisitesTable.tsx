@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import api from '@/lib/api';
 import { Requisite } from '@/hooks/useTraderRequisites';
+import { FaPen, FaTimes } from 'react-icons/fa'; // Import icons
 
 interface RequisitesTableProps {
   requisites: Requisite[];
@@ -10,7 +11,7 @@ interface RequisitesTableProps {
 
 const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites }) => {
   const [updating, setUpdating] = useState<number | null>(null);
-    const [localRequisites, setLocalRequisites] = useState<Requisite[]>(requisites);
+  const [localRequisites, setLocalRequisites] = useState<Requisite[]>(requisites);
 
   const handleDirectionToggle = async (
     requisiteId: number,
@@ -40,10 +41,20 @@ const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites }) => {
       });
     } catch (error) {
       console.error('Failed to update requisite:', error);
-        setLocalRequisites(requisites); // Revert to original requisites on error
+      setLocalRequisites(requisites); // Revert to original requisites on error
     } finally {
       setUpdating(null);
     }
+  };
+
+  const handleEdit = (id: number) => {
+    // Placeholder for edit functionality
+    alert(`Edit requisite with ID: ${id}`);
+  };
+
+  const handleDelete = (id: number) => {
+    // Placeholder for delete functionality
+    alert(`Delete requisite with ID: ${id}`);
   };
 
   // Helper function to determine switch appearance
@@ -84,6 +95,9 @@ const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites }) => {
             <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Дата создания
             </th>
+            <th className="px-6 py-3 bg-gray-50"> {/* Added empty th for icons */}
+              <span className="sr-only">Actions</span>
+            </th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
@@ -123,6 +137,24 @@ const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites }) => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {format(new Date(requisite.created_at), 'dd.MM.yyyy HH:mm')}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <div className="flex justify-end space-x-2">
+                    <button
+                      onClick={() => handleEdit(requisite.id)}
+                      className="text-gray-500 hover:text-gray-700" // Changed edit icon color
+                    >
+                      <FaPen className="h-3 w-3" /> {/* Reduced icon size */}
+                      <span className="sr-only">Edit</span>
+                    </button>
+                    <button
+                      onClick={() => handleDelete(requisite.id)}
+                      className="text-red-500 hover:text-red-700" // Ensured red color for delete icon
+                    >
+                      <FaTimes className="h-3 w-3" /> {/* Reduced icon size */}
+                      <span className="sr-only">Delete</span>
+                    </button>
+                  </div>
                 </td>
               </tr>
             );
