@@ -1,24 +1,27 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { FaPen, FaTimes } from 'react-icons/fa'; // Import icons
-import useTraderRequisites, { Requisite } from '@/hooks/useTraderRequisites';
+import { FaPen, FaTimes } from 'react-icons/fa';
+import { Requisite } from '@/hooks/useTraderRequisites';
 
 interface RequisitesTableProps {
   requisites: Requisite[];
+  onDelete: (id: number) => Promise<void>;
 }
 
-const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites }) => {
+const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onDelete }) => {
   const [updating, setUpdating] = useState<number | null>(null);
-  const [deleteConfirmation, setDeleteConfirmation] = useState<{ id: number | null, isOpen: boolean }>({ id: null, isOpen: false });
-  const { updateRequisiteStatus, loading } = useTraderRequisites();
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ id: number | null; isOpen: boolean }>({
+    id: null,
+    isOpen: false,
+  });
 
   const handleEdit = (id: number) => {
-    // Placeholder for edit functionality
+    // Placeholder for edit functionality (open modal or navigate to edit page)
     alert(`Edit requisite with ID: ${id}`);
   };
 
   const openDeleteConfirmation = (id: number) => {
-    setDeleteConfirmation({ id: id, isOpen: true });
+    setDeleteConfirmation({ id, isOpen: true });
   };
 
   const closeDeleteConfirmation = () => {
@@ -29,10 +32,9 @@ const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites }) => {
     closeDeleteConfirmation();
     try {
       setUpdating(id);
-      await updateRequisiteStatus(id, 'deleted');
+      await onDelete(id);
     } catch (error) {
       console.error('Failed to delete requisite:', error);
-      // Revert to original requisites on error - consider a more user-friendly error message
     } finally {
       setUpdating(null);
     }
@@ -64,7 +66,7 @@ const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites }) => {
             <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Дата создания
             </th>
-             <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Status
             </th>
             <th className="px-6 py-3 bg-gray-50">
@@ -101,13 +103,14 @@ const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites }) => {
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <div className="flex justify-end space-x-2">
-                  {requisite.status === 'deleted' ? (
+                  {requisite.status === 'delete' ? (
                     <span className="text-gray-500">{requisite.status}</span>
                   ) : (
                     <>
                       <button
                         onClick={() => handleEdit(requisite.id)}
                         className="text-gray-500 hover:text-gray-700"
+                        disabled={updating === requisite.id}
                       >
                         <FaPen className="h-4 w-4" />
                         <span className="sr-only">Edit</span>
@@ -115,6 +118,7 @@ const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites }) => {
                       <button
                         onClick={() => openDeleteConfirmation(requisite.id)}
                         className="text-red-500 hover:text-red-700"
+                        disabled={updating === requisite.id}
                       >
                         <FaTimes className="h-4 w-4" />
                         <span className="sr-only">Delete</span>
@@ -136,9 +140,10 @@ const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites }) => {
               <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
             </div>
 
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">
+              &#8203;
+            </span>
 
-            {/* Responsive Modal Container */}
             <div
               className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
               role="dialog"
@@ -148,7 +153,6 @@ const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites }) => {
               <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <div className="sm:flex sm:items-start">
                   <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                    {/* Heroicon name: outline/exclamation */}
                     <svg
                       className="h-6 w-6 text-red-600"
                       xmlns="http://www.w3.org/2000/svg"
@@ -177,13 +181,11 @@ const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites }) => {
                   </div>
                 </div>
               </div>
-              {/* Responsive Buttons */}
               <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                 <button
                   type="button"
                   className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
                   onClick={() => handleSoftDelete(deleteConfirmation.id || 0)}
-                  disabled={loading}
                 >
                   Delete
                 </button>
@@ -191,7 +193,6 @@ const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites }) => {
                   type="button"
                   className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm"
                   onClick={closeDeleteConfirmation}
-                  disabled={loading}
                 >
                   Cancel
                 </button>
@@ -204,4 +205,4 @@ const RequisitesTable: React.FC<RequisitesTableProps> = ({ requisites }) => {
   );
 };
 
-export default RequisitesTable;
+export default TraderRequisitesTable;

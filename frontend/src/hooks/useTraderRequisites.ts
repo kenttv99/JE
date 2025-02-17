@@ -14,11 +14,6 @@ export interface Requisite {
   updated_at: string;
 }
 
-interface FormError {
-  field: string;
-  message: string;
-}
-
 export interface RequisiteFormData {
   payment_method: string;
   bank: string;
@@ -59,10 +54,11 @@ const useTraderRequisites = () => {
     return null;
   };
 
+  // Sends a payload containing only the status field.
   const updateRequisiteStatus = async (id: number, status: string) => {
     try {
       setLoading(true);
-      await api.post(`/api/v1/trader_req/update_requisite_status`, { id, status });
+      await api.put(`/api/v1/trader_req/update_requisite/${id}`, { status });
       await refetch();
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to update requisite status'));
@@ -71,11 +67,16 @@ const useTraderRequisites = () => {
     }
   };
 
+  // Soft delete: mark the requisite as "delete", a valid value per TraderReqStatus enum.
+  const deleteRequisite = async (id: number) => {
+    await updateRequisiteStatus(id, 'delete');
+  };
+
   useEffect(() => {
     refetch();
   }, []);
 
-  return { requisites, loading, error, refetch, updateRequisiteStatus };
+  return { requisites, loading, error, refetch, updateRequisiteStatus, deleteRequisite };
 };
 
 export default useTraderRequisites;

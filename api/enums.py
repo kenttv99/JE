@@ -13,7 +13,7 @@ class OrderStatus(Enum):
 class AddressStatusEnum(Enum):
     approve = "approve"
     check = "check"
-    delete = "delete"
+    delete = "deleted"
 
 class OrderTypeEnum(Enum):
     buy = "buy"
@@ -62,7 +62,7 @@ class TraderVerificationLevelEnum(Enum):
 class TraderAddressStatusEnum(Enum):
     approve = "approve"
     check = "check"
-    delete = "delete"
+    delete = "deleted"
 
 class TraderOrderTypeEnum(Enum):
     pay_in = "pay_in"
@@ -74,4 +74,4 @@ class TraderFiatEnum(Enum):
 class TraderReqStatus(Enum):
     approve = "approve"
     check = "check"
-    delete = "delete"
+    delete = "deleted"

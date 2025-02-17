@@ -3,12 +3,12 @@
 import { useState, useCallback } from 'react';
 import useTraderRequisites from '@/hooks/useTraderRequisites';
 import { useRequisiteForm } from '@/hooks/useTraderRequisiteForm';
-import RequisitesTable from '@/components/TraderRequisitesTable';
+import TraderRequisitesTable from '@/components/TraderRequisitesTable';
 import AddTraderRequisiteModal from '@/components/AddTraderRequisiteModal';
-import { RequisiteFormData } from '@/hooks/useTraderRequisites';
+import type { RequisiteFormData } from '@/hooks/useTraderRequisites';
 
 const RequisitesPage = () => {
-  const { requisites, loading: reqLoading, refetch } = useTraderRequisites();
+  const { requisites, loading, refetch, deleteRequisite } = useTraderRequisites();
   const {
     paymentMethods,
     banks,
@@ -21,7 +21,7 @@ const RequisitesPage = () => {
     handleFioChange,
     handleCanBuyChange,
     handleCanSellChange,
-    handleInputChange
+    handleInputChange,
   } = useRequisiteForm();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -44,7 +44,18 @@ const RequisitesPage = () => {
     [addRequisite, refetch]
   );
 
-  if (reqLoading || formLoading) {
+  const handleDelete = useCallback(
+    async (id: number) => {
+      try {
+        await deleteRequisite(id);
+      } catch (error) {
+        console.error('Failed to delete requisite', error);
+      }
+    },
+    [deleteRequisite]
+  );
+
+  if (loading || formLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center py-8">
@@ -71,7 +82,7 @@ const RequisitesPage = () => {
           </div>
 
           <div className="p-6">
-            <RequisitesTable requisites={requisites} />
+            <TraderRequisitesTable requisites={requisites} onDelete={handleDelete} />
           </div>
         </div>
       </div>

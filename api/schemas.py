@@ -393,10 +393,10 @@ class ReqTraderCreate(ReqTraderBase):
     pass
 
 class ReqTraderUpdate(BaseModel):
-    payment_method: str  # Make this required
-    bank: str  # Make this required
-    req_number: str  # Make this required
-    fio: str  # Make this required
+    payment_method: Optional[str] = None
+    bank: Optional[str] = None
+    req_number: Optional[str] = None
+    fio: Optional[str] = None
     status: Optional[TraderReqStatus] = None
     can_buy: Optional[bool] = None
     can_sell: Optional[bool] = None
