@@ -80,13 +80,11 @@ const RequisitesPage = () => {
               Добавить реквизиты
             </button>
           </div>
-
           <div className="p-6">
             <TraderRequisitesTable requisites={requisites} onDelete={handleDelete} />
           </div>
         </div>
       </div>
-
       <AddTraderRequisiteModal
         isOpen={isModalOpen}
         onClose={handleClose}

@@ -54,7 +54,7 @@ const useTraderRequisites = () => {
     return null;
   };
 
-  // Sends a payload containing only the status field.
+  // Now the payload { status } is accepted because our ReqTraderUpdate schema allows partial updates.
   const updateRequisiteStatus = async (id: number, status: string) => {
     try {
       setLoading(true);
@@ -67,9 +67,9 @@ const useTraderRequisites = () => {
     }
   };
 
-  // Soft delete: mark the requisite as "delete", a valid value per TraderReqStatus enum.
+  // Soft delete: mark the requisite as “deleted” – a valid value per TraderReqStatus enum.
   const deleteRequisite = async (id: number) => {
-    await updateRequisiteStatus(id, 'delete');
+    await updateRequisiteStatus(id, 'deleted');
   };
 
   useEffect(() => {
