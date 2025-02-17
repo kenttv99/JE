@@ -46,19 +46,18 @@ const useTraderRequisites = () => {
       const data = await fetchRequisites();
       if (data) {
         setRequisites(data);
-        return data;
       }
     } finally {
       setLoading(false);
     }
-    return null;
   };
 
-  // Now the payload { status } is accepted because our ReqTraderUpdate schema allows partial updates.
+  // Update status primarily used for deletion.
   const updateRequisiteStatus = async (id: number, status: string) => {
     try {
       setLoading(true);
       await api.put(`/api/v1/trader_req/update_requisite/${id}`, { status });
+      // For status update we refetch, since deletion may be more involved.
       await refetch();
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to update requisite status'));
@@ -67,7 +66,29 @@ const useTraderRequisites = () => {
     }
   };
 
-  // Soft delete: mark the requisite as “deleted” – a valid value per TraderReqStatus enum.
+  // New generic update function for toggling properties.
+  // This version uses an optimistic update to change local state without reloading the entire page.
+  const updateRequisiteProperties = async (
+    id: number,
+    payload: Partial<Pick<Requisite, 'can_buy' | 'can_sell'>>
+  ) => {
+    try {
+      // Optimistically update local requisite state.
+      setRequisites((prev) =>
+        prev.map((req) =>
+          req.id === id ? { ...req, ...payload, updated_at: new Date().toISOString() } : req
+        )
+      );
+      // Perform the API update; no need to refetch the entire list.
+      await api.put(`/api/v1/trader_req/update_requisite/${id}`, payload);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to update requisite properties'));
+      // If the API call fails, refetch to sync state.
+      await refetch();
+    }
+  };
+
+  // Soft delete: mark the requisite as "deleted" (must match your backend enum).
   const deleteRequisite = async (id: number) => {
     await updateRequisiteStatus(id, 'deleted');
   };
@@ -76,7 +97,7 @@ const useTraderRequisites = () => {
     refetch();
   }, []);
 
-  return { requisites, loading, error, refetch, updateRequisiteStatus, deleteRequisite };
+  return { requisites, loading, error, refetch, updateRequisiteStatus, updateRequisiteProperties, deleteRequisite };
 };
 
 export default useTraderRequisites;

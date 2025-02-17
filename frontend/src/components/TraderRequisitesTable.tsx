@@ -6,9 +6,42 @@ import { Requisite } from '@/hooks/useTraderRequisites';
 interface RequisitesTableProps {
   requisites: Requisite[];
   onDelete: (id: number) => Promise<void>;
+  onToggleProperty: (id: number, property: 'can_buy' | 'can_sell', newValue: boolean) => Promise<void>;
 }
 
-const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onDelete }) => {
+interface ToggleSwitchProps {
+  checked: boolean;
+  onChange: () => void;
+  disabled: boolean;
+  inactive?: boolean;
+}
+
+const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ checked, onChange, disabled, inactive }) => {
+  return (
+    <label className="relative inline-flex items-center cursor-pointer">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={onChange}
+        disabled={disabled}
+        className="sr-only peer"
+      />
+      <div
+        className={`
+          w-11 h-6 rounded-full transition-colors duration-200 
+          ${inactive ? 'bg-gray-200' : (checked ? 'bg-blue-600' : 'bg-gray-300')}
+          peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 
+          ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} 
+          after:content-[""] after:absolute after:top-1 after:left-1 
+          after:bg-white after:border after:rounded-full after:h-4 after:w-4 after:transition-all 
+          ${inactive ? 'after:translate-x-0' : (checked ? 'after:translate-x-5' : 'after:translate-x-0')}
+        `}
+      ></div>
+    </label>
+  );
+};
+
+const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onDelete, onToggleProperty }) => {
   const [updating, setUpdating] = useState<number | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ id: number | null; isOpen: boolean }>({
     id: null,
@@ -40,6 +73,24 @@ const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onD
     }
   };
 
+  // Handle toggle for Pay In and Pay Out without triggering a full reload.
+  const handleToggle = async (
+    id: number,
+    property: 'can_buy' | 'can_sell',
+    currentValue: boolean,
+    inactive: boolean
+  ) => {
+    if (inactive) return; // Prevent toggling if inactive
+    try {
+      setUpdating(id);
+      await onToggleProperty(id, property, !currentValue);
+    } catch (error) {
+      console.error(`Failed to toggle ${property}:`, error);
+    } finally {
+      setUpdating(null);
+    }
+  };
+
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200">
@@ -57,17 +108,14 @@ const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onD
             <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               ФИО
             </th>
-            <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 bg-gray-50 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
               Pay In
             </th>
-            <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 bg-gray-50 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
               Pay Out
             </th>
             <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Дата создания
-            </th>
-            <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Status
             </th>
             <th className="px-6 py-3 bg-gray-50">
               <span className="sr-only">Actions</span>
@@ -75,63 +123,64 @@ const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onD
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {requisites.map((requisite) => (
-            <tr key={requisite.id} className="hover:bg-gray-50">
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {requisite.payment_method}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {requisite.bank}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {requisite.req_number}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {requisite.fio}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {requisite.can_buy ? 'Yes' : 'No'}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {requisite.can_sell ? 'Yes' : 'No'}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {format(new Date(requisite.created_at), 'dd.MM.yyyy HH:mm')}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {requisite.status || 'active'}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <div className="flex justify-end space-x-2">
-                  {requisite.status === 'delete' ? (
-                    <span className="text-gray-500">{requisite.status}</span>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => handleEdit(requisite.id)}
-                        className="text-gray-500 hover:text-gray-700"
-                        disabled={updating === requisite.id}
-                      >
-                        <FaPen className="h-4 w-4" />
-                        <span className="sr-only">Edit</span>
-                      </button>
-                      <button
-                        onClick={() => openDeleteConfirmation(requisite.id)}
-                        className="text-red-500 hover:text-red-700"
-                        disabled={updating === requisite.id}
-                      >
-                        <FaTimes className="h-4 w-4" />
-                        <span className="sr-only">Delete</span>
-                      </button>
-                    </>
-                  )}
-                </div>
-              </td>
-            </tr>
-          ))}
+          {requisites.map((requisite) => {
+            const isDeleted = requisite.status === 'deleted';
+            return (
+              <tr key={requisite.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{requisite.payment_method}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{requisite.bank}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{requisite.req_number}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{requisite.fio}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-center">
+                  <ToggleSwitch
+                    checked={requisite.can_buy}
+                    onChange={() => handleToggle(requisite.id, 'can_buy', requisite.can_buy, isDeleted)}
+                    disabled={updating === requisite.id || isDeleted}
+                    inactive={isDeleted}
+                  />
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-center">
+                  <ToggleSwitch
+                    checked={requisite.can_sell}
+                    onChange={() => handleToggle(requisite.id, 'can_sell', requisite.can_sell, isDeleted)}
+                    disabled={updating === requisite.id || isDeleted}
+                    inactive={isDeleted}
+                  />
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {format(new Date(requisite.created_at), 'dd.MM.yyyy HH:mm')}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <div className="flex justify-end space-x-2">
+                    {isDeleted ? (
+                      <span className="text-red-300">deleted</span>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => handleEdit(requisite.id)}
+                          className="text-gray-500 hover:text-gray-700"
+                          disabled={updating === requisite.id}
+                        >
+                          <FaPen className="h-4 w-4" />
+                          <span className="sr-only">Edit</span>
+                        </button>
+                        <button
+                          onClick={() => openDeleteConfirmation(requisite.id)}
+                          className="text-red-500 hover:text-red-700"
+                          disabled={updating === requisite.id}
+                        >
+                          <FaTimes className="h-4 w-4" />
+                          <span className="sr-only">Delete</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
-      {/* Delete Confirmation Modal */}
       {deleteConfirmation.isOpen && (
         <div className="fixed z-10 inset-0 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">

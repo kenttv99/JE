@@ -8,7 +8,7 @@ import AddTraderRequisiteModal from '@/components/AddTraderRequisiteModal';
 import type { RequisiteFormData } from '@/hooks/useTraderRequisites';
 
 const RequisitesPage = () => {
-  const { requisites, loading, refetch, deleteRequisite } = useTraderRequisites();
+  const { requisites, loading, refetch, deleteRequisite, updateRequisiteProperties } = useTraderRequisites();
   const {
     paymentMethods,
     banks,
@@ -42,6 +42,18 @@ const RequisitesPage = () => {
       }
     },
     [addRequisite, refetch]
+  );
+
+  // Prop to update toggle values.
+  const handleToggleProperty = useCallback(
+    async (id: number, property: 'can_buy' | 'can_sell', newValue: boolean) => {
+      try {
+        await updateRequisiteProperties(id, { [property]: newValue });
+      } catch (error) {
+        console.error(`Failed to update ${property}:`, error);
+      }
+    },
+    [updateRequisiteProperties]
   );
 
   const handleDelete = useCallback(
@@ -81,7 +93,11 @@ const RequisitesPage = () => {
             </button>
           </div>
           <div className="p-6">
-            <TraderRequisitesTable requisites={requisites} onDelete={handleDelete} />
+            <TraderRequisitesTable
+              requisites={requisites}
+              onDelete={handleDelete}
+              onToggleProperty={handleToggleProperty}
+            />
           </div>
         </div>
       </div>
