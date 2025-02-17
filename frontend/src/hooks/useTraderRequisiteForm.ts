@@ -63,33 +63,24 @@ export const useRequisiteForm = () => {
 
   const validateForm = (): boolean => {
     const errors: any[] = [];
-    console.log("formData before validation:", formData);
     if (!formData.payment_method) {
       errors.push({ field: 'payment_method', message: 'Выберите метод оплаты' });
     }
-    console.log("Errors after payment_method check:", errors);
     if (!formData.bank) {
       errors.push({ field: 'bank', message: 'Выберите банк' });
     }
-    console.log("Errors after bank check:", errors);
     if (!formData.req_number) {
       errors.push({ field: 'req_number', message: 'Введите номер реквизита' });
     }
-     console.log("Errors after req_number check:", errors);
     if (!formData.fio) {
       errors.push({ field: 'fio', message: 'Введите ФИО' });
     }
-
-    console.log("Errors before setting formErrors:", errors);
     setFormErrors(errors);
     return errors.length === 0;
   };
 
   const addRequisite = async (data?: RequisiteFormData): Promise<void> => {
-     console.log("Form has validation errors:", formErrors);
-    console.log("Data being sent to addRequisite:", data); // Add this line
      if (!validateForm()) {
-      console.log("Form has validation errors:", formErrors);
       return;
     }
     try {

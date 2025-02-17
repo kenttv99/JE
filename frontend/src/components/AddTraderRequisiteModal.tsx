@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export interface RequisiteFormData {
   payment_method: string;
@@ -24,7 +24,7 @@ interface AddRequisiteModalProps {
   handleFioChange: (value: string) => void;
   handleCanBuyChange: () => void;
   handleCanSellChange: () => void;
-  handleInputChange: (field: keyof RequisiteFormData, value: string) => void; // Add handleInputChange prop
+  handleInputChange: (field: keyof RequisiteFormData, value: string) => void;
 }
 
 const AddTraderRequisiteModal = ({
@@ -39,7 +39,7 @@ const AddTraderRequisiteModal = ({
   handleFioChange,
   handleCanBuyChange,
   handleCanSellChange,
-  handleInputChange, // Use handleInputChange prop
+  handleInputChange,
 }: AddRequisiteModalProps) => {
   const [selectedMethodName, setSelectedMethodName] = useState<string>('');
   const [localFormData, setLocalFormData] = useState<RequisiteFormData>(formData);
@@ -48,19 +48,38 @@ const AddTraderRequisiteModal = ({
     setLocalFormData(formData);
   }, [formData]);
 
-  const handleLocalInputChange = (field: keyof RequisiteFormData, value: string) => {
+  const handleLocalInputChange = useCallback((field: keyof RequisiteFormData, value: string) => {
     setLocalFormData(prev => ({ ...prev, [field]: value }));
-  };
+  }, []);
 
-  const handleLocalCanBuyChange = () => {
+  const handleLocalCanBuyChange = useCallback(() => {
     setLocalFormData(prev => ({ ...prev, can_buy: !prev.can_buy }));
-  };
+  }, []);
 
-  const handleLocalCanSellChange = () => {
+  const handleLocalCanSellChange = useCallback(() => {
     setLocalFormData(prev => ({ ...prev, can_sell: !prev.can_sell }));
-  };
+  }, []);
 
   if (!isOpen) return null;
+
+  const handlePaymentMethodSelect = useCallback((methodName: string) => {
+    setSelectedMethodName(methodName);
+    handleInputChange('payment_method', methodName);
+    setLocalFormData(prev => ({
+      ...prev,
+      payment_method: methodName
+    }));
+  }, [handleInputChange]);
+
+  const handlePaymentMethodClear = useCallback(() => {
+    setSelectedMethodName('');
+    handleInputChange('payment_method', '');
+    setLocalFormData(prev => ({
+      ...prev,
+      payment_method: '',
+      bank: ''
+    }));
+  }, [handleInputChange]);
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -79,15 +98,7 @@ const AddTraderRequisiteModal = ({
               {selectedMethodName && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedMethodName('');
-                    handleInputChange('payment_method', ''); // Update payment_method in parent component
-                    setLocalFormData(prev => ({
-                      ...prev,
-                      payment_method: '',
-                      bank: ''
-                    }));
-                  }}
+                  onClick={handlePaymentMethodClear}
                   className="text-gray-400 hover:text-gray-500 transition-colors p-2 rounded-full hover:bg-gray-100"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -116,14 +127,7 @@ const AddTraderRequisiteModal = ({
                 <button
                   key={methodName}
                   type="button"
-                  onClick={() => {
-                    setSelectedMethodName(methodName);
-                    handleInputChange('payment_method', methodName); // Update payment_method in parent component
-                    setLocalFormData(prev => ({
-                      ...prev,
-                      payment_method: methodName
-                    }));
-                  }}
+                  onClick={() => handlePaymentMethodSelect(methodName)}
                   className="w-full p-4 text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200 flex items-center justify-between group"
                 >
                   <div>
@@ -160,7 +164,6 @@ const AddTraderRequisiteModal = ({
                 </select>
               </div>
 
-              {/* Rest of the form remains the same */}
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">НОМЕР РЕКВИЗИТА</label>
                 <input
@@ -236,7 +239,6 @@ const AddTraderRequisiteModal = ({
                       ...localFormData,
                       created_at: new Date().toISOString(),
                     };
-                    console.log('Submitting data from AddTraderRequisiteModal:', submitData);
                     await onSubmit(submitData);
                   }}
                   className="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 hover:shadow-lg"
