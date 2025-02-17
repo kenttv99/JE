@@ -24,6 +24,7 @@ interface AddRequisiteModalProps {
   handleFioChange: (value: string) => void;
   handleCanBuyChange: () => void;
   handleCanSellChange: () => void;
+  handleInputChange: (field: keyof RequisiteFormData, value: string) => void; // Add handleInputChange prop
 }
 
 const AddTraderRequisiteModal = ({
@@ -38,6 +39,7 @@ const AddTraderRequisiteModal = ({
   handleFioChange,
   handleCanBuyChange,
   handleCanSellChange,
+  handleInputChange, // Use handleInputChange prop
 }: AddRequisiteModalProps) => {
   const [selectedMethodName, setSelectedMethodName] = useState<string>('');
   const [localFormData, setLocalFormData] = useState<RequisiteFormData>(formData);
@@ -46,7 +48,7 @@ const AddTraderRequisiteModal = ({
     setLocalFormData(formData);
   }, [formData]);
 
-  const handleInputChange = (field: keyof RequisiteFormData, value: string) => {
+  const handleLocalInputChange = (field: keyof RequisiteFormData, value: string) => {
     setLocalFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -79,6 +81,7 @@ const AddTraderRequisiteModal = ({
                   type="button"
                   onClick={() => {
                     setSelectedMethodName('');
+                    handleInputChange('payment_method', ''); // Update payment_method in parent component
                     setLocalFormData(prev => ({
                       ...prev,
                       payment_method: '',
@@ -115,6 +118,7 @@ const AddTraderRequisiteModal = ({
                   type="button"
                   onClick={() => {
                     setSelectedMethodName(methodName);
+                    handleInputChange('payment_method', methodName); // Update payment_method in parent component
                     setLocalFormData(prev => ({
                       ...prev,
                       payment_method: methodName
@@ -227,12 +231,13 @@ const AddTraderRequisiteModal = ({
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={async () => {
                     const submitData = {
                       ...localFormData,
-                      created_at: new Date().toISOString()
+                      created_at: new Date().toISOString(),
                     };
-                    onSubmit(submitData);
+                    console.log('Submitting data from AddTraderRequisiteModal:', submitData);
+                    await onSubmit(submitData);
                   }}
                   className="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 hover:shadow-lg"
                 >

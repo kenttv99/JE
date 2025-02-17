@@ -1,4 +1,3 @@
-// frontend/src/app/(auth)/trader/requisits/page.tsx
 'use client';
 
 import { useState, useCallback } from 'react';
@@ -22,6 +21,7 @@ const RequisitesPage = () => {
     handleFioChange,
     handleCanBuyChange,
     handleCanSellChange,
+    handleInputChange // Get handleInputChange from the hook
   } = useRequisiteForm();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -87,6 +87,7 @@ const RequisitesPage = () => {
         handleFioChange={handleFioChange}
         handleCanBuyChange={handleCanBuyChange}
         handleCanSellChange={handleCanSellChange}
+        handleInputChange={handleInputChange} // Pass handleInputChange to the modal
       />
     </div>
   );
