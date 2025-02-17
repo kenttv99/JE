@@ -26,39 +26,38 @@ export const useRequisiteForm = () => {
     fio: '',
     can_buy: false,
     can_sell: false,
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
   });
   const [formErrors, setFormErrors] = useState<any[]>([]);
   const [selectedMethod, setSelectedMethod] = useState('');
 
   const handleMethodSelect = (method: string) => {
     setSelectedMethod(method);
-    setFormData(prev => ({ ...prev, payment_method: method }));
+    setFormData((prev: RequisiteFormData) => ({ ...prev, payment_method: method }));
   };
 
   const handleInputChange = (field: keyof RequisiteFormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    // setFormErrors(prev => prev.filter(error => error.field !== field));
+    setFormData((prev: RequisiteFormData) => ({ ...prev, [field]: value }));
   };
 
   const handleBankChange = (value: string) => {
-    setFormData(prev => ({ ...prev, bank: value }));
+    setFormData((prev: RequisiteFormData) => ({ ...prev, bank: value }));
   };
 
   const handleReqNumberChange = (value: string) => {
-    setFormData(prev => ({ ...prev, req_number: value }));
+    setFormData((prev: RequisiteFormData) => ({ ...prev, req_number: value }));
   };
 
   const handleFioChange = (value: string) => {
-    setFormData(prev => ({ ...prev, fio: value }));
+    setFormData((prev: RequisiteFormData) => ({ ...prev, fio: value }));
   };
 
   const handleCanBuyChange = () => {
-    setFormData(prev => ({ ...prev, can_buy: !prev.can_buy }));
+    setFormData((prev: RequisiteFormData) => ({ ...prev, can_buy: !prev.can_buy }));
   };
 
   const handleCanSellChange = () => {
-    setFormData(prev => ({ ...prev, can_sell: !prev.can_sell }));
+    setFormData((prev: RequisiteFormData) => ({ ...prev, can_sell: !prev.can_sell }));
   };
 
   const validateForm = (): boolean => {
@@ -80,11 +79,11 @@ export const useRequisiteForm = () => {
   };
 
   const addRequisite = async (data?: RequisiteFormData): Promise<void> => {
-     if (!validateForm()) {
+    if (!validateForm()) {
+      console.log('Form has validation errors:', formErrors);
       return;
     }
     try {
-      //  const dataToSubmit = data || formData;
       await api.post<Requisite>('/api/v1/trader_req/add_requisite', data);
       resetForm();
       return;
@@ -102,7 +101,7 @@ export const useRequisiteForm = () => {
       fio: '',
       can_buy: false,
       can_sell: false,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     });
     setSelectedMethod('');
     setFormErrors([]);
@@ -116,7 +115,6 @@ export const useRequisiteForm = () => {
           api.get<Bank[]>('/api/v1/banks_trader/')
         ]);
 
-        // Extract method_name and bank_name into string arrays
         setPaymentMethods(methodsResponse.data.map(method => method.method_name));
         setBanks(banksResponse.data.map(bank => bank.bank_name));
       } catch (err) {

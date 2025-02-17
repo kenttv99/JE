@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { useTraderRequisites } from '@/hooks/useTraderRequisites';
+import useTraderRequisites from '@/hooks/useTraderRequisites';
 import { useRequisiteForm } from '@/hooks/useTraderRequisiteForm';
 import RequisitesTable from '@/components/TraderRequisitesTable';
 import AddTraderRequisiteModal from '@/components/AddTraderRequisiteModal';
-import type { RequisiteFormData } from '@/hooks/useTraderRequisites';
+import { RequisiteFormData } from '@/hooks/useTraderRequisites';
 
 const RequisitesPage = () => {
   const { requisites, loading: reqLoading, refetch } = useTraderRequisites();
@@ -21,7 +21,7 @@ const RequisitesPage = () => {
     handleFioChange,
     handleCanBuyChange,
     handleCanSellChange,
-    handleInputChange // Get handleInputChange from the hook
+    handleInputChange
   } = useRequisiteForm();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -31,15 +31,18 @@ const RequisitesPage = () => {
     resetForm();
   }, [resetForm]);
 
-  const handleSubmit = useCallback(async (submitData: RequisiteFormData) => {
-    try {
-      await addRequisite(submitData);
-      await refetch();
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error('Failed to add requisite:', error);
-    }
-  }, [addRequisite, refetch]);
+  const handleSubmit = useCallback(
+    async (submitData: RequisiteFormData) => {
+      try {
+        await addRequisite(submitData);
+        await refetch();
+        setIsModalOpen(false);
+      } catch (error) {
+        console.error('Failed to add requisite:', error);
+      }
+    },
+    [addRequisite, refetch]
+  );
 
   if (reqLoading || formLoading) {
     return (
@@ -68,9 +71,7 @@ const RequisitesPage = () => {
           </div>
 
           <div className="p-6">
-            <RequisitesTable
-              requisites={requisites}
-            />
+            <RequisitesTable requisites={requisites} />
           </div>
         </div>
       </div>
@@ -87,7 +88,7 @@ const RequisitesPage = () => {
         handleFioChange={handleFioChange}
         handleCanBuyChange={handleCanBuyChange}
         handleCanSellChange={handleCanSellChange}
-        handleInputChange={handleInputChange} // Pass handleInputChange to the modal
+        handleInputChange={handleInputChange}
       />
     </div>
   );
