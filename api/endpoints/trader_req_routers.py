@@ -28,6 +28,8 @@ async def create_trader_requisite(
             req_number=requisite.req_number,
             fio = requisite.fio,
             status=requisite.status,
+            can_buy=requisite.can_buy,  # Add this line
+            can_sell=requisite.can_sell,  # Add this line
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
         )
@@ -42,6 +44,8 @@ async def create_trader_requisite(
             req_number=new_requisite.req_number,
             fio = new_requisite.fio,
             status=new_requisite.status,
+            can_buy=requisite.can_buy,
+            can_sell=requisite.can_sell,
             created_at=new_requisite.created_at,
             updated_at=new_requisite.updated_at
         )

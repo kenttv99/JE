@@ -402,7 +402,7 @@ class ReqTraderUpdate(BaseModel):
     can_sell: Optional[bool] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class ReqTraderResponse(BaseModel):
     id: int
