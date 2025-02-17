@@ -383,6 +383,8 @@ class ReqTraderBase(BaseModel):
     req_number: str
     fio: str
     status: Optional[TraderReqStatus] = Field(default=TraderReqStatus.approve)
+    can_buy: bool
+    can_sell: bool
 
     class Config:
         from_attributes = True

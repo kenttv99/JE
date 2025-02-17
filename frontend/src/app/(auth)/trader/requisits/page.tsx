@@ -1,8 +1,9 @@
+// frontend/src/app/(auth)/trader/requisits/page.tsx
 'use client';
 
 import { useState, useCallback } from 'react';
 import { useTraderRequisites } from '@/hooks/useTraderRequisites';
-import { useRequisiteForm as useCorrectRequisiteForm } from '@/hooks/useTraderRequisiteForm'; // Updated import
+import { useRequisiteForm } from '@/hooks/useTraderRequisiteForm';
 import RequisitesTable from '@/components/TraderRequisitesTable';
 import AddTraderRequisiteModal from '@/components/AddTraderRequisiteModal';
 import type { RequisiteFormData } from '@/hooks/useTraderRequisites';
@@ -14,8 +15,14 @@ const RequisitesPage = () => {
     banks,
     loading: formLoading,
     addRequisite,
-    resetForm
-  } = useCorrectRequisiteForm(); // Updated hook name
+    resetForm,
+    formData,
+    handleBankChange,
+    handleReqNumberChange,
+    handleFioChange,
+    handleCanBuyChange,
+    handleCanSellChange,
+  } = useRequisiteForm();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -24,9 +31,9 @@ const RequisitesPage = () => {
     resetForm();
   }, [resetForm]);
 
-  const handleSubmit = useCallback(async (formData: RequisiteFormData) => {
+  const handleSubmit = useCallback(async (submitData: RequisiteFormData) => {
     try {
-      await addRequisite(formData);
+      await addRequisite(submitData);
       await refetch();
       setIsModalOpen(false);
     } catch (error) {
@@ -63,11 +70,6 @@ const RequisitesPage = () => {
           <div className="p-6">
             <RequisitesTable
               requisites={requisites}
-              // onUpdate={(updatedRequisites) => {   // Removed onUpdate prop
-              //   if (updatedRequisites && Array.isArray(updatedRequisites)) {
-              //     refetch();
-              //   }
-              // }}
             />
           </div>
         </div>
@@ -79,6 +81,12 @@ const RequisitesPage = () => {
         onSubmit={handleSubmit}
         paymentMethods={paymentMethods}
         banks={banks}
+        formData={formData}
+        handleBankChange={handleBankChange}
+        handleReqNumberChange={handleReqNumberChange}
+        handleFioChange={handleFioChange}
+        handleCanBuyChange={handleCanBuyChange}
+        handleCanSellChange={handleCanSellChange}
       />
     </div>
   );

@@ -41,6 +41,26 @@ export const useRequisiteForm = () => {
     // setFormErrors(prev => prev.filter(error => error.field !== field));
   };
 
+  const handleBankChange = (value: string) => {
+    setFormData(prev => ({ ...prev, bank: value }));
+  };
+
+  const handleReqNumberChange = (value: string) => {
+    setFormData(prev => ({ ...prev, req_number: value }));
+  };
+
+  const handleFioChange = (value: string) => {
+    setFormData(prev => ({ ...prev, fio: value }));
+  };
+
+  const handleCanBuyChange = () => {
+    setFormData(prev => ({ ...prev, can_buy: !prev.can_buy }));
+  };
+
+  const handleCanSellChange = () => {
+    setFormData(prev => ({ ...prev, can_sell: !prev.can_sell }));
+  };
+
   const validateForm = (): boolean => {
     const errors: any[] = [];
     if (!formData.payment_method) {
@@ -110,5 +130,22 @@ export const useRequisiteForm = () => {
     fetchData();
   }, []);
 
-  return { paymentMethods, banks, loading, error, formData, formErrors, selectedMethod, handleMethodSelect, handleInputChange, addRequisite, resetForm };
+  return {
+    paymentMethods,
+    banks,
+    loading,
+    error,
+    formData,
+    formErrors,
+    selectedMethod,
+    handleMethodSelect,
+    handleInputChange,
+    addRequisite,
+    resetForm,
+    handleBankChange,
+    handleReqNumberChange,
+    handleFioChange,
+    handleCanBuyChange,
+    handleCanSellChange,
+  };
 };

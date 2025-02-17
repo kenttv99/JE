@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export interface RequisiteFormData {
   payment_method: string;
@@ -16,8 +16,14 @@ interface AddRequisiteModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (formData: RequisiteFormData) => Promise<void>;
-  paymentMethods: string[];  // Changed: Now expects string arrays directly
-  banks: string[];          // Changed: Now expects string arrays directly
+  paymentMethods: string[];
+  banks: string[];
+  formData: RequisiteFormData;
+  handleBankChange: (value: string) => void;
+  handleReqNumberChange: (value: string) => void;
+  handleFioChange: (value: string) => void;
+  handleCanBuyChange: () => void;
+  handleCanSellChange: () => void;
 }
 
 const AddTraderRequisiteModal = ({
@@ -26,28 +32,43 @@ const AddTraderRequisiteModal = ({
   onSubmit,
   paymentMethods,
   banks,
+  formData,
+  handleBankChange,
+  handleReqNumberChange,
+  handleFioChange,
+  handleCanBuyChange,
+  handleCanSellChange,
 }: AddRequisiteModalProps) => {
   const [selectedMethodName, setSelectedMethodName] = useState<string>('');
-  const [formData, setFormData] = useState<RequisiteFormData>({
-    payment_method: '',
-    bank: '',
-    req_number: '',
-    fio: '',
-    can_buy: false,
-    can_sell: false,
-  });
+  const [localFormData, setLocalFormData] = useState<RequisiteFormData>(formData);
+
+  useEffect(() => {
+    setLocalFormData(formData);
+  }, [formData]);
+
+  const handleInputChange = (field: keyof RequisiteFormData, value: string) => {
+    setLocalFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleLocalCanBuyChange = () => {
+    setLocalFormData(prev => ({ ...prev, can_buy: !prev.can_buy }));
+  };
+
+  const handleLocalCanSellChange = () => {
+    setLocalFormData(prev => ({ ...prev, can_sell: !prev.can_sell }));
+  };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen p-4">
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
           onClick={onClose}
         />
 
-        <div 
+        <div
           className="relative bg-white rounded-lg max-w-md w-full p-6 shadow-xl"
           onClick={e => e.stopPropagation()}
         >
@@ -58,7 +79,7 @@ const AddTraderRequisiteModal = ({
                   type="button"
                   onClick={() => {
                     setSelectedMethodName('');
-                    setFormData(prev => ({
+                    setLocalFormData(prev => ({
                       ...prev,
                       payment_method: '',
                       bank: ''
@@ -94,7 +115,7 @@ const AddTraderRequisiteModal = ({
                   type="button"
                   onClick={() => {
                     setSelectedMethodName(methodName);
-                    setFormData(prev => ({
+                    setLocalFormData(prev => ({
                       ...prev,
                       payment_method: methodName
                     }));
@@ -122,9 +143,9 @@ const AddTraderRequisiteModal = ({
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">БАНК</label>
                 <select
-                  value={formData.bank}
-                  onChange={(e) => setFormData(prev => ({ ...prev, bank: e.target.value }))}
-                  className="block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg transition-all duration-200"
+                  value={localFormData.bank}
+                  onChange={(e) => handleBankChange(e.target.value)}
+                  className="block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg transition-all[...]"
                 >
                   <option value="">Выберите банк</option>
                   {banks.map((bankName) => (
@@ -140,9 +161,9 @@ const AddTraderRequisiteModal = ({
                 <label className="block text-sm font-medium text-gray-700">НОМЕР РЕКВИЗИТА</label>
                 <input
                   type="text"
-                  value={formData.req_number}
-                  onChange={(e) => setFormData(prev => ({ ...prev, req_number: e.target.value }))}
-                  className="block w-full px-3 py-2.5 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg transition-all duration-200"
+                  value={localFormData.req_number}
+                  onChange={(e) => handleReqNumberChange(e.target.value)}
+                  className="block w-full px-3 py-2.5 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg transition-all durat[...]"
                   placeholder="Введите номер реквизита"
                 />
               </div>
@@ -151,9 +172,9 @@ const AddTraderRequisiteModal = ({
                 <label className="block text-sm font-medium text-gray-700">ФИО</label>
                 <input
                   type="text"
-                  value={formData.fio}
-                  onChange={(e) => setFormData(prev => ({ ...prev, fio: e.target.value }))}
-                  className="block w-full px-3 py-2.5 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg transition-all duration-200"
+                  value={localFormData.fio}
+                  onChange={(e) => handleFioChange(e.target.value)}
+                  className="block w-full px-3 py-2.5 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg transition-all durat[...]"
                   placeholder="Введите ФИО"
                 />
               </div>
@@ -165,14 +186,14 @@ const AddTraderRequisiteModal = ({
                     <span className="text-sm text-gray-600">PayIn</span>
                     <button
                       type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, can_buy: !prev.can_buy }))}
+                      onClick={handleLocalCanBuyChange}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
-                        formData.can_buy ? 'bg-blue-500' : 'bg-gray-200'
+                        localFormData.can_buy ? 'bg-blue-500' : 'bg-gray-200'
                       }`}
                     >
                       <span
                         className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${
-                          formData.can_buy ? 'translate-x-6' : 'translate-x-1'
+                          localFormData.can_buy ? 'translate-x-6' : 'translate-x-1'
                         }`}
                       />
                     </button>
@@ -181,14 +202,14 @@ const AddTraderRequisiteModal = ({
                     <span className="text-sm text-gray-600">PayOut</span>
                     <button
                       type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, can_sell: !prev.can_sell }))}
+                      onClick={handleLocalCanSellChange}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
-                        formData.can_sell ? 'bg-blue-500' : 'bg-gray-200'
+                        localFormData.can_sell ? 'bg-blue-500' : 'bg-gray-200'
                       }`}
                     >
                       <span
                         className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${
-                          formData.can_sell ? 'translate-x-6' : 'translate-x-1'
+                          localFormData.can_sell ? 'translate-x-6' : 'translate-x-1'
                         }`}
                       />
                     </button>
@@ -208,7 +229,7 @@ const AddTraderRequisiteModal = ({
                   type="button"
                   onClick={() => {
                     const submitData = {
-                      ...formData,
+                      ...localFormData,
                       created_at: new Date().toISOString()
                     };
                     onSubmit(submitData);
