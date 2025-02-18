@@ -97,6 +97,9 @@ const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onD
         <thead>
           <tr>
             <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              #
+            </th>
+            <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Метод
             </th>
             <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -123,14 +126,25 @@ const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onD
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {requisites.map((requisite) => {
+          {requisites.map((requisite, index) => {
             const isDeleted = requisite.status === 'deleted';
             return (
               <tr key={requisite.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{requisite.payment_method}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{requisite.bank}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{requisite.req_number}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{requisite.fio}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {index + 1}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {requisite.payment_method}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {requisite.bank}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {requisite.req_number}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {requisite.fio}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   <ToggleSwitch
                     checked={requisite.can_buy}
