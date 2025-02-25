@@ -23,7 +23,7 @@ export interface Requisite {
 
 export interface RequisiteFormData extends Pick<Requisite, 
   'payment_method' | 'bank' | 'req_number' | 'fio' | 'can_buy' | 'can_sell' |
-  'payment_method_description' | 'bank_description' // Добавлено!
+  'payment_method_description' | 'bank_description'
 > {
   created_at: string;
 }
@@ -66,29 +66,6 @@ const useTraderRequisites = () => {
     }
   };
 
-  const enrichRequisite = (
-    requisite: Requisite,
-    banks: FinancialEntity[],
-    paymentMethods: FinancialEntity[]
-  ) => {
-    const normalizedBank = normalize(requisite.bank);
-    const normalizedMethod = normalize(requisite.payment_method);
-  
-    const bankDescription = banks.find(b => 
-      normalize(b.name) === normalizedBank
-    )?.description || requisite.bank;
-  
-    const methodDescription = paymentMethods.find(m => 
-      normalize(m.name) === normalizedMethod
-    )?.description || requisite.payment_method;
-  
-    return {
-      ...requisite,
-      bank_description: bankDescription,
-      payment_method_description: methodDescription
-    };
-  };
-
   const fetchRequisites = async () => {
     try {
       setState(prev => ({ ...prev, loading: true }));
@@ -99,45 +76,62 @@ const useTraderRequisites = () => {
       // Загружаем реквизиты
       const { data } = await api.get<Requisite[]>('/api/v1/trader_req/all_requisites');
       
-      // Обогащаем данные текущими банками и методами
-      const enrichedData = data.map(req => 
-        enrichRequisite(
-          { 
-            ...req, 
-            bank: req.bank || '', 
-            payment_method: req.payment_method || '' 
-          },
-          banks,
-          paymentMethods
-        )
-      );
+      // Ensure all requisites have proper descriptions
+      const enrichedData = data.map(req => ({
+        ...req, 
+        bank: req.bank || '', 
+        payment_method: req.payment_method || '',
+        // Make sure these are always strings to avoid rendering issues
+        bank_description: req.bank_description || req.bank || '',
+        payment_method_description: req.payment_method_description || req.payment_method || '' 
+      }));
       
       setState(prev => ({ 
         ...prev, 
         requisites: enrichedData,
         banks,
-        paymentMethods 
+        paymentMethods,
+        loading: false
       }));
     } catch (error) {
       setState(prev => ({ 
         ...prev, 
-        error: error instanceof Error ? error : new Error('Ошибка загрузки') 
+        error: error instanceof Error ? error : new Error('Ошибка загрузки'),
+        loading: false
       }));
-    } finally {
-      setState(prev => ({ ...prev, loading: false }));
     }
   };
 
   const updateRequisite = async (id: number, payload: Partial<Requisite>) => {
     try {
+      // First update locally for immediate UI feedback
       setState(prev => ({
         ...prev,
         requisites: prev.requisites.map(req => 
-          req.id === id ? enrichRequisite({ ...req, ...payload }, state.banks, state.paymentMethods) : req
+          req.id === id ? { ...req, ...payload } : req
         )
       }));
-      await api.put(`/api/v1/trader_req/update_requisite/${id}`, payload);
+      
+      // Then update on the server
+      const response = await api.put(`/api/v1/trader_req/update_requisite/${id}`, payload);
+      
+      // Update with the server response to ensure data consistency
+      if (response.data) {
+        setState(prev => ({
+          ...prev,
+          requisites: prev.requisites.map(req => 
+            req.id === id ? {
+              ...req,
+              ...response.data,
+              bank_description: response.data.bank_description || req.bank_description || response.data.bank || '',
+              payment_method_description: response.data.payment_method_description || req.payment_method_description || response.data.payment_method || ''
+            } : req
+          )
+        }));
+      }
     } catch (error) {
+      console.error('Error updating requisite:', error);
+      // Refresh all requisites if there's an error to ensure data consistency
       await fetchRequisites();
     }
   };

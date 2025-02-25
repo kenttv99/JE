@@ -63,7 +63,7 @@ const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onD
     }
   }, [onToggleProperty]);
 
-  // Enhanced filtering logic with column-specific search
+  // Enhanced filtering logic with column-specific search using descriptions
   const filteredRequisites = useMemo(() => {
     return requisites.filter((req) => {
       // First filter by status
@@ -83,18 +83,18 @@ const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onD
           searchMatch = req.req_number.toLowerCase().includes(query);
           break;
         case 'payment_method':
-          // Используем описание метода для поиска
-          searchMatch = req.payment_method_description.toLowerCase().includes(query);
+          // Always use description field for searching payment methods
+          searchMatch = (req.payment_method_description || req.payment_method || '').toLowerCase().includes(query);
           break;
         case 'bank':
-          // Используем описание банка для поиска
-          searchMatch = req.bank_description.toLowerCase().includes(query);
+          // Always use description field for searching banks
+          searchMatch = (req.bank_description || req.bank || '').toLowerCase().includes(query);
           break;
         case 'all':
           searchMatch = 
             req.req_number.toLowerCase().includes(query) ||
-            req.payment_method_description.toLowerCase().includes(query) ||
-            req.bank_description.toLowerCase().includes(query);
+            (req.payment_method_description || req.payment_method || '').toLowerCase().includes(query) ||
+            (req.bank_description || req.bank || '').toLowerCase().includes(query);
           break;
         default:
           searchMatch = true;

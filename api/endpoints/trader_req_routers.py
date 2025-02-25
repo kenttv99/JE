@@ -61,8 +61,17 @@ async def create_trader_requisite(
 @router.get("/all_requisites", response_model=List[ReqTraderResponse])
 async def get_trader_requisites(db: AsyncSession = Depends(get_async_db)):
     try:
+        # Instead of JOINs, we'll fetch all data separately and combine it in Python
         result = await db.execute(select(ReqTrader))
         requisites = result.scalars().all()
+        
+        # Fetch all banks and methods at once for efficiency
+        banks_result = await db.execute(select(BanksTrader))
+        banks = {bank.bank_name: bank.description for bank in banks_result.scalars().all()}
+        
+        methods_result = await db.execute(select(PaymentMethodTrader))
+        methods = {str(method.method_name): method.description for method in methods_result.scalars().all()}
+        
         return [
             ReqTraderResponse(
                 id=requisite.id,
@@ -74,8 +83,9 @@ async def get_trader_requisites(db: AsyncSession = Depends(get_async_db)):
                 status=requisite.status,
                 can_buy=requisite.can_buy,
                 can_sell=requisite.can_sell,
-                bank_description=requisite.bank_description,  # Добавляем в ответ
-                payment_method_description=requisite.payment_method_description,
+                # Use existing descriptions or look them up from our fetched data
+                bank_description=requisite.bank_description or banks.get(requisite.bank, requisite.bank),
+                payment_method_description=requisite.payment_method_description or methods.get(requisite.payment_method, requisite.payment_method),
                 created_at=requisite.created_at,
                 updated_at=requisite.updated_at
             ) for requisite in requisites
@@ -108,6 +118,25 @@ async def update_trader_requisite(
             update_data['fio'] = requisite.fio
             update_data['status'] = requisite.status
         
+        # If updating payment method or bank, fetch and update their descriptions too
+        if 'payment_method' in update_data:
+            method_result = await db.execute(
+                select(PaymentMethodTrader)
+                .where(PaymentMethodTrader.method_name == update_data['payment_method'])
+            )
+            method = method_result.scalar_one_or_none()
+            if method:
+                update_data['payment_method_description'] = method.description
+        
+        if 'bank' in update_data:
+            bank_result = await db.execute(
+                select(BanksTrader)
+                .where(BanksTrader.bank_name == update_data['bank'])
+            )
+            bank = bank_result.scalar_one_or_none()
+            if bank:
+                update_data['bank_description'] = bank.description
+        
         for key, value in update_data.items():
             setattr(requisite, key, value)
         
@@ -125,7 +154,7 @@ async def update_trader_requisite(
             status=requisite.status,
             can_buy=requisite.can_buy,
             can_sell=requisite.can_sell,
-            bank_description=requisite.bank_description,  # Добавляем в ответ
+            bank_description=requisite.bank_description,
             payment_method_description=requisite.payment_method_description,
             created_at=requisite.created_at,
             updated_at=requisite.updated_at

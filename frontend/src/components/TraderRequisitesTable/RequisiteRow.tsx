@@ -15,18 +15,15 @@ const RequisiteRow: React.FC<{
   const isDeleted = requisite.status === 'deleted';
   const cellClass = "px-6 py-4 whitespace-nowrap text-sm text-gray-900";
   
-  // Для отладки: вывод данных реквизита
-  console.log('Requisite Data (Frontend):', {
-    id: requisite.id,
-    methodDesc: requisite.payment_method_description,
-    bankDesc: requisite.bank_description
-  });
+  // Ensure we always have a string for display purposes
+  const methodDescription = requisite.payment_method_description || requisite.payment_method || '';
+  const bankDescription = requisite.bank_description || requisite.bank || '';
 
   return (
     <tr className="hover:bg-gray-50">
       <td className={cellClass}>{index + 1}</td>
-      <td className={cellClass}>{requisite.payment_method_description}</td>
-      <td className={cellClass}>{requisite.bank_description}</td>
+      <td className={cellClass}>{methodDescription}</td>
+      <td className={cellClass}>{bankDescription}</td>
       <td className={cellClass}>{requisite.req_number}</td>
       <td className={cellClass}>{requisite.fio}</td>
       
