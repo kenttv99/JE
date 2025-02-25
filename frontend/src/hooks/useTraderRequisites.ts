@@ -22,7 +22,8 @@ export interface Requisite {
 }
 
 export interface RequisiteFormData extends Pick<Requisite, 
-  'payment_method' | 'bank' | 'req_number' | 'fio' | 'can_buy' | 'can_sell'
+  'payment_method' | 'bank' | 'req_number' | 'fio' | 'can_buy' | 'can_sell' |
+  'payment_method_description' | 'bank_description' // Добавлено!
 > {
   created_at: string;
 }
@@ -30,7 +31,7 @@ export interface RequisiteFormData extends Pick<Requisite,
 const normalize = (str?: string | null) => 
   String(str || '')
     .toLowerCase()
-    .replace(/[_\s]/g, '') // Удаляем подчёркивания и пробелы
+    .replace(/[^a-zа-я0-9]/g, '') // Удаляем ВСЕ символы, кроме букв и цифр
     .trim();
 
 const useTraderRequisites = () => {
@@ -65,14 +66,26 @@ const useTraderRequisites = () => {
     }
   };
 
-  const enrichRequisite = (requisite: Requisite, banks: FinancialEntity[], paymentMethods: FinancialEntity[]) => {
-    const findDescription = (collection: FinancialEntity[], key?: string) =>
-      collection.find(item => item.name === normalize(key))?.description || key || '';
-
+  const enrichRequisite = (
+    requisite: Requisite,
+    banks: FinancialEntity[],
+    paymentMethods: FinancialEntity[]
+  ) => {
+    const normalizedBank = normalize(requisite.bank);
+    const normalizedMethod = normalize(requisite.payment_method);
+  
+    const bankDescription = banks.find(b => 
+      normalize(b.name) === normalizedBank
+    )?.description || requisite.bank;
+  
+    const methodDescription = paymentMethods.find(m => 
+      normalize(m.name) === normalizedMethod
+    )?.description || requisite.payment_method;
+  
     return {
       ...requisite,
-      bank_description: findDescription(banks, requisite.bank),
-      payment_method_description: findDescription(paymentMethods, requisite.payment_method)
+      bank_description: bankDescription,
+      payment_method_description: methodDescription
     };
   };
 

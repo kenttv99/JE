@@ -83,16 +83,18 @@ const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onD
           searchMatch = req.req_number.toLowerCase().includes(query);
           break;
         case 'payment_method':
-          searchMatch = req.payment_method_description.toLowerCase().includes(query); // Используем описание
+          // Используем описание метода для поиска
+          searchMatch = req.payment_method_description.toLowerCase().includes(query);
           break;
         case 'bank':
-          searchMatch = req.bank_description.toLowerCase().includes(query); // Используем описание
+          // Используем описание банка для поиска
+          searchMatch = req.bank_description.toLowerCase().includes(query);
           break;
         case 'all':
           searchMatch = 
             req.req_number.toLowerCase().includes(query) ||
-            req.payment_method_description.toLowerCase().includes(query) || // Используем описание
-            req.bank_description.toLowerCase().includes(query); // Используем описание
+            req.payment_method_description.toLowerCase().includes(query) ||
+            req.bank_description.toLowerCase().includes(query);
           break;
         default:
           searchMatch = true;

@@ -1,4 +1,3 @@
-// RequisiteRow.tsx
 import { memo } from 'react';
 import { format } from 'date-fns';
 import { FaPen, FaTimes } from 'react-icons/fa';
@@ -16,6 +15,13 @@ const RequisiteRow: React.FC<{
   const isDeleted = requisite.status === 'deleted';
   const cellClass = "px-6 py-4 whitespace-nowrap text-sm text-gray-900";
   
+  // Для отладки: вывод данных реквизита
+  console.log('Requisite Data (Frontend):', {
+    id: requisite.id,
+    methodDesc: requisite.payment_method_description,
+    bankDesc: requisite.bank_description
+  });
+
   return (
     <tr className="hover:bg-gray-50">
       <td className={cellClass}>{index + 1}</td>
@@ -46,10 +52,18 @@ const RequisiteRow: React.FC<{
             <span className="text-red-300">deleted</span>
           ) : (
             <>
-              <button onClick={() => onEdit(requisite.id)} disabled={updating}>
+              <button 
+                onClick={() => onEdit(requisite.id)} 
+                disabled={updating}
+                aria-label="Edit"
+              >
                 <FaPen className="h-4 w-4 text-gray-500 hover:text-gray-700" />
               </button>
-              <button onClick={() => onDelete(requisite.id)} disabled={updating}>
+              <button 
+                onClick={() => onDelete(requisite.id)} 
+                disabled={updating}
+                aria-label="Delete"
+              >
                 <FaTimes className="h-4 w-4 text-red-500 hover:text-red-700" />
               </button>
             </>

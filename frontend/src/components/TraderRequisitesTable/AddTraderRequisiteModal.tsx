@@ -8,6 +8,8 @@ interface AddRequisiteModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (formData: RequisiteFormData) => Promise<void>;
+    paymentMethods: string[]; // Добавлено
+    banks: string[]; // Добавлено
     formData: RequisiteFormData;
     handleBankChange: (value: string) => void;
     handleReqNumberChange: (value: string) => void;

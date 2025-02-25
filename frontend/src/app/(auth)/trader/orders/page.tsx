@@ -1,7 +1,7 @@
 'use client';
 
 import { useTraderOrders } from '@/hooks/useTraderOrders';
-import OrdersTable from '@/components/TraderOrdersTable';
+import OrdersTable from '@/components/TraderOrdersTable/TraderOrdersTable';
 
 const OrdersPage = () => {
   const { orders, loading, error } = useTraderOrders();
