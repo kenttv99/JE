@@ -4,7 +4,7 @@ import StatusFilter from './StatusFilter';
 import SearchBar from './SearchBar';
 import RequisiteRow from './RequisiteRow';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
-import { StatusType } from './types';
+import { StatusType, SearchColumnType } from './types';
 
 interface RequisitesTableProps {
   requisites: Requisite[];
@@ -20,6 +20,7 @@ const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onD
   });
   const [activeStatus, setActiveStatus] = useState<StatusType>('active');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchColumn, setSearchColumn] = useState<SearchColumnType>('req_number');
 
   const handleEdit = useCallback((id: number) => {
     alert(`Edit requisite with ID: ${id}`);
@@ -62,7 +63,7 @@ const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onD
     }
   }, [onToggleProperty]);
 
-  // Memoize the filtered requisites to avoid recalculating on every render
+  // Enhanced filtering logic with column-specific search
   const filteredRequisites = useMemo(() => {
     return requisites.filter((req) => {
       // First filter by status
@@ -71,15 +72,36 @@ const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onD
         activeStatus === 'active' ? req.status !== 'deleted' : 
         activeStatus === 'deleted' ? req.status === 'deleted' : true;
       
-      // Then filter by search query (if any)
-      const searchMatch = 
-        !searchQuery.trim() ? true : 
-        req.req_number.toLowerCase().includes(searchQuery.toLowerCase());
+      // Then filter by search query based on selected column
+      if (!searchQuery.trim()) return statusMatch;
+      
+      const query = searchQuery.toLowerCase();
+      let searchMatch = false;
+
+      switch (searchColumn) {
+        case 'req_number':
+          searchMatch = req.req_number.toLowerCase().includes(query);
+          break;
+        case 'payment_method':
+          searchMatch = req.payment_method.toLowerCase().includes(query);
+          break;
+        case 'bank':
+          searchMatch = req.bank.toLowerCase().includes(query);
+          break;
+        case 'all':
+          searchMatch = 
+            req.req_number.toLowerCase().includes(query) ||
+            req.payment_method.toLowerCase().includes(query) ||
+            req.bank.toLowerCase().includes(query);
+          break;
+        default:
+          searchMatch = true;
+      }
       
       // Both conditions must be met
       return statusMatch && searchMatch;
     });
-  }, [requisites, activeStatus, searchQuery]);
+  }, [requisites, activeStatus, searchQuery, searchColumn]);
 
   return (
     <div>
@@ -87,8 +109,13 @@ const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onD
         {/* Status Filter Buttons */}
         <StatusFilter activeStatus={activeStatus} onStatusChange={setActiveStatus} />
         
-        {/* Search Input */}
-        <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+        {/* Enhanced Search Input with Column Selection */}
+        <SearchBar 
+          searchQuery={searchQuery} 
+          setSearchQuery={setSearchQuery}
+          searchColumn={searchColumn}
+          setSearchColumn={setSearchColumn} 
+        />
       </div>
       
       {/* Table */}
@@ -142,7 +169,7 @@ const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onD
               <tr>
                 <td colSpan={9} className="px-6 py-4 text-center text-sm text-gray-500">
                   {searchQuery ? 
-                    `По запросу "${searchQuery}" ничего не найдено` : 
+                    `По запросу "${searchQuery}" в поле "${getColumnDisplayText(searchColumn)}" ничего не найдено` : 
                     'Нет доступных реквизитов'
                   }
                 </td>
@@ -160,6 +187,22 @@ const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onD
       />
     </div>
   );
+};
+
+// Helper function to get display name for search column
+const getColumnDisplayText = (column: SearchColumnType): string => {
+  switch (column) {
+    case 'req_number':
+      return 'Номер';
+    case 'payment_method':
+      return 'Метод';
+    case 'bank':
+      return 'Банк';
+    case 'all':
+      return 'Все поля';
+    default:
+      return 'Все поля';
+  }
 };
 
 export default TraderRequisitesTable;
