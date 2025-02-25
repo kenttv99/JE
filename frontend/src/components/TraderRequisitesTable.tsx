@@ -16,6 +16,9 @@ interface ToggleSwitchProps {
   inactive?: boolean;
 }
 
+// Define the status types for filtering
+type StatusType = 'all' | 'active' | 'deleted';
+
 const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ checked, onChange, disabled, inactive }) => {
   return (
     <label className="relative inline-flex items-center cursor-pointer">
@@ -41,12 +44,50 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ checked, onChange, disabled
   );
 };
 
+const StatusFilter: React.FC<{
+  activeStatus: StatusType;
+  onStatusChange: (status: StatusType) => void;
+}> = ({ activeStatus, onStatusChange }) => {
+  return (
+    <div className="flex space-x-2 mb-4">
+      <button
+        onClick={() => onStatusChange('all')}
+        className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200
+          ${activeStatus === 'all' 
+            ? 'bg-blue-100 text-blue-700 shadow-sm ring-1 ring-blue-700/10' 
+            : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+      >
+        Все
+      </button>
+      <button
+        onClick={() => onStatusChange('active')}
+        className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200
+          ${activeStatus === 'active' 
+            ? 'bg-green-100 text-green-700 shadow-sm ring-1 ring-green-700/10' 
+            : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+      >
+        Активные
+      </button>
+      <button
+        onClick={() => onStatusChange('deleted')}
+        className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200
+          ${activeStatus === 'deleted' 
+            ? 'bg-red-100 text-red-700 shadow-sm ring-1 ring-red-700/10' 
+            : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+      >
+        Удаленные
+      </button>
+    </div>
+  );
+};
+
 const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onDelete, onToggleProperty }) => {
   const [updating, setUpdating] = useState<number | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ id: number | null; isOpen: boolean }>({
     id: null,
     isOpen: false,
   });
+  const [activeStatus, setActiveStatus] = useState<StatusType>('active');
 
   const handleEdit = (id: number) => {
     // Placeholder for edit functionality.
@@ -91,110 +132,126 @@ const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onD
     }
   };
 
+  // Filter requisites based on active status
+  const filteredRequisites = requisites.filter((req) => {
+    if (activeStatus === 'all') return true;
+    if (activeStatus === 'active') return req.status !== 'deleted';
+    if (activeStatus === 'deleted') return req.status === 'deleted';
+    return true;
+  });
+
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead>
-          <tr>
-            <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              #
-            </th>
-            <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Метод
-            </th>
-            <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Банк
-            </th>
-            <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Номер
-            </th>
-            <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              ФИО
-            </th>
-            <th className="px-6 py-3 bg-gray-50 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Pay In
-            </th>
-            <th className="px-6 py-3 bg-gray-50 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Pay Out
-            </th>
-            <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Дата создания
-            </th>
-            <th className="px-6 py-3 bg-gray-50">
-              <span className="sr-only">Actions</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {requisites.map((requisite, index) => {
-            const isDeleted = requisite.status === 'deleted';
-            return (
-              <tr key={requisite.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {index + 1}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {requisite.payment_method}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {requisite.bank}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {requisite.req_number}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {requisite.fio}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-center">
-                  <ToggleSwitch
-                    checked={requisite.can_buy}
-                    onChange={() => handleToggle(requisite.id, 'can_buy', requisite.can_buy, isDeleted)}
-                    disabled={updating === requisite.id || isDeleted}
-                    inactive={isDeleted}
-                  />
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-center">
-                  <ToggleSwitch
-                    checked={requisite.can_sell}
-                    onChange={() => handleToggle(requisite.id, 'can_sell', requisite.can_sell, isDeleted)}
-                    disabled={updating === requisite.id || isDeleted}
-                    inactive={isDeleted}
-                  />
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {format(new Date(requisite.created_at), 'dd.MM.yyyy HH:mm')}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div className="flex justify-end space-x-2">
-                    {isDeleted ? (
-                      <span className="text-red-300">deleted</span>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => handleEdit(requisite.id)}
-                          className="text-gray-500 hover:text-gray-700"
-                          disabled={updating === requisite.id}
-                        >
-                          <FaPen className="h-4 w-4" />
-                          <span className="sr-only">Edit</span>
-                        </button>
-                        <button
-                          onClick={() => openDeleteConfirmation(requisite.id)}
-                          className="text-red-500 hover:text-red-700"
-                          disabled={updating === requisite.id}
-                        >
-                          <FaTimes className="h-4 w-4" />
-                          <span className="sr-only">Delete</span>
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+    <div>
+      {/* Status Filter Buttons */}
+      <StatusFilter activeStatus={activeStatus} onStatusChange={setActiveStatus} />
+      
+      {/* Table */}
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead>
+            <tr>
+              <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                #
+              </th>
+              <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Метод
+              </th>
+              <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Банк
+              </th>
+              <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Номер
+              </th>
+              <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                ФИО
+              </th>
+              <th className="px-6 py-3 bg-gray-50 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Pay In
+              </th>
+              <th className="px-6 py-3 bg-gray-50 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Pay Out
+              </th>
+              <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Дата создания
+              </th>
+              <th className="px-6 py-3 bg-gray-50">
+                <span className="sr-only">Actions</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {filteredRequisites.map((requisite, index) => {
+              const isDeleted = requisite.status === 'deleted';
+              return (
+                <tr key={requisite.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {index + 1}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {requisite.payment_method}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {requisite.bank}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {requisite.req_number}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {requisite.fio}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <ToggleSwitch
+                      checked={requisite.can_buy}
+                      onChange={() => handleToggle(requisite.id, 'can_buy', requisite.can_buy, isDeleted)}
+                      disabled={updating === requisite.id || isDeleted}
+                      inactive={isDeleted}
+                    />
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <ToggleSwitch
+                      checked={requisite.can_sell}
+                      onChange={() => handleToggle(requisite.id, 'can_sell', requisite.can_sell, isDeleted)}
+                      disabled={updating === requisite.id || isDeleted}
+                      inactive={isDeleted}
+                    />
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {format(new Date(requisite.created_at), 'dd.MM.yyyy HH:mm')}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div className="flex justify-end space-x-2">
+                      {isDeleted ? (
+                        <span className="text-red-300">deleted</span>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleEdit(requisite.id)}
+                            className="text-gray-500 hover:text-gray-700"
+                            disabled={updating === requisite.id}
+                          >
+                            <FaPen className="h-4 w-4" />
+                            <span className="sr-only">Edit</span>
+                          </button>
+                          <button
+                            onClick={() => openDeleteConfirmation(requisite.id)}
+                            className="text-red-500 hover:text-red-700"
+                            disabled={updating === requisite.id}
+                          >
+                            <FaTimes className="h-4 w-4" />
+                            <span className="sr-only">Delete</span>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      
+      {/* Delete Confirmation Modal */}
       {deleteConfirmation.isOpen && (
         <div className="fixed z-10 inset-0 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -251,7 +308,7 @@ const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onD
                 </button>
                 <button
                   type="button"
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm"
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                   onClick={closeDeleteConfirmation}
                 >
                   Cancel
