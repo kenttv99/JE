@@ -25,19 +25,20 @@ const SearchBar: React.FC<SearchBarProps> = ({
   // Calculate dropdown position when it opens or window resizes
   useEffect(() => {
     function updatePosition() {
-      if (buttonContainerRef.current) {
-        const rect = buttonContainerRef.current.getBoundingClientRect();
-        
-        // Calculate the right edge position relative to the viewport
-        const rightEdge = window.innerWidth - rect.right;
-        
-        setDropdownPosition({
-          top: rect.bottom + window.scrollY,
-          right: rightEdge + 1, // +1px to account for border or any minor pixel differences
-          width: 160 // Fixed width for the dropdown
-        });
+        if (buttonContainerRef.current) {
+          const rect = buttonContainerRef.current.getBoundingClientRect();
+          
+          // Calculate the right edge position relative to the viewport
+          const rightEdge = window.innerWidth - rect.right;
+          const offsetX = -10; // Negative value moves dropdown to the RIGHT
+          
+          setDropdownPosition({
+            top: rect.bottom + window.scrollY,
+            right: rightEdge + offsetX, 
+            width: 160 // Fixed width for the dropdown
+          });
+        }
       }
-    }
 
     if (dropdownOpen) {
       updatePosition();
