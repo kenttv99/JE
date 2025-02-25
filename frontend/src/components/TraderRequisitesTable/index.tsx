@@ -1,0 +1,165 @@
+import { useState, useCallback, useMemo } from 'react';
+import { Requisite } from '@/hooks/useTraderRequisites';
+import StatusFilter from './StatusFilter';
+import SearchBar from './SearchBar';
+import RequisiteRow from './RequisiteRow';
+import DeleteConfirmationModal from './DeleteConfirmationModal';
+import { StatusType } from './types';
+
+interface RequisitesTableProps {
+  requisites: Requisite[];
+  onDelete: (id: number) => Promise<void>;
+  onToggleProperty: (id: number, property: 'can_buy' | 'can_sell', newValue: boolean) => Promise<void>;
+}
+
+const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onDelete, onToggleProperty }) => {
+  const [updating, setUpdating] = useState<number | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ id: number | null; isOpen: boolean }>({
+    id: null,
+    isOpen: false,
+  });
+  const [activeStatus, setActiveStatus] = useState<StatusType>('active');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+
+  const handleEdit = useCallback((id: number) => {
+    alert(`Edit requisite with ID: ${id}`);
+  }, []);
+
+  const openDeleteConfirmation = useCallback((id: number) => {
+    setDeleteConfirmation({ id, isOpen: true });
+  }, []);
+
+  const closeDeleteConfirmation = useCallback(() => {
+    setDeleteConfirmation({ id: null, isOpen: false });
+  }, []);
+
+  const handleSoftDelete = useCallback(async (id: number) => {
+    closeDeleteConfirmation();
+    try {
+      setUpdating(id);
+      await onDelete(id);
+    } catch (error) {
+      console.error('Failed to delete requisite:', error);
+    } finally {
+      setUpdating(null);
+    }
+  }, [closeDeleteConfirmation, onDelete]);
+
+  const handleToggle = useCallback(async (
+    id: number,
+    property: 'can_buy' | 'can_sell',
+    currentValue: boolean,
+    inactive: boolean
+  ) => {
+    if (inactive) return;
+    try {
+      setUpdating(id);
+      await onToggleProperty(id, property, !currentValue);
+    } catch (error) {
+      console.error(`Failed to toggle ${property}:`, error);
+    } finally {
+      setUpdating(null);
+    }
+  }, [onToggleProperty]);
+
+  // Memoize the filtered requisites to avoid recalculating on every render
+  const filteredRequisites = useMemo(() => {
+    return requisites.filter((req) => {
+      // First filter by status
+      const statusMatch = 
+        activeStatus === 'all' ? true : 
+        activeStatus === 'active' ? req.status !== 'deleted' : 
+        activeStatus === 'deleted' ? req.status === 'deleted' : true;
+      
+      // Then filter by search query (if any)
+      const searchMatch = 
+        !searchQuery.trim() ? true : 
+        req.req_number.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Both conditions must be met
+      return statusMatch && searchMatch;
+    });
+  }, [requisites, activeStatus, searchQuery]);
+
+  return (
+    <div>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+        {/* Status Filter Buttons */}
+        <StatusFilter activeStatus={activeStatus} onStatusChange={setActiveStatus} />
+        
+        {/* Search Input */}
+        <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+      </div>
+      
+      {/* Table */}
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead>
+            <tr>
+              <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                #
+              </th>
+              <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Метод
+              </th>
+              <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Банк
+              </th>
+              <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Номер
+              </th>
+              <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                ФИО
+              </th>
+              <th className="px-6 py-3 bg-gray-50 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Pay In
+              </th>
+              <th className="px-6 py-3 bg-gray-50 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Pay Out
+              </th>
+              <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Дата создания
+              </th>
+              <th className="px-6 py-3 bg-gray-50">
+                <span className="sr-only">Actions</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {filteredRequisites.length > 0 ? (
+              filteredRequisites.map((requisite, index) => (
+                <RequisiteRow
+                  key={requisite.id}
+                  requisite={requisite}
+                  index={index}
+                  updating={updating === requisite.id}
+                  onEdit={handleEdit}
+                  onDelete={openDeleteConfirmation}
+                  onToggle={handleToggle}
+                />
+              ))
+            ) : (
+              <tr>
+                <td colSpan={9} className="px-6 py-4 text-center text-sm text-gray-500">
+                  {searchQuery ? 
+                    `По запросу "${searchQuery}" ничего не найдено` : 
+                    'Нет доступных реквизитов'
+                  }
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteConfirmation.isOpen}
+        onClose={closeDeleteConfirmation}
+        onDelete={() => handleSoftDelete(deleteConfirmation.id || 0)}
+      />
+    </div>
+  );
+};
+
+export default TraderRequisitesTable;

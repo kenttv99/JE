@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import useTraderRequisites from '@/hooks/useTraderRequisites';
 import { useRequisiteForm } from '@/hooks/useTraderRequisiteForm';
 import TraderRequisitesTable from '@/components/TraderRequisitesTable';
-import AddTraderRequisiteModal from '@/components/AddTraderRequisiteModal';
+import AddTraderRequisiteModal from '@/components/TraderRequisitesTable/AddTraderRequisiteModal';
 import type { RequisiteFormData } from '@/hooks/useTraderRequisites';
 
 const RequisitesPage = () => {
