@@ -8,8 +8,6 @@ interface AddRequisiteModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (formData: RequisiteFormData) => Promise<void>;
-    paymentMethods: string[];
-    banks: string[];
     formData: RequisiteFormData;
     handleBankChange: (value: string) => void;
     handleReqNumberChange: (value: string) => void;
@@ -23,8 +21,6 @@ const AddTraderRequisiteModal = ({
     isOpen,
     onClose,
     onSubmit,
-    paymentMethods,
-    banks,
     formData,
     handleBankChange,
     handleReqNumberChange,
@@ -34,25 +30,46 @@ const AddTraderRequisiteModal = ({
     handleInputChange,
 }: AddRequisiteModalProps) => {
     const [selectedMethodName, setSelectedMethodName] = useState<string>('');
+    const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
+    const [banks, setBanks] = useState<string[]>([]);
 
+    // Загрузка списка методов оплаты
     useEffect(() => {
-        // You might need to handle the initial selected method based on formData
-        if (formData.payment_method) {
-            setSelectedMethodName(formData.payment_method);
-        }
-    }, [formData.payment_method]);
+        const fetchPaymentMethods = async () => {
+            try {
+                const response = await fetch('/api/v1/trader_methods/get_methods');
+                if (!response.ok) throw new Error('Failed to fetch payment methods');
+                const data = await response.json();
+                setPaymentMethods(data.map((method: any) => method.method_name));
+            } catch (error) {
+                console.error('Error fetching payment methods:', error);
+            }
+        };
+        fetchPaymentMethods();
+    }, []);
 
+    // Загрузка списка банков для выбранного метода
+    const fetchBanksByMethod = async (methodName: string) => {
+        try {
+            const response = await fetch(`/api/v1/trader_methods/${methodName}/banks`);
+            if (!response.ok) throw new Error('Failed to fetch banks');
+            const data = await response.json();
+            setBanks(data); // Теперь сохраняем полные объекты банков
+        } catch (error) {
+            console.error('Error fetching banks:', error);
+        }
+    };
 
     const handlePaymentMethodSelect = useCallback((methodName: string) => {
         setSelectedMethodName(methodName);
         handleInputChange('payment_method', methodName);
+        fetchBanksByMethod(methodName);
     }, [handleInputChange]);
 
     const handlePaymentMethodClear = useCallback(() => {
         setSelectedMethodName('');
         handleInputChange('payment_method', '');
     }, [handleInputChange]);
-
 
     const paymentMethodsVariants = {
         initial: { opacity: 0, x: -20 },
@@ -69,14 +86,12 @@ const AddTraderRequisiteModal = ({
     return (
         <div className="fixed inset-0 z-50 overflow-y-auto" style={{ display: isOpen ? 'block' : 'none' }}>
             <div className="flex items-center justify-center min-h-screen p-4">
-                <div
-                    className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
-                    onClick={onClose}
-                />
+                <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={onClose} />
 
                 <div
-                    className={`relative bg-white rounded-lg max-w-md w-full p-6 shadow-xl transform transition-all duration-300 ${isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-[-100px]'
-                        } overflow-hidden`}
+                    className={`relative bg-white rounded-lg max-w-md w-full p-6 shadow-xl transform transition-all duration-300 ${
+                        isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-[-100px]'
+                    } overflow-hidden`}
                     onClick={e => e.stopPropagation()}
                 >
                     <div className="flex justify-between items-center mb-6">
@@ -157,9 +172,9 @@ const AddTraderRequisiteModal = ({
                                         className="block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg transition-all hover:shadow-md"
                                     >
                                         <option value="">Выберите банк</option>
-                                        {banks.map((bankName) => (
-                                            <option key={bankName} value={bankName}>
-                                                {bankName}
+                                        {banks.map((bank: any) => (
+                                            <option key={bank.bank_name} value={bank.bank_name}>
+                                                {bank.description}
                                             </option>
                                         ))}
                                     </select>
@@ -195,12 +210,14 @@ const AddTraderRequisiteModal = ({
                                             <button
                                                 type="button"
                                                 onClick={handleCanBuyChange}
-                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${formData.can_buy ? 'bg-blue-500' : 'bg-gray-200'
-                                                    }`}
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
+                                                    formData.can_buy ? 'bg-blue-500' : 'bg-gray-200'
+                                                }`}
                                             >
                                                 <span
-                                                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${formData.can_buy ? 'translate-x-6' : 'translate-x-1'
-                                                        }`}
+                                                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${
+                                                        formData.can_buy ? 'translate-x-6' : 'translate-x-1'
+                                                    }`}
                                                 />
                                             </button>
                                         </div>
@@ -209,12 +226,14 @@ const AddTraderRequisiteModal = ({
                                             <button
                                                 type="button"
                                                 onClick={handleCanSellChange}
-                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${formData.can_sell ? 'bg-blue-500' : 'bg-gray-200'
-                                                    }`}
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
+                                                    formData.can_sell ? 'bg-blue-500' : 'bg-gray-200'
+                                                }`}
                                             >
                                                 <span
-                                                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${formData.can_sell ? 'translate-x-6' : 'translate-x-1'
-                                                        }`}
+                                                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${
+                                                        formData.can_sell ? 'translate-x-6' : 'translate-x-1'
+                                                    }`}
                                                 />
                                             </button>
                                         </div>

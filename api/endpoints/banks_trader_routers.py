@@ -12,11 +12,7 @@ async def create_bank_trader(
     bank: BanksTraderCreate,
     db: AsyncSession = Depends(get_async_db)
 ):
-    """
-    Create a new bank trader with the given details.
-    """
     try:
-        # Check if bank with same name already exists
         existing_bank = await db.execute(
             select(BanksTrader).where(BanksTrader.bank_name == bank.bank_name)
         )
@@ -26,7 +22,6 @@ async def create_bank_trader(
                 detail="Bank with this name already exists"
             )
 
-        # Create new bank
         new_bank = BanksTrader(**bank.dict())
         db.add(new_bank)
         await db.commit()
@@ -44,9 +39,6 @@ async def get_bank_trader(
     bank_id: int,
     db: AsyncSession = Depends(get_async_db)
 ):
-    """
-    Get a specific bank trader by ID.
-    """
     bank = await db.execute(
         select(BanksTrader).where(BanksTrader.id == bank_id)
     )
@@ -64,9 +56,6 @@ async def list_bank_traders(
     limit: int = 100,
     db: AsyncSession = Depends(get_async_db)
 ):
-    """
-    Get list of all bank traders with pagination.
-    """
     banks = await db.execute(
         select(BanksTrader)
         .offset(skip)
@@ -80,11 +69,7 @@ async def update_bank_trader(
     bank: BanksTraderUpdate,
     db: AsyncSession = Depends(get_async_db)
 ):
-    """
-    Update a bank trader's details.
-    """
     try:
-        # Check if bank exists
         existing_bank = await db.execute(
             select(BanksTrader).where(BanksTrader.id == bank_id)
         )
@@ -95,7 +80,6 @@ async def update_bank_trader(
                 detail="Bank not found"
             )
 
-        # Check if new bank name conflicts with existing bank
         if bank.bank_name and bank.bank_name != existing_bank.bank_name:
             name_check = await db.execute(
                 select(BanksTrader).where(BanksTrader.bank_name == bank.bank_name)
@@ -106,7 +90,6 @@ async def update_bank_trader(
                     detail="Bank with this name already exists"
                 )
 
-        # Update bank details
         update_data = bank.dict(exclude_unset=True)
         for key, value in update_data.items():
             setattr(existing_bank, key, value)
@@ -128,11 +111,7 @@ async def delete_bank_trader(
     bank_id: int,
     db: AsyncSession = Depends(get_async_db)
 ):
-    """
-    Delete a bank trader.
-    """
     try:
-        # Check if bank exists
         existing_bank = await db.execute(
             select(BanksTrader).where(BanksTrader.id == bank_id)
         )
@@ -143,7 +122,6 @@ async def delete_bank_trader(
                 detail="Bank not found"
             )
 
-        # Delete bank
         await db.delete(existing_bank)
         await db.commit()
     except HTTPException:
@@ -160,9 +138,6 @@ async def get_bank_by_name(
     bank_name: str,
     db: AsyncSession = Depends(get_async_db)
 ):
-    """
-    Get a specific bank trader by name.
-    """
     bank = await db.execute(
         select(BanksTrader).where(BanksTrader.bank_name == bank_name)
     )

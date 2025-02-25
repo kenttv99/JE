@@ -307,6 +307,7 @@ class PaymentMethodTrader(Base):
 
     # Связь с ордерами
     orders = relationship("TraderOrder", back_populates="payment_method")
+    bank_trader = relationship("BanksTrader", back_populates="payment_method") 
 
 
 class ReqTrader(Base):
@@ -326,6 +327,8 @@ class ReqTrader(Base):
     can_buy = Column(Boolean, default=True, nullable=False)     # Возможность использовать для покупки
     can_sell = Column(Boolean, default=False, nullable=False)   # Возможность использовать для продажи
     fee_percentage = Column(DECIMAL(5, 2), default=Decimal('0.00'), nullable=False)  # Комиссия за транзакцию
+    bank_description = Column(String(255), nullable=True)
+    payment_method_description = Column(String(255), nullable=True)
 
     # Связи
     trader = relationship("Trader", back_populates="req_traders")
@@ -338,11 +341,17 @@ class BanksTrader(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     bank_name = Column(String(100), unique=True, nullable=False)
+    method_name = Column(  # Добавьте это поле
+        Enum(TraderPaymentMethodEnum), 
+        ForeignKey("payment_methods_trader.method_name"), 
+        nullable=False
+    )
     description = Column(String(255), nullable=True)
     interbank = Column(Boolean, default=False, nullable=False)
 
     # Связь с реквизитами трейдеров
     req_traders = relationship("ReqTrader", back_populates="bank_trader")
+    payment_method = relationship("PaymentMethodTrader", back_populates="bank_trader")
 
 
 class FiatCurrencyTrader(Base):

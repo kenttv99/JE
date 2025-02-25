@@ -5,8 +5,12 @@ from sqlalchemy.future import select
 from typing import List
 from datetime import datetime
 
-from database.init_db import get_async_db, PaymentMethodTrader
-from api.schemas import TraderMethodCreateRequest, TraderMethodResponse
+from database.init_db import get_async_db, PaymentMethodTrader, BanksTrader
+from api.schemas import (
+    TraderMethodCreateRequest, 
+    TraderMethodResponse,
+    BanksTraderResponse
+)
 
 router = APIRouter()
 
@@ -35,7 +39,7 @@ async def create_trader_method(
         await db.refresh(new_method)
         return TraderMethodResponse(
             id=new_method.id,
-            method_name=new_method.method_name.value,  # Convert Enum to string
+            method_name=new_method.method_name.value,
             details=new_method.description
         )
     except HTTPException as http_exc:
@@ -57,12 +61,35 @@ async def get_trader_methods(db: AsyncSession = Depends(get_async_db)):
         return [
             TraderMethodResponse(
                 id=method.id,
-                method_name=method.method_name.value,  # Convert Enum to string
-                details=method.description
+                method_name=method.method_name.value,
+                description=method.description
             ) for method in methods
         ]
     except Exception as e:
         logging.error(f"Error fetching trader methods: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+@router.get("/{method_name}/banks", response_model=List[BanksTraderResponse])
+async def get_banks_by_method(
+    method_name: str,
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    Get banks for a specific payment method.
+    """
+    try:
+        result = await db.execute(
+            select(BanksTrader).where(BanksTrader.method_name == method_name)
+        )
+        banks = result.scalars().all()
+        if not banks:
+            raise HTTPException(
+                status_code=404,
+                detail="Banks not found for the specified method"
+            )
+        return banks
+    except Exception as e:
+        logging.error(f"Error fetching banks: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @router.delete("/delete_method/{method_id}", response_model=dict)
@@ -82,7 +109,6 @@ async def delete_trader_method(
         
         await db.delete(method)
         await db.commit()
-        
         return {"message": "Method deleted successfully"}
     except HTTPException as http_exc:
         await db.rollback()

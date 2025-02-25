@@ -360,7 +360,7 @@ class ExchangeRateResponse(BaseModel):
 
 class TraderMethodCreateRequest(BaseModel):
     name: str
-    details: Optional[str] = None
+    description: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -368,7 +368,7 @@ class TraderMethodCreateRequest(BaseModel):
 class TraderMethodResponse(BaseModel):
     id: int
     method_name: str
-    details: Optional[str] = None
+    description: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -414,6 +414,8 @@ class ReqTraderResponse(BaseModel):
     status: TraderReqStatus
     can_buy: bool  # Add this field
     can_sell: bool # Add this field
+    bank_description: str
+    payment_method_description: str
     created_at: datetime
     updated_at: datetime
 
@@ -433,31 +435,7 @@ class BanksTraderBase(BaseModel):
         from_attributes = True
 
 class BanksTraderCreate(BanksTraderBase):
-    pass
-
-class BanksTraderUpdate(BanksTraderBase):
-    pass
-
-class BanksTraderResponse(BanksTraderBase):
-    id: int
-
-    class Config:
-        from_attributes = True
-        
-# -----------------------
-# BanksTrader Schemas
-# -----------------------
-
-class BanksTraderBase(BaseModel):
-    bank_name: str
-    description: Optional[str] = None
-    interbank: bool = False
-
-    class Config:
-        from_attributes = True
-
-class BanksTraderCreate(BanksTraderBase):
-    pass
+    method_name: TraderPaymentMethodEnum  # Обязательное поле
 
 class BanksTraderUpdate(BanksTraderBase):
     pass

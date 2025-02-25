@@ -5,7 +5,7 @@ from sqlalchemy.future import select
 from typing import List
 from datetime import datetime
 
-from database.init_db import get_async_db, ReqTrader
+from database.init_db import BanksTrader, PaymentMethodTrader, get_async_db, ReqTrader
 from api.schemas import ReqTraderCreate, ReqTraderResponse, ReqTraderUpdate
 from api.auth import get_current_trader
 
@@ -18,6 +18,21 @@ async def create_trader_requisite(
     current_trader: dict = Depends(get_current_trader)
 ):
     try:
+        # Получаем данные банка
+        bank_result = await db.execute(
+            select(BanksTrader).where(BanksTrader.bank_name == requisite.bank))
+        bank = bank_result.scalar_one_or_none()
+        if not bank:
+            raise HTTPException(status_code=404, detail="Bank not found")
+
+        # Получаем метод оплаты
+        method_result = await db.execute(
+            select(PaymentMethodTrader)
+            .where(PaymentMethodTrader.method_name == requisite.payment_method))
+        method = method_result.scalar_one_or_none()
+        if not method:
+            raise HTTPException(status_code=404, detail="Payment method not found")
+
         new_requisite = ReqTrader(
             trader_id=current_trader.id,
             payment_method=requisite.payment_method,
@@ -27,25 +42,17 @@ async def create_trader_requisite(
             status=requisite.status,
             can_buy=requisite.can_buy,
             can_sell=requisite.can_sell,
+            bank_description=bank.description,
+            payment_method_description=method.description,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
         )
         db.add(new_requisite)
         await db.commit()
         await db.refresh(new_requisite)
-        return ReqTraderResponse(
-            id=new_requisite.id,
-            trader_id=new_requisite.trader_id,
-            payment_method=new_requisite.payment_method,
-            bank=new_requisite.bank,
-            req_number=new_requisite.req_number,
-            fio=new_requisite.fio,
-            status=new_requisite.status,
-            can_buy=new_requisite.can_buy,
-            can_sell=new_requisite.can_sell,
-            created_at=new_requisite.created_at,
-            updated_at=new_requisite.updated_at
-        )
+        return ReqTraderResponse.from_orm(new_requisite)
+    except HTTPException as he:
+        raise he
     except Exception as e:
         await db.rollback()
         logging.error(f"Error creating trader requisite: {e}")
@@ -67,6 +74,8 @@ async def get_trader_requisites(db: AsyncSession = Depends(get_async_db)):
                 status=requisite.status,
                 can_buy=requisite.can_buy,
                 can_sell=requisite.can_sell,
+                bank_description=requisite.bank_description,  # Добавляем в ответ
+                payment_method_description=requisite.payment_method_description,
                 created_at=requisite.created_at,
                 updated_at=requisite.updated_at
             ) for requisite in requisites
@@ -116,6 +125,8 @@ async def update_trader_requisite(
             status=requisite.status,
             can_buy=requisite.can_buy,
             can_sell=requisite.can_sell,
+            bank_description=requisite.bank_description,  # Добавляем в ответ
+            payment_method_description=requisite.payment_method_description,
             created_at=requisite.created_at,
             updated_at=requisite.updated_at
         )
