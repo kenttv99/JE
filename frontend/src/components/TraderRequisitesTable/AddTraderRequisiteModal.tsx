@@ -225,8 +225,9 @@ const AddTraderRequisiteModal = ({
                 >
                     <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" onClick={onClose} />
 
+                    {/* Removed overflow-hidden to ensure content is visible */}
                     <motion.div
-                        className="relative bg-white rounded-xl max-w-md w-full p-6 shadow-2xl transform overflow-hidden"
+                        className="relative bg-white rounded-xl max-w-md w-full p-6 shadow-2xl transform"
                         initial={{ opacity: 0, y: 20, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -20, scale: 0.95 }}
@@ -280,7 +281,7 @@ const AddTraderRequisiteModal = ({
                                             />
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                                 <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"></path>
+                                                    <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                                                 </svg>
                                             </div>
                                             {searchQuery && (
@@ -295,49 +296,53 @@ const AddTraderRequisiteModal = ({
                                         </div>
                                     </div>
                                     
-                                    {/* Payment methods list */}
-                                    <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1 -mr-1">
-                                        {methodsLoading ? (
-                                            <div className="flex justify-center items-center h-40">
-                                                <FaSpinner className="w-6 h-6 text-blue-500 animate-spin" />
-                                            </div>
-                                        ) : filteredMethods.length > 0 ? (
-                                            filteredMethods.map((method) => (
-                                                <motion.button
-                                                    key={method.method_name}
-                                                    type="button"
-                                                    onClick={() => handlePaymentMethodSelect(method)}
-                                                    className="w-full p-4 text-left bg-white border border-gray-200 hover:border-blue-300 hover:bg-blue-50 rounded-lg transition-colors duration-200 flex items-center justify-between group hover:shadow-md"
-                                                    variants={fadeIn}
-                                                    whileHover={{ scale: 1.01 }}
-                                                    whileTap={{ scale: 0.99 }}
-                                                >
-                                                    <div>
-                                                        <div className="font-medium text-gray-900">
-                                                            {method.description || method.method_name}
-                                                        </div>
-                                                        {method.description && method.description !== method.method_name && (
-                                                            <div className="text-sm text-gray-500">{method.method_name}</div>
-                                                        )}
-                                                    </div>
-                                                    <div className="text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                        </svg>
-                                                    </div>
-                                                </motion.button>
-                                            ))
-                                        ) : searchQuery ? (
-                                            <div className="text-center p-8 text-gray-500 bg-gray-50 rounded-lg">
+                                    {/* Fixed container with proper padding to prevent hover effects from causing scrollbars */}
+                                    <div className="relative overflow-hidden">
+                                        <div className="max-h-[400px] overflow-y-auto px-0.5 py-0.5 -mx-0.5 -my-0.5">
+                                            {methodsLoading ? (
+                                                <div className="flex justify-center items-center h-40">
+                                                    <FaSpinner className="w-6 h-6 text-blue-500 animate-spin" />
+                                                </div>
+                                            ) : filteredMethods.length > 0 ? (
+                                                <div className="space-y-2">
+                                                    {filteredMethods.map((method) => (
+                                                        <motion.button
+                                                            key={method.method_name}
+                                                            type="button"
+                                                            onClick={() => handlePaymentMethodSelect(method)}
+                                                            className="w-full p-4 text-left bg-white border border-gray-200 hover:border-blue-300 hover:bg-blue-50 rounded-lg transition-colors duration-200 flex justify-between items-center group"
+                                                            variants={fadeIn}
+                                                            // Removed scale animation to prevent overflow
+                                                            whileTap={{ scale: 0.995 }}
+                                                        >
+                                                            <div>
+                                                                <div className="font-medium text-gray-900">
+                                                                    {method.description || method.method_name}
+                                                                </div>
+                                                                {method.description && method.description !== method.method_name && (
+                                                                    <div className="text-sm text-gray-500">{method.method_name}</div>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                                </svg>
+                                                            </div>
+                                                        </motion.button>
+                                                    ))}
+                                                </div>
+                                            ) : searchQuery ? (
+                                                <div className="text-center p-8 text-gray-500 bg-gray-50 rounded-lg">
                                                 <FaExclamationTriangle className="w-6 h-6 mx-auto mb-2 text-gray-400" />
                                                 <p>По запросу "{searchQuery}" ничего не найдено</p>
                                             </div>
                                         ) : (
                                             <div className="text-center p-8 text-gray-500 bg-gray-50 rounded-lg">
-                                            <FaExclamationTriangle className="w-6 h-6 mx-auto mb-2 text-gray-400" />
-                                            <p>Нет доступных методов оплаты</p>
-                                        </div>
-                                    )}
+                                                <FaExclamationTriangle className="w-6 h-6 mx-auto mb-2 text-gray-400" />
+                                                <p>Нет доступных методов оплаты</p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </motion.div>
                         ) : (
