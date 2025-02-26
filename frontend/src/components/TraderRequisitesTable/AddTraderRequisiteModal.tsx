@@ -564,13 +564,8 @@ const AddTraderRequisiteModal = ({
                                                 : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 hover:shadow-lg text-white'
                                         }`}
                                     >
-                                        {submitting ? (
-                                            <>
-                                                                                                <FaSpinner className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 animate-spin" />
-                                                Сохранение...
-                                            </>
-                                        ) : (
-                                            <>
+                                        {submitting ? (<><FaSpinner className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 animate-spin" />
+                                                Сохранение...</>) : (<>
                                                 <FaCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                                                 Сохранить
                                             </>

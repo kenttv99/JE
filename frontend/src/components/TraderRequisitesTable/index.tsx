@@ -5,6 +5,13 @@ import SearchBar from './SearchBar';
 import RequisiteRow from './RequisiteRow';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 import { StatusType, SearchColumnType } from './types';
+import { FaCaretUp, FaCaretDown } from 'react-icons/fa';
+
+// Updated type definitions to support multi-column sorting
+type SortConfig = {
+  can_buy?: 'asc' | 'desc' | null;
+  can_sell?: 'asc' | 'desc' | null;
+};
 
 interface RequisitesTableProps {
   requisites: Requisite[];
@@ -21,6 +28,9 @@ const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onD
   const [activeStatus, setActiveStatus] = useState<StatusType>('active');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [searchColumn, setSearchColumn] = useState<SearchColumnType>('req_number');
+  
+  // Updated sorting state to support multi-column sorting
+  const [sortConfig, setSortConfig] = useState<SortConfig>({});
 
   const handleEdit = useCallback((id: number) => {
     alert(`Edit requisite with ID: ${id}`);
@@ -63,16 +73,35 @@ const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onD
     }
   }, [onToggleProperty]);
 
-  // Enhanced filtering logic with column-specific search using descriptions
-  const filteredRequisites = useMemo(() => {
-    return requisites.filter((req) => {
-      // First filter by status
+  // Updated sort handler to support multi-column sorting
+  const handleSort = useCallback((field: 'can_buy' | 'can_sell') => {
+    setSortConfig(prevConfig => {
+      const currentDirection = prevConfig[field];
+      
+      // Cycle through: null -> 'asc' -> 'desc' -> null
+      let nextDirection: 'asc' | 'desc' | null;
+      if (!currentDirection) nextDirection = 'asc';
+      else if (currentDirection === 'asc') nextDirection = 'desc';
+      else nextDirection = null;
+      
+      return {
+        ...prevConfig,
+        [field]: nextDirection
+      };
+    });
+  }, []);
+
+  // Enhanced filtering and sorting logic with multi-column support
+  const filteredAndSortedRequisites = useMemo(() => {
+    // First filter by status and search query
+    const filtered = requisites.filter((req) => {
+      // Status filtering
       const statusMatch = 
         activeStatus === 'all' ? true : 
         activeStatus === 'active' ? req.status !== 'deleted' : 
         activeStatus === 'deleted' ? req.status === 'deleted' : true;
       
-      // Then filter by search query based on selected column
+      // Search query filtering
       if (!searchQuery.trim()) return statusMatch;
       
       const query = searchQuery.toLowerCase();
@@ -83,11 +112,9 @@ const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onD
           searchMatch = req.req_number.toLowerCase().includes(query);
           break;
         case 'payment_method':
-          // Always use description field for searching payment methods
           searchMatch = (req.payment_method_description || req.payment_method || '').toLowerCase().includes(query);
           break;
         case 'bank':
-          // Always use description field for searching banks
           searchMatch = (req.bank_description || req.bank || '').toLowerCase().includes(query);
           break;
         case 'all':
@@ -102,21 +129,59 @@ const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onD
       
       return statusMatch && searchMatch;
     });
-  }, [requisites, activeStatus, searchQuery, searchColumn]);
+
+    // Sort based on the sortConfig
+    if (Object.values(sortConfig).some(v => v !== null)) {
+      return [...filtered].sort((a, b) => {
+        // Sort first by can_buy if specified
+        if (sortConfig.can_buy) {
+          const valueA = a.can_buy ? 1 : 0;
+          const valueB = b.can_buy ? 1 : 0;
+          const compareResult = sortConfig.can_buy === 'asc' ? valueA - valueB : valueB - valueA;
+          
+          // If values are different for this column, return the result
+          if (compareResult !== 0) return compareResult;
+        }
+        
+        // Then sort by can_sell if specified
+        if (sortConfig.can_sell) {
+          const valueA = a.can_sell ? 1 : 0;
+          const valueB = b.can_sell ? 1 : 0;
+          return sortConfig.can_sell === 'asc' ? valueA - valueB : valueB - valueA;
+        }
+        
+        return 0; // No changes if no sort is active
+      });
+    }
+    
+    return filtered;
+  }, [requisites, activeStatus, searchQuery, searchColumn, sortConfig]);
+
+  // Render sort indicator based on sort state
+  const renderSortIndicator = (field: 'can_buy' | 'can_sell') => {
+    if (!sortConfig[field]) return null;
+    
+    return sortConfig[field] === 'asc' 
+      ? <FaCaretUp className="ml-1 inline" />
+      : <FaCaretDown className="ml-1 inline" />;
+  };
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-        {/* Status Filter Buttons */}
-        <StatusFilter activeStatus={activeStatus} onStatusChange={setActiveStatus} />
-        
-        {/* Enhanced Search Input with Column Selection */}
-        <SearchBar 
-          searchQuery={searchQuery} 
-          setSearchQuery={setSearchQuery}
-          searchColumn={searchColumn}
-          setSearchColumn={setSearchColumn} 
-        />
+      {/* Table container with controls */}
+      <div className="mb-4">
+        {/* Status Filter aligned left */}
+        <div className="flex justify-between items-center mb-4">
+          <StatusFilter activeStatus={activeStatus} onStatusChange={setActiveStatus} />
+          
+          {/* Search control aligned right */}
+          <SearchBar 
+            searchQuery={searchQuery} 
+            setSearchQuery={setSearchQuery}
+            searchColumn={searchColumn}
+            setSearchColumn={setSearchColumn} 
+          />
+        </div>
       </div>
       
       {/* Table */}
@@ -128,25 +193,37 @@ const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onD
                 #
               </th>
               <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Метод
+                Method
               </th>
               <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Банк
+                Bank
               </th>
               <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Номер
+                Number
               </th>
               <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                ФИО
+                Full Name
               </th>
-              <th className="px-6 py-3 bg-gray-50 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Pay In
+              {/* Clickable PayIn header */}
+              <th 
+                onClick={() => handleSort('can_buy')}
+                className="px-6 py-3 bg-gray-50 text-center text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-200"
+                style={{ color: sortConfig.can_buy ? '#3B82F6' : '#6B7280' }}
+                title="Click to sort by Pay In"
+              >
+                Pay In {renderSortIndicator('can_buy')}
               </th>
-              <th className="px-6 py-3 bg-gray-50 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Pay Out
+              {/* Clickable PayOut header */}
+              <th 
+                onClick={() => handleSort('can_sell')}
+                className="px-6 py-3 bg-gray-50 text-center text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-200"
+                style={{ color: sortConfig.can_sell ? '#3B82F6' : '#6B7280' }}
+                title="Click to sort by Pay Out"
+              >
+                Pay Out {renderSortIndicator('can_sell')}
               </th>
               <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Дата создания
+                Created At
               </th>
               <th className="px-6 py-3 bg-gray-50">
                 <span className="sr-only">Actions</span>
@@ -154,8 +231,8 @@ const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onD
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredRequisites.length > 0 ? (
-              filteredRequisites.map((requisite, index) => (
+            {filteredAndSortedRequisites.length > 0 ? (
+              filteredAndSortedRequisites.map((requisite, index) => (
                 <RequisiteRow
                   key={requisite.id}
                   requisite={requisite}
@@ -170,8 +247,8 @@ const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onD
               <tr>
                 <td colSpan={9} className="px-6 py-4 text-center text-sm text-gray-500">
                   {searchQuery ? 
-                    `По запросу "${searchQuery}" в поле "${getColumnDisplayText(searchColumn)}" ничего не найдено` : 
-                    'Нет доступных реквизитов'
+                    `No results found for "${searchQuery}" in "${getColumnDisplayText(searchColumn)}"` : 
+                    'No requisites available'
                   }
                 </td>
               </tr>
@@ -194,15 +271,15 @@ const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onD
 const getColumnDisplayText = (column: SearchColumnType): string => {
   switch (column) {
     case 'req_number':
-      return 'Номер';
+      return 'Number';
     case 'payment_method':
-      return 'Метод';
+      return 'Method';
     case 'bank':
-      return 'Банк';
+      return 'Bank';
     case 'all':
-      return 'Все поля';
+      return 'All fields';
     default:
-      return 'Все поля';
+      return 'All fields';
   }
 };
 
