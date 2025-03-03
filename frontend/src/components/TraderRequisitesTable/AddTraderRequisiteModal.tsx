@@ -21,6 +21,8 @@ interface AddRequisiteModalProps {
     onClose: () => void;
     onSubmit: (formData: RequisiteFormData) => Promise<void>;
     formData: RequisiteFormData;
+    paymentMethods?: string[]; // Added this line
+    banks?: string[]; // Added this line
     handleBankChange: (value: string) => void;
     handleReqNumberChange: (value: string) => void;
     handleFioChange: (value: string) => void;

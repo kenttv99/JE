@@ -193,16 +193,16 @@ const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onD
                 #
               </th>
               <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Method
+                МЕТОД
               </th>
               <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Bank
+                БАНК
               </th>
               <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Number
+                НОМЕР
               </th>
               <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Full Name
+                ФИО
               </th>
               {/* Clickable PayIn header */}
               <th 
@@ -223,10 +223,10 @@ const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onD
                 Pay Out {renderSortIndicator('can_sell')}
               </th>
               <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Created At
+                СОЗДАН
               </th>
               <th className="px-6 py-3 bg-gray-50">
-                <span className="sr-only">Actions</span>
+                <span className="sr-only">ДЕЙСТВИЯ</span>
               </th>
             </tr>
           </thead>
@@ -247,8 +247,8 @@ const TraderRequisitesTable: React.FC<RequisitesTableProps> = ({ requisites, onD
               <tr>
                 <td colSpan={9} className="px-6 py-4 text-center text-sm text-gray-500">
                   {searchQuery ? 
-                    `No results found for "${searchQuery}" in "${getColumnDisplayText(searchColumn)}"` : 
-                    'No requisites available'
+                    `Нет результатов для "${searchQuery}" в "${getRussianColumnDisplayText(searchColumn)}"` : 
+                    'Реквизитов не найдено'
                   }
                 </td>
               </tr>
@@ -280,6 +280,22 @@ const getColumnDisplayText = (column: SearchColumnType): string => {
       return 'All fields';
     default:
       return 'All fields';
+  }
+};
+
+// Helper function to get Russian display name for search column
+const getRussianColumnDisplayText = (column: SearchColumnType): string => {
+  switch (column) {
+    case 'req_number':
+      return 'Номер';
+    case 'payment_method':
+      return 'Метод';
+    case 'bank':
+      return 'Банк';
+    case 'all':
+      return 'Все поля';
+    default:
+      return 'Все поля';
   }
 };
 

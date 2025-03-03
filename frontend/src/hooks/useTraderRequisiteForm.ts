@@ -27,6 +27,8 @@ export const useRequisiteForm = () => {
     can_buy: false,
     can_sell: false,
     created_at: new Date().toISOString(),
+    payment_method_description: '', // Добавлено
+    bank_description: '' // Добавлено
   });
   const [formErrors, setFormErrors] = useState<any[]>([]);
   const [selectedMethod, setSelectedMethod] = useState('');
@@ -84,7 +86,7 @@ export const useRequisiteForm = () => {
       return;
     }
     try {
-      await api.post<Requisite>('/api/v1/trader_req/add_requisite', data);
+      await api.post<Requisite>('/api/v1/trader_req/add_requisite', data || formData); // Используем переданные данные или formData
       resetForm();
       return;
     } catch (error) {
@@ -102,6 +104,8 @@ export const useRequisiteForm = () => {
       can_buy: false,
       can_sell: false,
       created_at: new Date().toISOString(),
+      payment_method_description: '', // Добавлено
+      bank_description: '' // Добавлено
     });
     setSelectedMethod('');
     setFormErrors([]);

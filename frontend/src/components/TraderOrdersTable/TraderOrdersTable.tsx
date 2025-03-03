@@ -12,51 +12,96 @@ import {
 } from 'react-table';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+import { format, differenceInSeconds } from 'date-fns';
+import { ru } from 'date-fns/locale';
 
 interface Order {
   id: string;
-  detailsType: string;
-  detailsNumber: string;
+  method: string;
+  bank: string;
+  number: string;
   createdAt: string;
+  expiresAt: string;
   status: string;
 }
 
 interface OrdersTableProps {
   orders: Order[];
+  onCancel: (orderId: string) => void;
+  onConfirm: (orderId: string) => void;
 }
 
-const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
+const OrdersTable: React.FC<OrdersTableProps> = ({ orders, onCancel, onConfirm }) => {
   const data = useMemo(() => orders, [orders]);
 
   const columns = useMemo<Column<Order>[]>(
     () => [
       { Header: 'ID', accessor: 'id' },
-      { Header: 'Тип реквизитов', accessor: 'detailsType' },
-      { Header: 'Номер реквизита', accessor: 'detailsNumber' },
-      { Header: 'Дата создания', accessor: 'createdAt' },
+      { Header: 'МЕТОД', accessor: 'method' },
+      { Header: 'БАНК', accessor: 'bank' },
+      { Header: 'НОМЕР', accessor: 'number' },
       {
-        Header: 'Таймер',
-        accessor: 'timer' as keyof Order,
-        Cell: ({ row }: CellProps<Order>) => <span>{/* Timer implementation */}</span>,
+        Header: 'ВРЕМЯ ВЫПЛАТЫ',
+        accessor: 'expiresAt',
+        Cell: ({ row }: CellProps<Order>) => {
+          const expiresAt = new Date(row.original.expiresAt);
+          const now = new Date();
+          const secondsLeft = Math.max(0, differenceInSeconds(expiresAt, now));
+          
+          const minutes = Math.floor(secondsLeft / 60);
+          const seconds = secondsLeft % 60;
+          
+          const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+          
+          return (
+            <span className={`${secondsLeft < 300 ? 'text-red-600' : 'text-green-600'} font-medium`}>
+              {timeString}
+            </span>
+          );
+        },
       },
       {
-        Header: 'Отмена',
-        accessor: 'cancel' as keyof Order,
-        Cell: ({ row }: CellProps<Order>) => <button>Отменить</button>,
+        Header: 'ОТМЕНА',
+        id: 'cancel',
+        Cell: ({ row }: CellProps<Order>) => (
+          <button 
+            className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded"
+            onClick={() => onCancel(row.original.id)}
+          >
+            Отменить
+          </button>
+        ),
       },
       {
-        Header: 'Подтверждение',
-        accessor: 'confirm' as keyof Order,
-        Cell: ({ row }: CellProps<Order>) => <button>Подтвердить</button>,
+        Header: 'ПОДТВЕРЖДЕНИЕ',
+        id: 'confirm',
+        Cell: ({ row }: CellProps<Order>) => (
+          <button 
+            className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
+            onClick={() => onConfirm(row.original.id)}
+          >
+            Подтвердить
+          </button>
+        ),
       },
       {
-        Header: 'Тикеты',
-        accessor: 'tickets' as keyof Order,
-        Cell: ({ row }: CellProps<Order>) => <span>{/* Tickets implementation */}</span>,
+        Header: 'СТАТУС',
+        accessor: 'status',
+        Cell: ({ value }: { value: string }) => (
+          <span className={`px-2 py-1 rounded text-xs font-medium
+            ${value === 'processing' ? 'bg-yellow-100 text-yellow-800' : 
+              value === 'completed' ? 'bg-green-100 text-green-800' :
+              value === 'cancelled' ? 'bg-red-100 text-red-800' :
+              'bg-gray-100 text-gray-800'}`
+          }>
+            {value === 'processing' ? 'В обработке' :
+             value === 'completed' ? 'Завершен' :
+             value === 'cancelled' ? 'Отменен' : value}
+          </span>
+        ),
       },
-      { Header: 'Статус', accessor: 'status' },
     ],
-    []
+    [onCancel, onConfirm]
   );
 
   const {
