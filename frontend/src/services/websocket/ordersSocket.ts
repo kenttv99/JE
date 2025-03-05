@@ -86,4 +86,5 @@ class OrdersSocket {
   }
 }
 
-export default new OrdersSocket();
+// Changed to named export instead of default export
+export const ordersSocket = new OrdersSocket();

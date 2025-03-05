@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import OrdersSocket from '@/services/websocket/ordersSocket';
+import { ordersSocket } from '@/services/websocket/ordersSocket';
 import { TraderOrder } from '@/types/trader';  // Используем твой интерфейс
 import { useAuth } from '@/hooks/useAuth';  // Используем хук для авторизации
 
@@ -115,11 +115,11 @@ export const useTraderOrders = () => {
       const data = await response.json();
       setIsAcceptingOrders(data);  // Обновляем состояние на основе ответа бэкенда
       if (!newStatus) {
-        OrdersSocket.disconnect();  // Закрываем WebSocket при выключении
+        ordersSocket.disconnect();  // Закрываем WebSocket при выключении
         setWsStatus('disconnected');
       } else if (status === 'authenticated') {
         // Подключаем WebSocket заново при включении
-        OrdersSocket.connect({
+        ordersSocket.connect({
           url: 'ws://localhost:8001/api/v1/ws/orders',
           traderId,
           token,  // Передаём токен
@@ -165,7 +165,7 @@ export const useTraderOrders = () => {
 
       if (isAcceptingOrders) {
         const token = session?.accessToken || localStorage.getItem('token') || '';
-        OrdersSocket.connect({
+        ordersSocket.connect({
           url: 'ws://localhost:8001/api/v1/ws/orders',
           traderId,
           token,
@@ -178,20 +178,20 @@ export const useTraderOrders = () => {
           }
         }, 5000);
 
-        OrdersSocket.on('orders_update', (updatedOrders: TraderOrder[]) => {
+        ordersSocket.on('orders_update', (updatedOrders: TraderOrder[]) => {
           setOrders(updatedOrders);
           setWsStatus('connected');
           clearTimeout(timeout);
         });
 
-        OrdersSocket.on('error', (error: any) => {
+        ordersSocket.on('error', (error: any) => {
           setError(error.message || 'WebSocket error');
           setWsStatus('disconnected');
           console.error('WebSocket error:', JSON.stringify(error));
           clearTimeout(timeout);
         });
 
-        OrdersSocket.on('disconnect', (event?: CloseEvent) => {
+        ordersSocket.on('disconnect', (event?: CloseEvent) => {
           setWsStatus('disconnected');
           if (event?.code !== 1000) {
             console.error('WebSocket disconnected unexpectedly, code:', event?.code, 'reason:', event?.reason || 'No reason provided');
@@ -201,7 +201,7 @@ export const useTraderOrders = () => {
       }
 
       return () => {
-        OrdersSocket.disconnect();
+        ordersSocket.disconnect();
       };
     } else {
       setLoading(false);
