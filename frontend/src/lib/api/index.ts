@@ -18,9 +18,10 @@ api.interceptors.request.use(
     // Update this line to match the token name from auth.ts
     if (session?.accessToken) { 
       config.headers['Authorization'] = `Bearer ${session.accessToken}`;
-      console.log('Adding Authorization header with token:', session.accessToken.substring(0, 10) + '...');  // Отладочный лог
-    } else {
-      console.warn('No access token available in session');
+      // Remove debug logging in production
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('Adding Authorization header with token:', session.accessToken.substring(0, 10) + '...');
+      }
     }
     return config;
   },
@@ -32,10 +33,13 @@ api.interceptors.request.use(
 // Add a response interceptor to handle errors
 api.interceptors.response.use(
   (response) => {
-    console.log('Response:', {
-      status: response.status,
-      data: response.data
-    });
+    // Remove debug logging in production
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Response:', {
+        status: response.status,
+        data: response.data
+      });
+    }
     return response;
   },
   async (error) => {
@@ -46,8 +50,11 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        console.error('Authentication error:', error.response?.data);
-        console.log('Attempting to sign out due to 401...');
+        // Only log in development
+        if (process.env.NODE_ENV !== 'production') {
+          console.error('Authentication error:', error.response?.data);
+          console.log('Attempting to sign out due to 401...');
+        }
         
         await signOut({ 
           redirect: true,
@@ -55,19 +62,26 @@ api.interceptors.response.use(
         });
         return Promise.reject(error);
       } catch (signOutError) {
-        console.error('Error during sign out:', signOutError);
+        if (process.env.NODE_ENV !== 'production') {
+          console.error('Error during sign out:', signOutError);
+        }
         return Promise.reject(error);
       }
     }
 
-    // For other errors, reject with the original error
-    console.error('API error:', error);
+    // Only log in development
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('API error:', error);
+    }
+    
     return Promise.reject(error);
   }
 );
 
-// Add request/response logging in development
+// Add request/response logging only in development
 if (process.env.NODE_ENV === 'development') {
+  // Comment out or remove this block if you don't want any API request logs
+  /*
   api.interceptors.request.use(request => {
     console.log('Starting Request:', {
       url: request.url,
@@ -76,6 +90,7 @@ if (process.env.NODE_ENV === 'development') {
     });
     return request;
   });
+  */
 }
 
 export default api;
