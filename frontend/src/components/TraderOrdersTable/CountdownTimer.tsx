@@ -1,54 +1,37 @@
-import { useState, useEffect } from 'react';
-import { differenceInSeconds } from 'date-fns';
+import React from 'react';
+import { useOrderCountdown } from './useOrderCountdown';
+import { useAuth } from '@/hooks/useAuth';  // Импортируем useAuth для получения токена
 
 interface CountdownTimerProps {
   expiresAt: string;
-  onExpire?: () => void;
+  orderId: string;  // Добавляем orderId для отправки запроса на отмену
 }
 
-const CountdownTimer: React.FC<CountdownTimerProps> = ({ expiresAt, onExpire }) => {
-  const [timeLeft, setTimeLeft] = useState<number>(0);
-  
-  useEffect(() => {
-    const calculateTimeLeft = () => {
-      const now = new Date();
-      const target = new Date(expiresAt);
-      const secondsLeft = Math.max(0, differenceInSeconds(target, now));
-      
-      setTimeLeft(secondsLeft);
-      
-      if (secondsLeft === 0 && onExpire) {
-        onExpire();
+const CountdownTimer: React.FC<CountdownTimerProps> = ({ expiresAt, orderId }) => {
+  const { session } = useAuth('trader');  // Получаем сессию для токена, типизируем через CustomSession
+  const { timeString, textColorClass } = useOrderCountdown(expiresAt, () => {
+    // Вызываем API для отмены ордера, когда таймер истекает
+    const cancelOrder = async () => {
+      try {
+        const token = session?.accessToken || localStorage.getItem('token') || '';
+        const response = await fetch(`/api/v1/trader_orders/${orderId}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status: 'cancelled' }),  // Обновляем статус на "cancelled"
+        });
+        if (!response.ok) {
+          console.error('Failed to cancel order:', response.status, await response.text());
+        }
+      } catch (error) {
+        console.error('Error cancelling order:', error);
       }
     };
-    
-    // Calculate initially
-    calculateTimeLeft();
-    
-    // Update every second
-    const interval = setInterval(calculateTimeLeft, 1000);
-    
-    return () => clearInterval(interval);
-  }, [expiresAt, onExpire]);
-  
-  const minutes = Math.floor(timeLeft / 60);
-  const seconds = timeLeft % 60;
-  
-  const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  
-  const currentDate = new Date();
-  // For the example, let's set the expiration date to be 1 hour from now
-  const expirationDate = new Date(expiresAt);
-  
-  // We might want to show different colors based on how much time is remaining
-  let textColorClass = 'text-green-600'; // Default: more than 15 minutes
-  
-  if (timeLeft < 300) { // Less than 5 minutes
-    textColorClass = 'text-red-600';
-  } else if (timeLeft < 900) { // Less than 15 minutes
-    textColorClass = 'text-orange-500';
-  }
-  
+    cancelOrder();
+  });
+
   return (
     <span className={`font-mono font-medium ${textColorClass}`}>
       {timeString}

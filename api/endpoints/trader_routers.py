@@ -1,6 +1,6 @@
 from datetime import timedelta
 import logging
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -280,3 +280,28 @@ async def change_trader_password(
         await db.rollback()
         logger.error(f"Password change error: {str(e)}")
         raise HTTPException(status_code=500, detail="Error changing password")
+
+@router.post("/{trader_id}/toggle-online-status", response_model=bool)
+async def toggle_trader_online_status(
+    trader_id: str,
+    is_online: bool = Body(..., description="Whether the trader is accepting orders (true/false)"),  # Простое булевое значение
+    db: AsyncSession = Depends(get_async_db),
+    current_trader: Trader = Depends(get_current_trader)
+):
+    """
+    Toggle whether the trader is online/accepting orders (updates pay_in).
+    """
+    print(f"Received is_online: {is_online}")  # Отладочный лог
+    if str(current_trader.id) != trader_id:
+        raise HTTPException(status_code=403, detail="Not authorized to modify this trader")
+
+    # Получаем трейдера из базы
+    db_trader = await db.get(Trader, int(trader_id))
+    if db_trader is None:
+        raise HTTPException(status_code=404, detail="Trader not found")
+
+    # Обновляем флаг онлайн-статуса (pay_in)
+    db_trader.pay_in = is_online
+    await db.commit()
+    logger.info(f"Trader {trader_id} online status toggled to {is_online}")
+    return db_trader.pay_in

@@ -1,145 +1,89 @@
-import { WS_CONFIG } from './config';
-import { 
-  ConnectionStatus, 
-  WebSocketHandler,
-  WSMessage, 
-  OrderEvent
-} from './types';
+// JE/frontend/src/services/websocket/ordersSocket.ts
+class OrdersSocket {
+  private ws: WebSocket | null = null;
+  private eventListeners: { [event: string]: ((data: any) => void)[] } = {};
+  private reconnectAttempts: number = 0;
+  private maxReconnectAttempts: number = 5;
+  private reconnectInterval: number = 2000; // 2 секунды между попытками
 
-class OrdersSocketHandler implements WebSocketHandler<OrderEvent> {
-  private socket: WebSocket | null = null;
-  private status: ConnectionStatus = 'disconnected';
-  private reconnectAttempts = 0;
-  private reconnectTimeout: NodeJS.Timeout | null = null;
-  private subscribers: ((message: WSMessage<OrderEvent>) => void)[] = [];
-  private heartbeatInterval: NodeJS.Timeout | null = null;
+  connect({ url, traderId, token }: { url: string; traderId: string; token: string }) {
+    this.ws = new WebSocket(`${url}/${traderId}?token=${encodeURIComponent(token)}`);
 
-  constructor(private readonly endpoint: string = '/orders') {}
+    this.ws.onopen = () => {
+      this.reconnectAttempts = 0; // Сбросить счётчик попыток при успешном подключении
+      this.emit('connect');
+    };
 
-  public connect(): void {
-    if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) {
-      return; // Already connected or connecting
-    }
-    
-    this.status = 'connecting';
-    
-    try {
-      // Construct the full WebSocket URL
-      const wsUrl = `${WS_CONFIG.BASE_URL}${this.endpoint}`;
-      this.socket = new WebSocket(wsUrl);
-      
-      this.socket.onopen = this.handleOpen;
-      this.socket.onmessage = this.handleMessage;
-      this.socket.onclose = this.handleClose;
-      this.socket.onerror = this.handleError;
-    } catch (error) {
-      console.error('Failed to establish WebSocket connection:', error);
-      this.status = 'failed';
-      this.attemptReconnect();
-    }
-  }
+    this.ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        this.emit('message', data);
+        if (data.type === 'orders_update') {
+          this.emit('orders_update', data.orders);
+        } else if (data.type === 'error') {
+          this.emit('error', data.message);
+        }
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
+        this.emit('error', 'Invalid message format');
+      }
+    };
 
-  public disconnect(): void {
-    if (this.socket) {
-      this.clearHeartbeat();
-      this.socket.close();
-      this.socket = null;
-    }
-    
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout);
-      this.reconnectTimeout = null;
-    }
-    
-    this.status = 'disconnected';
-  }
+    this.ws.onerror = (error: Event) => {
+      console.error('WebSocket error:', JSON.stringify(error));
+      this.emit('error', error);
+      if (this.ws?.readyState === WebSocket.CLOSED || this.ws?.readyState === WebSocket.CLOSING) {
+        this.handleReconnect(url, traderId, token);
+      }
+    };
 
-  public getStatus(): ConnectionStatus {
-    return this.status;
-  }
-
-  public subscribe(callback: (message: WSMessage<OrderEvent>) => void): () => void {
-    this.subscribers.push(callback);
-    
-    // Return unsubscribe function
-    return () => {
-      this.subscribers = this.subscribers.filter(cb => cb !== callback);
+    this.ws.onclose = (event: CloseEvent) => {
+      this.emit('disconnect', event);
+      this.ws = null;
+      this.handleReconnect(url, traderId, token);
+      if (event.code !== 1000) { // Логируем только ненормальные закрытия (не 1000 — Normal Closure)
+        console.error('WebSocket disconnected unexpectedly, code:', event.code, 'reason:', event.reason || 'No reason provided');
+      }
     };
   }
 
-  private handleOpen = () => {
-    this.status = 'connected';
-    this.reconnectAttempts = 0;
-    this.startHeartbeat();
-    console.log('WebSocket connection established');
-  };
-
-  private handleMessage = (event: MessageEvent) => {
-    try {
-      const data = JSON.parse(event.data) as WSMessage<OrderEvent>;
-      
-      // Notify all subscribers
-      this.subscribers.forEach(callback => {
-        try {
-          callback(data);
-        } catch (error) {
-          console.error('Error in subscriber callback:', error);
-        }
-      });
-    } catch (error) {
-      console.error('Failed to parse WebSocket message:', error);
+  private handleReconnect(url: string, traderId: string, token: string) {
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectAttempts++;
+      setTimeout(() => {
+        this.connect({ url, traderId, token });
+      }, this.reconnectInterval * this.reconnectAttempts);
+    } else {
+      console.error('Max reconnect attempts reached. WebSocket connection failed.');
     }
-  };
-
-  private handleClose = () => {
-    this.status = 'disconnected';
-    this.clearHeartbeat();
-    console.log('WebSocket connection closed');
-    this.attemptReconnect();
-  };
-
-  private handleError = (error: Event) => {
-    console.error('WebSocket error:', error);
-    this.status = 'failed';
-  };
-
-  private attemptReconnect() {
-    if (this.reconnectAttempts >= WS_CONFIG.MAX_RECONNECT_ATTEMPTS) {
-      console.log('Maximum reconnect attempts reached');
-      this.status = 'failed';
-      return;
-    }
-
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout);
-    }
-
-    this.reconnectAttempts++;
-    console.log(`Attempting to reconnect (${this.reconnectAttempts}/${WS_CONFIG.MAX_RECONNECT_ATTEMPTS})...`);
-    
-    this.reconnectTimeout = setTimeout(() => {
-      this.connect();
-    }, WS_CONFIG.RECONNECT_INTERVAL);
   }
 
-  private startHeartbeat() {
-    this.clearHeartbeat();
-    
-    this.heartbeatInterval = setInterval(() => {
-      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-        // Send ping message to keep connection alive
-        this.socket.send(JSON.stringify({ type: 'ping' }));
-      }
-    }, WS_CONFIG.HEARTBEAT_INTERVAL);
+  disconnect() {
+    if (this.ws) {
+      this.ws.close(1000, 'User-initiated disconnect'); // Закрытие с кодом 1000 (Normal Closure)
+      this.ws = null;
+    }
   }
 
-  private clearHeartbeat() {
-    if (this.heartbeatInterval) {
-      clearInterval(this.heartbeatInterval);
-      this.heartbeatInterval = null;
+  on(event: string, callback: (data: any) => void) {
+    if (!this.eventListeners[event]) {
+      this.eventListeners[event] = [];
     }
+    this.eventListeners[event].push(callback);
+  }
+
+  private emit(event: string, data?: any) {
+    if (this.eventListeners[event]) {
+      this.eventListeners[event].forEach((callback) => callback(data));
+    }
+  }
+
+  onOrdersUpdate: (orders: any) => void = () => {};
+
+  setOnOrdersUpdate(callback: (orders: any) => void) {
+    this.onOrdersUpdate = callback;
+    this.on('orders_update', (orders) => this.onOrdersUpdate(orders));
   }
 }
 
-// Create a singleton instance for orders WebSocket
-export const ordersSocket = new OrdersSocketHandler();
+export default new OrdersSocket();

@@ -11,6 +11,13 @@ const compat = new FlatCompat({
 
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+  {
+    files: ["**/*.css"], // Применяем правила только к CSS-файлам
+    rules: {
+      // Игнорируем неизвестные директивы @tailwind и @apply в CSS
+      "css/unknownAtRules": ["off", { allow: ["tailwind", "apply"] }],
+    },
+  },
 ];
 
 export default eslintConfig;

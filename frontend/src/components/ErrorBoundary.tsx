@@ -21,7 +21,10 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    // Логируем только в случае реальных сбоев, которые требуют внимания
+    if (process.env.NODE_ENV === 'development') {
+      console.error('ErrorBoundary caught an error:', error, errorInfo);
+    }
   }
 
   public render() {
@@ -31,16 +34,16 @@ class ErrorBoundary extends Component<Props, State> {
           <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
             <div className="text-center">
               <h3 className="mt-4 text-lg font-medium text-gray-900">
-                Something went wrong
+                Произошла ошибка
               </h3>
               <p className="mt-2 text-sm text-gray-500">
-                {this.state.error?.message}
+                {this.state.error?.message || 'Пожалуйста, попробуйте позже.'}
               </p>
               <button
                 onClick={() => window.location.reload()}
                 className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                Try again
+                Попробовать снова
               </button>
             </div>
           </div>

@@ -1,4 +1,5 @@
-import './globals.css';
+// JE/frontend/src/app/layout.tsx
+import '../app/globals.css';
 import { Providers } from './providers';
 
 export default function RootLayout({

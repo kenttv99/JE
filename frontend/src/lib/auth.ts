@@ -1,4 +1,4 @@
-// frontend/src/lib/auth.ts
+// JE/frontend/src/lib/auth.ts
 import { NextAuthOptions } from "next-auth";
 import type { Session, DefaultSession } from "next-auth";
 import type { JWT, DefaultJWT } from "next-auth/jwt";
@@ -6,6 +6,12 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { AxiosError } from "axios";
 import api from '@/lib/api';
 import { CustomUser, LoginResponse, ApiError, ExtendedJWT, CustomSession } from '@/types/auth';
+import jwt from 'jsonwebtoken';  // Импортируем jsonwebtoken для работы с JWT
+
+// Определяем константы, совпадающие с бэкендом (JE/constants.py)
+const SECRET_KEY = process.env.NEXTAUTH_SECRET || '123456789';  // Совпадает с JE/constants.py
+const ALGORITHM = 'HS256';  // Совпадает с JE/constants.py
+const ACCESS_TOKEN_EXPIRE_MINUTES = 30;  // Совпадает с JE/constants.py
 
 // Extend the built-in types
 declare module "next-auth" {
@@ -105,7 +111,15 @@ export const authOptions: NextAuthOptions = {
           verification_level: customUser.verification_level,
           pay_in: customUser.pay_in,
           pay_out: customUser.pay_out,
-          accessToken: customUser.access_token,
+          accessToken: jwt.sign(
+            {
+              sub: customUser.email,
+              type: customUser.role,  // Убедимся, что роль включена
+              verification_level: customUser.verification_level,
+            },
+            SECRET_KEY,
+            { algorithm: ALGORITHM, expiresIn: `${ACCESS_TOKEN_EXPIRE_MINUTES}m` }
+          ),
           created_at: customUser.created_at,
           updated_at: customUser.updated_at,
           tokenExpires: Math.floor(Date.now() / 1000) + 23 * 60 * 60

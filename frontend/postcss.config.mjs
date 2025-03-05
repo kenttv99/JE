@@ -1,9 +1,7 @@
-/** @type {import('postcss-load-config').Config} */
-const config = {
+// JE/frontend/postcss.config.mjs
+export default {
   plugins: {
-    tailwindcss: {},
+    tailwindcss: {}, // Используем tailwindcss напрямую для версии 3.x
     autoprefixer: {},
   },
 };
-
-export default config;

@@ -7,10 +7,11 @@ import {
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
-import { useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { traderNavigation } from '@/config/navigation';
 import { useProfile } from '@/hooks/useProfile';
+import { useTraderOrders } from '@/hooks/useTraderOrders';  // Импортируем useTraderOrders
 
 interface TraderLayoutProps {
   children: React.ReactNode;
@@ -20,7 +21,16 @@ export default function TraderLayout({ children }: TraderLayoutProps) {
   const { data: session, status } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
   const { profile, isLoading } = useProfile();
+  const { isAcceptingOrders, toggleOrderAcceptance } = useTraderOrders();  // Получаем состояние и функцию из useTraderOrders
+
+  useEffect(() => {
+    console.log('Layout loaded - Auth status:', status);  // Отладочный лог
+    if (status === 'unauthenticated') {
+      router.replace('/login');  // Перенаправляем на /login, если пользователь не авторизован
+    }
+  }, [status, router]);
 
   if (status === 'loading') {
     return (
@@ -34,10 +44,15 @@ export default function TraderLayout({ children }: TraderLayoutProps) {
   }
 
   if (!session || session.user.role !== 'trader') {
-    return null;
+    return null;  // Предполагаем, что перенаправление уже произошло
   }
 
   const isActive = (path: string) => pathname === path;
+
+  // Синхронизация состояния ползунка с useTraderOrders (если нужно)
+  useEffect(() => {
+    console.log('Current isAcceptingOrders state:', isAcceptingOrders);  // Отладочный лог
+  }, [isAcceptingOrders]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -60,12 +75,27 @@ export default function TraderLayout({ children }: TraderLayoutProps) {
               <h1 className="text-xl font-semibold text-gray-800">Кабинет трейдера</h1>
             </div>
 
-            {/* Balance Display */}
-            <div className="flex items-center">
+            {/* Balance and Toggle Switch */}
+            <div className="flex items-center space-x-4">
               <div className={`bg-gray-100 rounded-md px-4 py-2 flex items-center ${isLoading ? 'animate-pulse' : ''}`}>
                 <span className="text-sm font-medium text-gray-700">
                   {isLoading ? 'Загрузка...' : `Баланс: ${profile?.balance || '0.00'} ${profile?.fiat_currency || 'RUB'}`}
                 </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium">Прием ордеров</span>
+                <label className="inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isAcceptingOrders}
+                    onChange={(e) => {
+                      console.log('Toggling order acceptance to:', e.target.checked);  // Отладочный лог
+                      toggleOrderAcceptance(e.target.checked);
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+                </label>
               </div>
             </div>
           </div>

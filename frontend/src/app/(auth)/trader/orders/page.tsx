@@ -1,20 +1,26 @@
-'use client';
+'use client';  // Убедились, что это клиентский компонент
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTraderOrders } from '@/hooks/useTraderOrders';
+import { useAuth } from '@/hooks/useAuth';  // Импортируем useAuth
 import OrdersTable from '@/components/TraderOrdersTable/TraderOrdersTable';
+import { TraderOrder } from '@/types/trader';  // Используем твой интерфейс
 
 const OrdersPage = () => {
-  const { orders, loading, error, cancelOrder, confirmOrder, refreshOrders, wsStatus } = useTraderOrders();
+  const { orders, loading, error, cancelOrder, confirmOrder, wsStatus } = useTraderOrders();
+  const { session } = useAuth('trader');  // Получаем сессию трейдера
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  // Получаем traderId из сессии (хотя он больше не используется в этом файле)
+  const traderId = session?.user?.id || '1';  // Используем '1' как дефолт (оставляем для совместимости)
 
   const handleCancelOrder = async (orderId: string) => {
     try {
       setIsProcessing(orderId);
       setActionError(null);
       await cancelOrder(orderId);
-    } catch (error) {
+    } catch (err: any) {  // Указываем тип 'any' для err
       setActionError('Ошибка при отмене заказа. Пожалуйста, попробуйте снова.');
     } finally {
       setIsProcessing(null);
@@ -26,14 +32,14 @@ const OrdersPage = () => {
       setIsProcessing(orderId);
       setActionError(null);
       await confirmOrder(orderId);
-    } catch (error) {
+    } catch (err: any) {  // Указываем тип 'any' для err
       setActionError('Ошибка при подтверждении заказа. Пожалуйста, попробуйте снова.');
     } finally {
       setIsProcessing(null);
     }
   };
 
-  if (loading) {
+  if (loading && !orders.length) {  // Показываем загрузку только если нет ордеров
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center py-8">
@@ -59,12 +65,6 @@ const OrdersPage = () => {
                 }`}></span>
                 {wsStatus === 'connected' ? 'Онлайн' : 'Оффлайн'}
               </span>
-              <button 
-                onClick={refreshOrders}
-                className="px-4 py-2 bg-white text-blue-600 rounded hover:bg-blue-50"
-              >
-                Обновить
-              </button>
             </div>
           </div>
 
@@ -84,7 +84,7 @@ const OrdersPage = () => {
           )}
 
           <div className="p-6">
-            {isProcessing ? (
+            {isProcessing && isProcessing !== 'toggle' ? (
               <div className="flex justify-center items-center py-4">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mr-2"></div>
                 <span className="text-gray-600">Обработка...</span>

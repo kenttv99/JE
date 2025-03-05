@@ -12,21 +12,11 @@ import {
 } from 'react-table';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { format, differenceInSeconds } from 'date-fns';
-import { ru } from 'date-fns/locale';
-
-interface Order {
-  id: string;
-  method: string;
-  bank: string;
-  number: string;
-  createdAt: string;
-  expiresAt: string;
-  status: string;
-}
+import CountdownTimer from './CountdownTimer';  // Импортируем CountdownTimer
+import { TraderOrder } from '@/types/trader';  // Используем твой интерфейс
 
 interface OrdersTableProps {
-  orders: Order[];
+  orders: TraderOrder[];
   onCancel: (orderId: string) => void;
   onConfirm: (orderId: string) => void;
 }
@@ -34,36 +24,51 @@ interface OrdersTableProps {
 const OrdersTable: React.FC<OrdersTableProps> = ({ orders, onCancel, onConfirm }) => {
   const data = useMemo(() => orders, [orders]);
 
-  const columns = useMemo<Column<Order>[]>(
+  const columns = useMemo<Column<TraderOrder>[]>(
     () => [
       { Header: 'ID', accessor: 'id' },
-      { Header: 'МЕТОД', accessor: 'method' },
-      { Header: 'БАНК', accessor: 'bank' },
-      { Header: 'НОМЕР', accessor: 'number' },
+      { Header: 'ТИП', accessor: 'type' },
       {
-        Header: 'ВРЕМЯ ВЫПЛАТЫ',
-        accessor: 'expiresAt',
-        Cell: ({ row }: CellProps<Order>) => {
-          const expiresAt = new Date(row.original.expiresAt);
-          const now = new Date();
-          const secondsLeft = Math.max(0, differenceInSeconds(expiresAt, now));
-          
-          const minutes = Math.floor(secondsLeft / 60);
-          const seconds = secondsLeft % 60;
-          
-          const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-          
-          return (
-            <span className={`${secondsLeft < 300 ? 'text-red-600' : 'text-green-600'} font-medium`}>
-              {timeString}
-            </span>
-          );
-        },
+        Header: 'ДАТА',  // Колонка для отображения даты
+        id: 'dateDisplay',  // Уникальный id для этой колонки
+        accessor: 'date',  // Используем поле date из TraderOrder
+        Cell: ({ row }: CellProps<TraderOrder>) => new Date(row.original.date).toLocaleString('ru'),
+      },
+      {
+        Header: 'СУММА',
+        accessor: 'amount',
+        Cell: ({ value }: CellProps<TraderOrder>) => `${value.toFixed(2)}`,
+      },
+      {
+        Header: 'СТАТУС',
+        accessor: 'status',
+        Cell: ({ value }: { value: 'pending' | 'completed' | 'cancelled' }) => (
+          <span className={`px-2 py-1 rounded text-xs font-medium
+            ${value === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+              value === 'completed' ? 'bg-green-100 text-green-800' :
+              value === 'cancelled' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`
+          }>
+            {value === 'pending' ? 'В обработке' :
+             value === 'completed' ? 'Завершен' :
+             value === 'cancelled' ? 'Отменен' : value}
+          </span>
+        ),
+      },
+      {
+        Header: 'ВРЕМЯ ДО ИСТЕЧЕНИЯ',  // Колонка для таймера
+        id: 'dateExpiration',  // Уникальный id для этой колонки
+        accessor: 'date',  // Используем то же поле date из TraderOrder
+        Cell: ({ row }: CellProps<TraderOrder>) => (
+          <CountdownTimer 
+            expiresAt={row.original.date}  // Передаем дату создания ордера как expiresAt
+            orderId={row.original.id}  // Передаем orderId для отмены
+          />
+        ),
       },
       {
         Header: 'ОТМЕНА',
         id: 'cancel',
-        Cell: ({ row }: CellProps<Order>) => (
+        Cell: ({ row }: CellProps<TraderOrder>) => (
           <button 
             className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded"
             onClick={() => onCancel(row.original.id)}
@@ -75,29 +80,13 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders, onCancel, onConfirm }
       {
         Header: 'ПОДТВЕРЖДЕНИЕ',
         id: 'confirm',
-        Cell: ({ row }: CellProps<Order>) => (
+        Cell: ({ row }: CellProps<TraderOrder>) => (
           <button 
             className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
             onClick={() => onConfirm(row.original.id)}
           >
             Подтвердить
           </button>
-        ),
-      },
-      {
-        Header: 'СТАТУС',
-        accessor: 'status',
-        Cell: ({ value }: { value: string }) => (
-          <span className={`px-2 py-1 rounded text-xs font-medium
-            ${value === 'processing' ? 'bg-yellow-100 text-yellow-800' : 
-              value === 'completed' ? 'bg-green-100 text-green-800' :
-              value === 'cancelled' ? 'bg-red-100 text-red-800' :
-              'bg-gray-100 text-gray-800'}`
-          }>
-            {value === 'processing' ? 'В обработке' :
-             value === 'completed' ? 'Завершен' :
-             value === 'cancelled' ? 'Отменен' : value}
-          </span>
         ),
       },
     ],
@@ -111,16 +100,16 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders, onCancel, onConfirm }
     rows,
     prepareRow,
     setColumnOrder,
-  } = useTable<Order>(
+  } = useTable<TraderOrder>(
     { columns, data },
     useColumnOrder,
-  ) as TableInstance<Order> & { setColumnOrder: (order: string[]) => void };
+  ) as TableInstance<TraderOrder> & { setColumnOrder: (order: string[]) => void };
 
   const handleColumnOrderChange = (newOrder: string[]) => {
     setColumnOrder(newOrder);
   };
 
-  const DragableColumnHeader = ({ column, index }: { column: ColumnInstance<Order>; index: number }) => {
+  const DragableColumnHeader = ({ column, index }: { column: ColumnInstance<TraderOrder>; index: number }) => {
     const [, ref] = useDrag({
       type: 'COLUMN',
       item: { index },
@@ -157,9 +146,9 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders, onCancel, onConfirm }
       <div className="overflow-x-auto">
         <table {...getTableProps()} className="min-w-full divide-y divide-gray-200 border">
           <thead className="bg-gray-100">
-            {headerGroups.map((headerGroup: HeaderGroup<Order>) => (
+            {headerGroups.map((headerGroup: HeaderGroup<TraderOrder>) => (
               <tr {...headerGroup.getHeaderGroupProps()}>
-                {headerGroup.headers.map((column: ColumnInstance<Order>, index: number) => (
+                {headerGroup.headers.map((column: ColumnInstance<TraderOrder>, index: number) => (
                   <DragableColumnHeader key={column.id} column={column} index={index} />
                 ))}
               </tr>
@@ -167,11 +156,11 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders, onCancel, onConfirm }
           </thead>
           <tbody {...getTableBodyProps()} className="bg-white divide-y divide-gray-200">
             {rows.length > 0 ? (
-              rows.map((row: Row<Order>) => {
+              rows.map((row: Row<TraderOrder>) => {
                 prepareRow(row);
                 return (
                   <tr {...row.getRowProps()} className="hover:bg-gray-100 transition-colors">
-                    {row.cells.map((cell: Cell<Order>) => (
+                    {row.cells.map((cell: Cell<TraderOrder>) => (
                       <td
                         {...cell.getCellProps()}
                         className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 border-r"

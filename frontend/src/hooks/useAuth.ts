@@ -1,25 +1,31 @@
-// frontend/src/hooks/useAuth.ts
+// JE/frontend/src/hooks/useAuth.ts
+import { useSession } from 'next-auth/react';  // Убираем импорт Session, так как используем CustomSession
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { useSessionContext } from '@/contexts/SessionContext';
+import { CustomSession } from '@/types/auth';  // Импортируем CustomSession
 
-export function useAuth(requiredRole?: string) {
-  const { session, status, isLoading } = useSessionContext();
+export function useAuth(requiredRole: 'trader' | 'admin' | 'merchant' | undefined = 'trader') {
+  const { data: session, status } = useSession();  // Используем useSession напрямую
   const router = useRouter();
 
+  const customSession = session as CustomSession | undefined;
+
   useEffect(() => {
-    if (!isLoading) {
-      if (status === 'unauthenticated') {
-        router.replace('/login');
-      } else if (status === 'authenticated' && requiredRole && session?.user?.role !== requiredRole) {
-        if (session?.user?.role === 'trader' && !window.location.pathname.startsWith('/trader')) {
-          router.replace('/trader/profile');
-        } else if (session?.user?.role !== 'trader') {
-          router.replace('/');
-        }
+    console.log('useAuth effect - Status:', status, 'Session:', customSession?.accessToken);  // Отладочный лог
+    if (status === 'unauthenticated') {
+      router.replace('/login');
+    } else if (status === 'authenticated' && requiredRole && customSession?.user?.role !== requiredRole) {
+      if (customSession?.user?.role === 'trader' && !window.location.pathname.startsWith('/trader')) {
+        router.replace('/trader/profile');
+      } else if (customSession?.user?.role !== 'trader') {
+        router.replace('/');
       }
     }
-  }, [status, session, router, requiredRole, isLoading]);
+  }, [status, customSession, router, requiredRole]);
 
-  return { session, status, isLoading };
+  return {
+    session: customSession,
+    status,
+    isLoading: status === 'loading',  // Добавляем isLoading для совместимости
+  };
 }

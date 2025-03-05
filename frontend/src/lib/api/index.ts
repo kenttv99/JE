@@ -1,3 +1,4 @@
+// JE/frontend/src/lib/api/index.ts
 import axios from 'axios';
 import { getSession, signOut } from 'next-auth/react';
 
@@ -15,8 +16,11 @@ api.interceptors.request.use(
     const session = await getSession();
     
     // Update this line to match the token name from auth.ts
-    if (session?.accessToken) { // This now matches the name in auth.ts
+    if (session?.accessToken) { 
       config.headers['Authorization'] = `Bearer ${session.accessToken}`;
+      console.log('Adding Authorization header with token:', session.accessToken.substring(0, 10) + '...');  // Отладочный лог
+    } else {
+      console.warn('No access token available in session');
     }
     return config;
   },
@@ -27,7 +31,13 @@ api.interceptors.request.use(
 
 // Add a response interceptor to handle errors
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('Response:', {
+      status: response.status,
+      data: response.data
+    });
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
 
@@ -36,8 +46,8 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        // Add logging to help debug authentication issues
         console.error('Authentication error:', error.response?.data);
+        console.log('Attempting to sign out due to 401...');
         
         await signOut({ 
           redirect: true,
@@ -51,6 +61,7 @@ api.interceptors.response.use(
     }
 
     // For other errors, reject with the original error
+    console.error('API error:', error);
     return Promise.reject(error);
   }
 );
@@ -64,14 +75,6 @@ if (process.env.NODE_ENV === 'development') {
       headers: request.headers
     });
     return request;
-  });
-
-  api.interceptors.response.use(response => {
-    console.log('Response:', {
-      status: response.status,
-      data: response.data
-    });
-    return response;
   });
 }
 

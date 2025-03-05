@@ -1,39 +1,19 @@
 'use client';
 
-import { FormEvent, useEffect, useState, Suspense } from 'react';
-import { signIn, useSession } from 'next-auth/react';
+import { FormEvent, useState } from 'react';
+import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
-function LoginPageComponent() {
+export default function LoginPage() {
   const router = useRouter();
-  const { data: session, status } = useSession({ required: false });
-  const searchParams = useSearchParams(); 
-  
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const callbackUrl = searchParams?.get('callbackUrl') || '/trader/profile';
-
-  useEffect(() => {
-    if (!isRedirecting && status === 'authenticated' && session?.user?.role === 'trader') {
-      setIsRedirecting(true);
-      router.replace(callbackUrl);
-    }
-  }, [session, status, router, callbackUrl, isRedirecting]);
-
-  if (status === 'loading' && !isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <LoadingSpinner size="lg" />
-        </div>
-      </div>
-    );
-  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -45,7 +25,7 @@ function LoginPageComponent() {
 
     try {
       setIsLoading(true);
-      setError('');
+      setError(null);
 
       const result = await signIn('credentials', {
         email,
@@ -55,11 +35,12 @@ function LoginPageComponent() {
 
       if (result?.error) {
         setError('Неверный email или пароль');
-        setIsLoading(false);
-        return;
+      } else {
+        router.push(callbackUrl);
       }
     } catch (err) {
       setError('Произошла ошибка при входе');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -68,12 +49,8 @@ function LoginPageComponent() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-900">
-            Вход в систему
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Введите свои данные для входа
-          </p>
+          <h2 className="text-3xl font-bold text-gray-900">Вход в систему</h2>
+          <p className="mt-2 text-sm text-gray-600">Введите свои данные для входа</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -87,8 +64,7 @@ function LoginPageComponent() {
               type="email"
               autoComplete="email"
               required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400
-                       focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isLoading}
@@ -106,8 +82,7 @@ function LoginPageComponent() {
               type="password"
               autoComplete="current-password"
               required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400
-                       focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={isLoading}
@@ -143,10 +118,7 @@ function LoginPageComponent() {
             <button
               type="submit"
               disabled={isLoading}
-              className={`w-full inline-flex items-center justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white
-                ${isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}
-                focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
-                transition-colors duration-200 h-10`}
+              className="w-full inline-flex items-center justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 h-10 disabled:bg-blue-400 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center">
@@ -161,13 +133,5 @@ function LoginPageComponent() {
         </form>
       </div>
     </div>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense fallback={<LoadingSpinner size="lg" />}>
-      <LoginPageComponent />
-    </Suspense>
   );
 }
