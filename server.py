@@ -14,6 +14,7 @@ from api.endpoints.trader_addresses_routers import router as trader_addresses_ro
 from api.endpoints.timezone_routers import router as timezone_router
 from api.endpoints.trader_methods_routers import router as trader_methods_router
 from api.endpoints.trader_orders_router import router as trader_orders_router
+from api.endpoints.merchant_orders_routers import router as merchant_orders_router  # Добавляем новый роутер
 from api.endpoints.trader_req_routers import router as trader_req_routers
 from api.endpoints.banks_trader_routers import router as banks_trader_router
 from api.endpoints.trader_fiat_routers import router as trader_fiat_router
@@ -56,6 +57,7 @@ app.include_router(trader_addresses_router, prefix="/api/v1/trader_addresses", t
 app.include_router(timezone_router, prefix="/api/v1/trader_timezones", tags=["Timezones"])
 app.include_router(trader_methods_router, prefix="/api/v1/trader_methods", tags=["Trader Methods"])
 app.include_router(trader_orders_router, prefix="/api/v1/trader_orders", tags=["Trader Orders"])
+app.include_router(merchant_orders_router, prefix="/api/v1/merchant_orders", tags=["Merchant Orders"])  # Регистрируем новый роутер
 app.include_router(trader_req_routers, prefix="/api/v1/trader_req", tags=["Trader Requisites"])
 app.include_router(banks_trader_router, prefix="/api/v1/banks_trader", tags=["BanksTrader"])
 app.include_router(trader_fiat_router, prefix="/api/v1/trader_fiat", tags=["Trader Fiat"])
