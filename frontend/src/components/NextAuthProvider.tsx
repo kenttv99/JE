@@ -1,17 +1,18 @@
 'use client';
-
 import { SessionProvider } from "next-auth/react";
 import { ReactNode } from "react";
 
-export function NextAuthProvider({ 
-  children 
-}: { 
-  children: ReactNode 
+export function NextAuthProvider({
+  children
+}: {
+  children: ReactNode
 }) {
   return (
     <SessionProvider
-      refetchInterval={0}
-      refetchOnWindowFocus={false}
+      // Включаем периодическую проверку сессии (каждые 5 минут)
+      refetchInterval={300000}
+      // Проверяем при возвращении фокуса на окно
+      refetchOnWindowFocus={true}
       refetchWhenOffline={false}
     >
       {children}

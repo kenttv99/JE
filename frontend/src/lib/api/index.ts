@@ -90,25 +90,22 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
+    // Обработка 401 ошибок (Unauthorized)
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      try {
-        if (process.env.NODE_ENV !== 'production') {
-          console.error('Authentication error:', error.response?.data);
-          console.log('Attempting to sign out due to 401...');
-        }
-        
-        await signOut({
-          redirect: true,
-          callbackUrl: '/login'
-        });
-        return Promise.reject(error);
-      } catch (signOutError) {
-        if (process.env.NODE_ENV !== 'production') {
-          console.error('Error during sign out:', signOutError);
-        }
-        return Promise.reject(error);
+      
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('Authentication error:', error.response?.data);
+        console.log('Redirecting to login page due to auth error...');
       }
+      
+      // Выполняем выход и редирект одним действием
+      await signOut({
+        redirect: true,
+        callbackUrl: '/login'
+      });
+      
+      return Promise.reject(error);
     }
     
     if (process.env.NODE_ENV !== 'production') {
