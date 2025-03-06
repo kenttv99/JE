@@ -3,14 +3,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload
 import logging
-
 from database.init_db import TimeZone, Trader, get_async_db
 from api.auth import get_current_trader
 
 # Setup logging
 from config.logging_config import setup_logging
 setup_logging()
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)  # Исправлено с 'name' на '__name__'
 
 router = APIRouter()
 

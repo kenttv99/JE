@@ -4,7 +4,7 @@ import { Session } from "next-auth";
 import { JWT } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { AxiosError } from "axios";
-import api from '@/lib/api';
+import { authApiRequest } from '@/lib/api';
 import { TraderData, LoginResponse, ExtendedJWT, CustomSession } from '@/types/auth';
 
 export const authOptions: NextAuthOptions = {
@@ -20,7 +20,8 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
         try {
-          const response = await api.post<LoginResponse>('/api/v1/traders/login', {
+          // Используем прямой запрос без интерцепторов
+          const response = await authApiRequest<LoginResponse>('/api/v1/traders/login', {
             email: credentials.email,
             password: credentials.password
           });

@@ -1,11 +1,11 @@
 // frontend/src/hooks/useTraderTimezone.ts
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import api from '@/lib/api';
+import api, { addAuthHeader } from '@/lib/api';
 import { TimeZone } from '@/types/trader';
 
 export function useTraderTimezone() {
-  const { data: session, status } = useSession(); // Извлекаем session для доступа к accessToken
+  const { data: session, status } = useSession();
   const [timeZones, setTimeZones] = useState<TimeZone[]>([]);
   const [selectedTimezone, setSelectedTimezone] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
@@ -26,22 +26,31 @@ export function useTraderTimezone() {
 
       try {
         setIsLoading(true);
-        console.log('Fetching timezones');
+        console.log('Fetching timezones with token:', session.accessToken);
 
-        // Get all timezones (токен добавляется автоматически)
-        const timezonesResponse = await api.get<TimeZone[]>('/api/v1/trader_timezones/timezones');
+        // Явно добавляем заголовок авторизации
+        const authConfig = await addAuthHeader();
+        
+        // Запрос списка доступных часовых поясов
+        const timezonesResponse = await api.get<TimeZone[]>(
+          '/api/v1/trader_timezones/timezones', 
+          authConfig
+        );
 
         if (isMounted && timezonesResponse.data.length > 0) {
           setTimeZones(timezonesResponse.data);
 
-          // Get current trader's timezone (токен добавляется автоматически)
-          console.log('Fetching trader timezone');
-          const traderTzResponse = await api.get('/api/v1/trader_timezones/trader/timezone');
+          console.log('Fetching trader timezone with token');
+          
+          // Запрос текущего часового пояса трейдера
+          const traderTzResponse = await api.get(
+            '/api/v1/trader_timezones/trader/timezone',
+            authConfig
+          );
 
           if (isMounted && traderTzResponse.data) {
             setSelectedTimezone(traderTzResponse.data.id);
           } else if (isMounted) {
-            // Если часовой пояс трейдера не найден (404), устанавливаем первый доступный
             setSelectedTimezone(timezonesResponse.data[0].id);
             setError(traderTzResponse.status === 404 ? 'Time zone not set for trader' : null);
           }
@@ -82,11 +91,19 @@ export function useTraderTimezone() {
     }
 
     try {
-      console.log('Updating timezone');
-      // Обновляем часовой пояс (токен добавляется автоматически)
-      const response = await api.put(`/api/v1/trader_timezones/trader/timezone/${timezoneId}`, null);
+      console.log('Updating timezone with token');
+      
+      // Явно добавляем заголовок авторизации
+      const authConfig = await addAuthHeader();
+      
+      // Обновляем часовой пояс
+      const response = await api.put(
+        `/api/v1/trader_timezones/trader/timezone/${timezoneId}`, 
+        null, 
+        authConfig
+      );
 
-      if (response.status === 200 || response.status === 201) { // Убедились, что запрос успешен
+      if (response.status === 200 || response.status === 201) {
         setSelectedTimezone(timezoneId);
 
         // Update table data timestamp formatting

@@ -1,47 +1,122 @@
 // JE/frontend/src/lib/api/index.ts
-import axios from 'axios';
-import { LoginResponse, ApiError } from '@/types/auth';
-import { getSession, GetSessionParams } from 'next-auth/react'; // Используем GetSessionParams для SSR
+import axios, { AxiosResponse, AxiosRequestConfig } from 'axios';
+import { getSession, signOut } from 'next-auth/react';
 
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
-  timeout: 30000,
+// Создаем базовый экземпляр axios
+const axiosInstance = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL,
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
   },
-  withCredentials: true,
 });
 
-api.interceptors.request.use(async (config) => {
-  // Проверяем, вызывается ли код на сервере или клиенте
-  const isServer = typeof window === 'undefined';
-  let session;
+// Функция для авторизации без интерцепторов
+export const authApiRequest = <T = any>(url: string, data: any): Promise<AxiosResponse<T>> => {
+  return axios.post<T>(url, data, {
+    baseURL: process.env.NEXT_PUBLIC_API_URL,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+};
 
-  if (isServer) {
-    // Для серверного рендеринга используем параметры запроса
-    const request = config as any; // Типизация может потребовать доработки
-    session = await getSession({ req: request });
-  } else {
-    // Для клиентского рендеринга получаем сессию напрямую
-    session = await getSession();
-  }
-
-  if (session?.accessToken) {
-    config.headers.Authorization = `Bearer ${session.accessToken}`;
-    console.log('API request with token:', config.url, config.headers.Authorization);
-  } else {
-    console.warn('No access token found for API request:', config.url);
+// Функция для добавления токена авторизации к запросу вручную
+export const addAuthHeader = async (config: AxiosRequestConfig = {}): Promise<AxiosRequestConfig> => {
+  try {
+    const session = await getSession();
+    if (session?.accessToken) {
+      return {
+        ...config,
+        headers: {
+          ...config.headers,
+          Authorization: `Bearer ${session.accessToken}`
+        }
+      };
+    }
+  } catch (error) {
+    console.error('Error getting auth header:', error);
   }
   return config;
-});
+};
 
-api.interceptors.response.use(
-  (response) => response,
+// Интерцептор запросов
+axiosInstance.interceptors.request.use(
+  async (config) => {
+    try {
+      const session = await getSession();
+      
+      // Отладочный вывод
+      if (!session?.accessToken && process.env.NODE_ENV !== 'production') {
+        console.log('No access token found in session', {
+          session: session ? 'exists' : 'null',
+          url: config.url
+        });
+      }
+      
+      // Добавляем токен в заголовок
+      if (session?.accessToken) {
+        config.headers['Authorization'] = `Bearer ${session.accessToken}`;
+        
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('API Request with token:', {
+            url: config.url,
+            method: config.method,
+            hasToken: true
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error setting auth header:', error);
+    }
+    
+    return config;
+  },
   (error) => {
-    console.error('API error:', error.response?.data || error.message);
     return Promise.reject(error);
   }
 );
 
-export default api;
+// Интерцептор ответов
+axiosInstance.interceptors.response.use(
+  (response) => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Response:', {
+        url: response.config.url,
+        status: response.status,
+      });
+    }
+    return response;
+  },
+  async (error) => {
+    const originalRequest = error.config;
+    
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        if (process.env.NODE_ENV !== 'production') {
+          console.error('Authentication error:', error.response?.data);
+          console.log('Attempting to sign out due to 401...');
+        }
+        
+        await signOut({
+          redirect: true,
+          callbackUrl: '/login'
+        });
+        return Promise.reject(error);
+      } catch (signOutError) {
+        if (process.env.NODE_ENV !== 'production') {
+          console.error('Error during sign out:', signOutError);
+        }
+        return Promise.reject(error);
+      }
+    }
+    
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('API error:', error);
+    }
+    
+    return Promise.reject(error);
+  }
+);
+
+export default axiosInstance;
