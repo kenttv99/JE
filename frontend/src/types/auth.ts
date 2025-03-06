@@ -1,17 +1,18 @@
-// frontend/src/types/auth.ts
-import { User } from "next-auth";
-import type { DefaultSession } from "next-auth";
-import type { DefaultJWT } from "next-auth/jwt";
+// JE/frontend/src/types/auth.ts
+import { User, DefaultSession } from 'next-auth';
+import { JWT as BaseJWT } from 'next-auth/jwt'; // Явный импорт базового JWT
 
 export interface TraderData {
   id: string;
   email: string;
+  role: string;
   verification_level: number;
   pay_in: boolean;
   pay_out: boolean;
   access: boolean;
   created_at?: string;
   updated_at?: string;
+  access_token?: string;
   bankDetails?: {
     bankName: string;
     accountNumber: string;
@@ -23,10 +24,15 @@ export interface TraderData {
 export const DEFAULT_TRADER_DATA: TraderData = {
   id: '',
   email: '',
+  role: 'trader',
   verification_level: 0,
   pay_in: false,
   pay_out: false,
-  access: false
+  access: false,
+  created_at: undefined,
+  updated_at: undefined,
+  access_token: undefined,
+  bankDetails: undefined,
 };
 
 export interface CustomUser extends User {
@@ -52,31 +58,24 @@ export interface ApiError {
   status?: number;
 }
 
-// Remove the circular dependencies by not extending Session and JWT directly
-export interface CustomSession {
-  user: {
-    id: string;
-    email: string;
-    role: string;
-    verification_level: number;
-    pay_in: boolean;
-    pay_out: boolean;
-    created_at?: string;
-    updated_at?: string;
-  } & DefaultSession["user"];
+export interface CustomSession extends DefaultSession {
+  user: TraderData;
   accessToken: string;
   expires: string;
 }
 
-export interface ExtendedJWT extends DefaultJWT {
+// Определяем ExtendedJWT как отдельный интерфейс, расширяющий BaseJWT
+export interface ExtendedJWT {
   id: string;
   email: string;
   role: string;
   verification_level: number;
   pay_in: boolean;
   pay_out: boolean;
-  accessToken: string;
+  accessToken?: string;
   created_at?: string;
   updated_at?: string;
   tokenExpires?: number;
+  error?: string;
+  [key: string]: any; // Индексная сигнатура для совместимости с JWT
 }

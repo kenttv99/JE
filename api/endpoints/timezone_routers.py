@@ -49,8 +49,10 @@ async def get_trader_timezone(
         )
         trader = result.scalar_one_or_none()
         
-        if not trader or not trader.time_zone:
-            raise HTTPException(status_code=404, detail="Time zone not found")
+        if not trader:
+            raise HTTPException(status_code=404, detail="Trader not found")
+        if not trader.time_zone:
+            raise HTTPException(status_code=404, detail="Time zone not set for trader")
             
         return {
             "id": trader.time_zone.id,

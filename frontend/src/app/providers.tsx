@@ -1,3 +1,4 @@
+// JE/frontend/src/app/providers.tsx
 'use client';
 
 import { SessionProvider } from 'next-auth/react';
@@ -6,8 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { Toaster } from 'react-hot-toast';
 
-// Убедимся, что TronLink или tronweb не инициализируются глобально, если не нужны
-export function Providers({ children, session }: { children: ReactNode; session?: any }) {
+export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
@@ -21,12 +21,7 @@ export function Providers({ children, session }: { children: ReactNode; session?
 
   return (
     <QueryClientProvider client={queryClient}>
-      <SessionProvider 
-        session={session}
-        refetchInterval={0}
-        refetchOnWindowFocus={false}
-        refetchWhenOffline={false}
-      >
+      <SessionProvider>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

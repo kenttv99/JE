@@ -1,3 +1,4 @@
+// JE/frontend/src/app/(auth)/trader/layout.tsx
 'use client';
 
 import {
@@ -11,7 +12,7 @@ import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { traderNavigation } from '@/config/navigation';
 import { useProfile } from '@/hooks/useProfile';
-import { useTraderOrders } from '@/hooks/useTraderOrders';  // Импортируем useTraderOrders
+import { useTraderOrders } from '@/hooks/useTraderOrders';
 
 interface TraderLayoutProps {
   children: React.ReactNode;
@@ -23,12 +24,12 @@ export default function TraderLayout({ children }: TraderLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { profile, isLoading } = useProfile();
-  const { isAcceptingOrders, toggleOrderAcceptance } = useTraderOrders();  // Получаем состояние и функцию из useTraderOrders
+  const { isAcceptingOrders, toggleOrderAcceptance, error: ordersError } = useTraderOrders();
 
   useEffect(() => {
-    console.log('Layout loaded - Auth status:', status);  // Отладочный лог
+    console.log('Layout loaded - Auth status:', status); // Отладочный лог
     if (status === 'unauthenticated') {
-      router.replace('/login');  // Перенаправляем на /login, если пользователь не авторизован
+      router.replace('/login'); // Перенаправляем на /login, если пользователь не авторизован
     }
   }, [status, router]);
 
@@ -43,16 +44,17 @@ export default function TraderLayout({ children }: TraderLayoutProps) {
     );
   }
 
-  if (!session || session.user.role !== 'trader') {
-    return null;  // Предполагаем, что перенаправление уже произошло
+  // Проверяем role, добавляя его в TraderData или используя тип из session
+  if (!session || (session.user as any)?.role !== 'trader') { // Временное решение с любым типом
+    return null; // Предполагаем, что перенаправление уже произошло
   }
 
   const isActive = (path: string) => pathname === path;
 
   // Синхронизация состояния ползунка с useTraderOrders (если нужно)
   useEffect(() => {
-    console.log('Current isAcceptingOrders state:', isAcceptingOrders);  // Отладочный лог
-  }, [isAcceptingOrders]);
+    console.log('Current isAcceptingOrders state:', isAcceptingOrders, 'Error:', ordersError); // Отладочный лог
+  }, [isAcceptingOrders, ordersError]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -89,7 +91,7 @@ export default function TraderLayout({ children }: TraderLayoutProps) {
                     type="checkbox"
                     checked={isAcceptingOrders}
                     onChange={(e) => {
-                      console.log('Toggling order acceptance to:', e.target.checked);  // Отладочный лог
+                      console.log('Toggling order acceptance to:', e.target.checked); // Отладочный лог
                       toggleOrderAcceptance(e.target.checked);
                     }}
                     className="sr-only peer"

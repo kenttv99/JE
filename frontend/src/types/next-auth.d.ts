@@ -1,17 +1,17 @@
-// frontend/src/types/next-auth.d.ts
+// JE/frontend/src/types/next-auth.d.ts
 import 'next-auth';
-import { CustomUser } from '@/lib/auth.config';
+import { TraderData } from '@/types/auth';
+import { ExtendedJWT } from '@/types/auth';
 
 declare module 'next-auth' {
-  interface User extends CustomUser {}
+  interface User extends Omit<TraderData, 'bankDetails'> {}
 
   interface Session {
-    user: CustomUser;
+    user: TraderData;
+    accessToken?: string;
   }
 }
 
 declare module 'next-auth/jwt' {
-  interface JWT {
-    user?: CustomUser;
-  }
+  interface JWT extends ExtendedJWT {}
 }
