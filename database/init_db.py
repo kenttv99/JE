@@ -114,6 +114,7 @@ class Trader(Base):
     pay_out = Column(Boolean, default=False)
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+    in_work = Column(Boolean, default=True)
     access = Column(Boolean, default=True)
     two_factor_auth_token = Column(String(32), nullable=True)
     time_zone_id = Column(Integer, ForeignKey('time_zones.id'), nullable=False)
